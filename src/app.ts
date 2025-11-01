@@ -20,7 +20,7 @@ import { eventReportRouter } from '@/routers/article/eventReport'
 import { eventStageRouter } from '@/routers/eventStage'
 import { songRandomRouter } from '@/routers/songRandom'
 import { fuzzySearchRouter } from '@/routers/fuzzySearch'
-
+import { topRateDetailRouter } from './routers/topRateDetail';
 import { logger } from '@/logger'
 import * as dotenv from 'dotenv';
 
@@ -49,6 +49,7 @@ app.use('/cutoffAll', cutoffAllRouter)
 app.use('/eventStage', eventStageRouter)
 app.use('/songRandom', songRandomRouter);
 app.use('/fuzzySearch', fuzzySearchRouter);
+app.use('/topRateDetail', topRateDetailRouter);
 
 
 if (process.env.LOCAL_DB == 'true') {
