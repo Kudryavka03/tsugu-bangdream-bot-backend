@@ -26,18 +26,6 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     //标题
     list.push(await drawListByServerList(song.musicTitle, '歌曲名称'))
     list.push(line)
-
-    //歌曲tag(类型)
-    var typeImage = drawList({
-        key: '类型', text: song.getTagName()
-    })
-    //歌曲ID
-    var IdImage = drawList({
-        key: 'ID', text: song.songId.toString()
-    })
-    list.push(drawListMerge([typeImage, IdImage]))
-    list.push(line)
-
     //乐队
     var band = new Band(song.bandId)
     list.push(await drawListByServerList(band.bandName, '乐队', displayedServerList))
@@ -82,6 +70,18 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     })
     list.push(drawListMerge([timeLength, bpmData]))
     list.push(line)
+
+    //歌曲tag(类型)
+    var typeImage = drawList({
+        key: '类型', text: song.getTagName()
+    })
+    //歌曲ID
+    var IdImage = drawList({
+        key: 'ID', text: song.songId.toString()
+    })
+    list.push(drawListMerge([typeImage, IdImage]))
+    list.push(line)
+
     list.push(drawListTextWithImages({
         key: 'Notes',
         content: [drawDifficulityListWithNotes(song)],
