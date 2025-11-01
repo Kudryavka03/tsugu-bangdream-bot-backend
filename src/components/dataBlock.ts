@@ -7,13 +7,15 @@ interface datablockOptions {
     BG?: boolean
     topLeftText?: string
     opacity?: number
+    maxWidth?: number
 }
 //组合表格子程序，使用block当做底，通过最大高度换行，默认高度无上限
 export function drawDatablock({
     list,
     BG = true,
     topLeftText,
-    opacity = 0.9
+    opacity = 0.9,
+    maxWidth
 }: datablockOptions): Canvas {
     const topLeftTextHeight = 70
     //计算高度

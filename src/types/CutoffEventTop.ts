@@ -50,7 +50,7 @@ export class CutoffEventTop{
             this.status = 'in_progress';
         }
     }
-    async initFull(){
+    async initFull(interval = 3600000){
         if (!this.isExist){
             return
         }
