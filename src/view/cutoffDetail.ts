@@ -85,7 +85,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         //活动剩余时间
         tempTimeList.push(drawList({
             key: '活动剩余时间',
-            text: `${changeTimePeriodFormat(cutoff.endAt - time)}`
+            text: `${changeTimePeriodFormat(cutoff.endAt - time,false)}`
         }))
         tempTimeList.push(drawList({
             key: '更新时间',

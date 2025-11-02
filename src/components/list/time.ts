@@ -103,7 +103,7 @@ export function changeTimefomantMonthDay(timeStamp: number | null) {//获取生�
     return temp
 }
 
-export function changeTimePeriodFormat(period: number): string {//时间戳的差值到年月日时分秒
+export function changeTimePeriodFormat(period: number,showSecond = true): string {//时间戳的差值到年月日时分秒
     if (period == null) {
         return '?'
     }
@@ -136,7 +136,9 @@ export function changeTimePeriodFormat(period: number): string {//时间戳的�
     if (minutes != 0) {
         temp += minutes.toString() + "分钟";
     }
-    temp += seconds.toString() + "秒";
+    if(showSecond){
+        temp += seconds.toString() + "秒";
+    }
 
     return temp;
 }

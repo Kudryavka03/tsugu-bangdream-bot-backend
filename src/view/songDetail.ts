@@ -31,15 +31,6 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     list.push(await drawListByServerList(band.bandName, '乐队', displayedServerList))
     list.push(line)
 
-    //作词
-    list.push(await drawListByServerList(song.detail.lyricist, '作词', displayedServerList))
-    list.push(line)
-    //作曲
-    list.push(await drawListByServerList(song.detail.composer, '作曲', displayedServerList))
-    list.push(line)
-    //编曲
-    list.push(await drawListByServerList(song.detail.arranger, '编曲', displayedServerList))
-    list.push(line)
     //时长
     var timeLength = drawList({
         key: '时长',
@@ -86,6 +77,17 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
         key: 'Notes',
         content: [drawDifficulityListWithNotes(song)],
     }))
+
+    
+    //作词
+    list.push(await drawListByServerList(song.detail.lyricist, '作词', displayedServerList))
+    list.push(line)
+    //作曲
+    list.push(await drawListByServerList(song.detail.composer, '作曲', displayedServerList))
+    list.push(line)
+    //编曲
+    list.push(await drawListByServerList(song.detail.arranger, '编曲', displayedServerList))
+    list.push(line)
 
     //发布时间
     list.push(await drawTimeInList({
