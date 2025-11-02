@@ -52,6 +52,19 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
         })
 
         if (cutoff.status == 'in_progress') {
+
+            datasets.push({
+                label: lableName,
+                data: cutoff.getPredictChartData(setStartToZero),
+                borderWidth: 5,
+                borderColor: [tempColor.getRGBA(1)],
+                backgroundColor: [tempColor.getRGBA(1)],
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                borderDash: [20, 10],
+            })
+
             if (cutoff.predictEP != null && cutoff.predictEP != 0) {
                 let data = []
                 if (setStartToZero) {

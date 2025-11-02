@@ -32,6 +32,8 @@ export const bindingPlayerPromptWaitingTime: number = 5 * 60 * 10000
 export const Bestdoriurl: string = 'https://bestdori.com'; //Bestdori网站的url
 export const BandoriStationurl: string = 'https://api.bandoristation.com/'; //BandoriStation网站的url
 
+export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
+
 export const globalDefaultServer: Array<Server> = [Server.cn, Server.jp]//默认服务器列表
 export const globalServerPriority: Array<Server> = [Server.cn, Server.jp, Server.tw, Server.en, Server.kr]//默认服务器优先级
 

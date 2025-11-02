@@ -37,11 +37,15 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     //如果活动在进行中    
     if (cutoff.status == 'in_progress') {
         cutoff.predict()
+        cutoff.predict2()
+
         if (cutoff.predictEP == null || cutoff.predictEP == 0) {
             var predictText = '?'
+            var predictText2 = '数据不足'
         }
         else {
             var predictText = cutoff.predictEP.toString()
+            var predictText2 = cutoff.predictEP2.toString()
         }
 
         //预测线和时速
@@ -50,13 +54,13 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         list.push(drawListMerge([
             drawList({
-                key: '预测线',
+                key: '预测线1',
                 text: predictText
             }),
             drawList({
-                key: '当前时速',
-                text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
-            })
+                key: '预测线2',
+                text: predictText2
+            }),
         ]))
         list.push(line)
 
@@ -68,22 +72,28 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             text: cutoff.latestCutoff.ep.toString()
         })
         tempImageList.push(finalCutoffImage)
+        
+        tempImageList.push(drawList({
+            key: '当前时速',
+            text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
+        }))
 
-        //更新时间
-        const finalTimeImage = drawList({
-            key: '更新时间',
-            text: `${changeTimePeriodFormat((new Date().getTime()) - cutoff.latestCutoff.time)}前`
-        })
-        tempImageList.push(finalTimeImage)
 
         list.push(drawListMerge(tempImageList)) //合并两个list
         list.push(line)
-
+        const tempTimeList = []
         //活动剩余时间
-        list.push(drawList({
+        tempTimeList.push(drawList({
             key: '活动剩余时间',
             text: `${changeTimePeriodFormat(cutoff.endAt - time)}`
         }))
+        tempTimeList.push(drawList({
+            key: '更新时间',
+            text: `${changeTimePeriodFormat((new Date().getTime()) - cutoff.latestCutoff.time)}前`
+        }))
+        list.push(drawListMerge(tempTimeList))
+
+
         list.push(line)
 
     }

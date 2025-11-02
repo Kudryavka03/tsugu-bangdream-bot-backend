@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
-import { Bestdoriurl, tierListOfServer } from '@/config';
+import { Bestdoriurl, extraUrl, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
@@ -11,10 +11,12 @@ export class Cutoff {
     tier: number;
     isExist = false;
     cutoffs: { time: number, ep: number }[];
+    pCutoffs: { time: number, ep: number }[];
     eventType: string;
     latestCutoff: { time: number, ep: number };
     rate: number | null;
     predictEP: number;
+    predictEP2: number;
     startAt: number;
     endAt: number;
     status: 'not_start' | 'in_progress' | 'ended';
@@ -60,13 +62,16 @@ export class Cutoff {
             return
         }
         let cutoffData
+        let pCutoffData
         //如果cutoff的活动已经结束，则使用缓存
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 24 * 2) {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`)
+            pCutoffData = await callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`)
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            pCutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
         }
         if (cutoffData == undefined) {
             this.isExist = false;
@@ -78,6 +83,7 @@ export class Cutoff {
         }
         this.isExist = true;
         this.cutoffs = cutoffData['cutoffs'] as { time: number, ep: number }[]
+        this.pCutoffs = pCutoffData['cutoffs'] as { time: number, ep: number }[]
         if (this.cutoffs.length == 0) {
             const event = new Event(this.eventId)
             this.latestCutoff = { time: event.startAt[this.server], ep: 0 }
@@ -100,6 +106,7 @@ export class Cutoff {
         }
         if (this.status == 'in_progress') {
             this.predict()
+            this.predict2()
         }
         this.isInitfull = true
     }
@@ -125,6 +132,10 @@ export class Cutoff {
         this.predictEP = Math.floor(result.ep)
         return this.predictEP
     }
+    predict2(): number {
+        this.predictEP2 = this.pCutoffs[this.pCutoffs.length-1]['ep']
+        return this.predictEP2
+    }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
             return [];
@@ -142,6 +153,33 @@ export class Cutoff {
 
         for (let i = 0; i < this.cutoffs.length; i++) {
             const element = this.cutoffs[i];
+            if (setStartToZero) {
+                // 确保 tempTime 不为 null 才执行减法操作
+                chartData.push({ x: tempTime ? new Date(element.time - this.startAt) : new Date(0), y: element.ep });
+            } else {
+                chartData.push({ x: new Date(element.time), y: element.ep });
+            }
+            tempTime = element.time;
+        }
+        return chartData;
+    }
+    getPredictChartData(setStartToZero = false): { x: Date, y: number }[] {
+        if (this.isExist == false) {
+            return [];
+        }
+        let chartData: { x: Date, y: number }[] = [];
+        if (setStartToZero) {
+            chartData.push({ x: new Date(0), y: 0 });
+        } else {
+            chartData.push({ x: new Date(this.startAt), y: 0 });
+        }
+
+        // 在访问 this.cutoffs[0].time 之前检查 this.cutoffs 是否存在且长度大于0
+        let tempTime = this.pCutoffs && this.pCutoffs.length > 0 ? this.pCutoffs[0].time : null;
+        // 如果 tempTime 为 null，则后续逻辑应当考虑这种情况以避免错误
+
+        for (let i = 0; i < this.pCutoffs.length; i++) {
+            const element = this.pCutoffs[i];
             if (setStartToZero) {
                 // 确保 tempTime 不为 null 才执行减法操作
                 chartData.push({ x: tempTime ? new Date(element.time - this.startAt) : new Date(0), y: element.ep });
