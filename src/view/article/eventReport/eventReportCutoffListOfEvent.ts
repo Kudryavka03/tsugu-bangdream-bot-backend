@@ -48,7 +48,7 @@ export async function drawEventReportCutoffListOfEvent(eventId: number, mainServ
                 predictText = '?'
             }
             else {
-                predictText = cutoff.predictEP.toString()
+                predictText = cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString()
             }
             cutoffContent.push(`当前预测线: ${predictText}\n`)
             cutoffContent.push(`最新分数线: ${cutoff.latestCutoff.ep.toString()}\n`)

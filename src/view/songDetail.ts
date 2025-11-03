@@ -77,7 +77,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
         key: 'Notes',
         content: [drawDifficulityListWithNotes(song)],
     }))
-
+    list.push(line)
     
     //作词
     list.push(await drawListByServerList(song.detail.lyricist, '作词', displayedServerList))
