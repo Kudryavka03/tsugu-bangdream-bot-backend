@@ -118,12 +118,13 @@ namespace 预测线验证平台
                 var upEpRatio = 165;    // 165
                 var endEpRatio = 360;
                 var microUpRatioEp = 1.2;
-                if (tier == "500") {  upEpRatio = 120; microUpRatio = 80; upRatio = 87; } // t500的曲线相对较平，不抬升，由end拉高
-                if (tier == "1000") { endRatio = 96; upRatio = 70;  microUpRatio = 1000; } // t1000后面冲刺阶段会比较猛，阈值给多
-                if (Convert.ToInt32(tier) > 1999) { upEpRatio = 111; microUpRatio = 1011; upRatio = 1011; endRatio = 98; microUpRatio = 1011; } // t2000的曲线不再介入处理，仅保留冲刺抬升
-                if (Convert.ToInt32(tier) > 2999) { upEpRatio = 111; microUpRatio = 1011; upRatio = 1011; endRatio = 99; microUpRatio = 1101; } // t3000的曲线冲刺抬升进一步缩小
-                if (Convert.ToInt32(tier) > 3999) { upEpRatio = 1011; microUpRatio = 1011; upRatio = 1011; endRatio = 1101; microUpRatio = 1101; } // t3000后不再做任何处理
+                if (tier == "500") { upEpRatio = 120; microUpRatio = 80; upRatio = 87; } // t500的曲线相对较平，不抬升，由end拉高
+                if (tier == "1000") { endRatio = 96; upRatio = 70; microUpRatio = 1000; } // t1000后面冲刺阶段会比较猛，阈值给多
+
                 if (eventType == "medley") { endRatio = 95; upRatio = 85; upEpRatio = 165; microUpRatio = 60; }
+                if (Convert.ToInt32(tier) > 1999) { upEpRatio = 120; microUpRatio = 110; upRatio = 82; endRatio = 97; } // t2000的曲线不再介入处理，仅保留冲刺抬升
+                if (Convert.ToInt32(tier) > 2999) { upEpRatio = 110; microUpRatio = 110; upRatio = 82; endRatio = 98; } // t2000的曲线不再介入处理，仅保留冲刺抬升
+                if (Convert.ToInt32(tier) > 5001) { upEpRatio = 100; microUpRatio = 110; upRatio = 105; endRatio = 100; } // t5000后不再做任何处理
                 // 到这一步，均速计算完成了。开始读取最后一条记录的分数......
                 var lastRecord = cutoffDetails[cutoffDetailCounts - 1];
                 var lastRecordEp = ConvertToLong(cutoffDetails[cutoffDetailCounts - 1]["ep"].ToString());
