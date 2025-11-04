@@ -11,11 +11,13 @@ import * as fs from 'fs';
 const errUrl: { [key: string]: number } = {};
 const ERROR_CACHE_EXPIRY = 12 * 60 * 60 * 1000; // 1 天
 
-async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 3): Promise<Buffer> {
+async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 1): Promise<Buffer> {
   try {
     const currentTime = Date.now();
     if(url.includes('undefined')) {
+      console.trace
       throw new Error("downloadFile: url.includes('undefined')");
+      
     }
 
     if (errUrl[url] && currentTime - errUrl[url] < ERROR_CACHE_EXPIRY) {
@@ -37,6 +39,7 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
         if (data.toString().startsWith("<!DOCTYPE html>")) {
           fs.unlinkSync(path.join(cacheDir, fileName));
           assetNotExists = true;
+          console.trace;
           throw new Error("downloadFile: data.toString().startsWith(\"<!DOCTYPE html>\")");
         }
         return data;
@@ -48,7 +51,7 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
           throw e;
         }
         //等待3秒后重试
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 1));
       }
     }
   } catch (e) {

@@ -2,7 +2,7 @@ import { downloadFile } from '@/api/downloadFile'
 import { assetErrorImageBuffer } from "@/image/utils";
 const cache: { [url: string]: Buffer } = {};
 
-async function downloadFileCache(url: string,IgnoreErr = true, overwrite = false, retryCount = 3): Promise<Buffer> {
+async function downloadFileCache(url: string,IgnoreErr = true): Promise<Buffer> {
     if (cache[url]) {
         // 如果已经有缓存，则直接返回缓存数据
         //console.log(`已有缓存:${url}`)
@@ -11,7 +11,7 @@ async function downloadFileCache(url: string,IgnoreErr = true, overwrite = false
     // 下载文件
     // const data = await downloadFile(url,IgnoreErr)
     // 将下载的文件缓存起来
-    const data = await downloadFile(url,IgnoreErr,overwrite,retryCount)
+    const data = await downloadFile(url,IgnoreErr)
     if (data.equals(assetErrorImageBuffer)){
         return data;
     }

@@ -34,7 +34,7 @@ export const BandoriStationurl: string = 'https://api.bandoristation.com/'; //Ba
 
 export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
 
-export const globalDefaultServer: Array<Server> = [Server.cn, Server.jp]//默认服务器列表
+export const globalDefaultServer: Array<Server> = [Server.cn,Server.jp]//默认服务器列表
 export const globalServerPriority: Array<Server> = [Server.cn, Server.jp, Server.tw, Server.en, Server.kr]//默认服务器优先级
 
 export const serverNameFullList = [

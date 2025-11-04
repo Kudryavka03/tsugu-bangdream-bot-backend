@@ -7,6 +7,7 @@ import { Attribute } from '@/types/Attribute';
 import { Character } from '@/types/Character';
 import { globalDefaultServer, Bestdoriurl } from '@/config';
 import { stringToNumberArray } from '@/types/utils'
+import { logger } from '@/logger';
 
 var eventDataCache = {}
 
@@ -209,6 +210,7 @@ export class Event {
             var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
             return await loadImage(BannerImageBuffer)
         } catch (e) {
+            logger(`Event`, `"${e}"`);
             var server = Server.jp
             var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`)
             return await loadImage(BannerImageBuffer)

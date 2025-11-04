@@ -16,7 +16,9 @@ export async function download(url: string, directory?: string, fileName?: strin
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
       if(!isApiRequest){
-        return fs.readFileSync(cacheFilePath);
+        if (fs.existsSync(cacheFilePath)){
+          return fs.readFileSync(cacheFilePath);
+        }
       }
       else{
         const eTagFilePath = path.join(directory, `${fileName}.etag`);
@@ -47,11 +49,12 @@ export async function download(url: string, directory?: string, fileName?: strin
     }
 
     const fileBuffer = Buffer.from(response.data, 'binary');
-
+    /*
     const newETag = response.headers.etag;
     if (newETag && directory && fileName) {
       fs.writeFileSync(path.join(directory, `${fileName}.etag`), newETag);
     }
+    */
 
     if (directory && fileName) {
       fs.writeFileSync(path.join(directory, fileName), fileBuffer);

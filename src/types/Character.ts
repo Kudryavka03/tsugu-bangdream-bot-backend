@@ -3,7 +3,7 @@ import { callAPIAndCacheResponse } from '@/api/getApi'
 import { Image, loadImage } from 'skia-canvas'
 import { downloadFileCache } from '@/api/downloadFileCache'
 import { formatNumber } from '@/types/utils';
-import { Bestdoriurl } from "@/config"
+import { Bestdoriurl, globalDefaultServer } from "@/config"
 
 let characterDataCache = {}
 
@@ -108,7 +108,7 @@ export class Character {
         return (await loadImage(illustrationBuffer))
     }
     async getNameBanner(): Promise<Image> {
-        const nameBannerBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/character_name_rip/name_top_chr${formatNumber(this.characterId, 2)}.png`)
+        const nameBannerBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${globalDefaultServer[0]}/character_name_rip/name_top_chr${formatNumber(this.characterId, 2)}.png`)
         return (await loadImage(nameBannerBuffer))
     }
     getCharacterName(): Array<string | null> {
