@@ -4,7 +4,7 @@ import * as fs from 'fs';
 
 const errUrl: string[] = [];
 
-export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<Buffer> {
+export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (directory != undefined && fileName != undefined) {
     createDirIfNonExist(directory);
   }
@@ -12,19 +12,23 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (errUrl.includes(url)) {
       throw new Error("downloadFile: errUrl.includes(url)");
     }
-
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      const eTagFilePath = path.join(directory, `${fileName}.etag`);
-      eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
-      if (fs.existsSync(cacheFilePath)) {
-        const stat = fs.statSync(cacheFilePath);
-        const now = Date.now();
-        if (now - stat.mtimeMs < cacheTime * 1000) {
-          //console.log(`Cache time for "${url}" has not expired. Using cached file.`);
-          const cachedData = fs.readFileSync(cacheFilePath);
-          return cachedData;
+      if(!isApiRequest){
+        return fs.readFileSync(cacheFilePath);
+      }
+      else{
+        const eTagFilePath = path.join(directory, `${fileName}.etag`);
+        eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
+        if (fs.existsSync(cacheFilePath)) {
+          const stat = fs.statSync(cacheFilePath);
+          const now = Date.now();
+         if (now - stat.mtimeMs < cacheTime * 1000) {
+            //console.log(`Cache time for "${url}" has not expired. Using cached file.`);
+           const cachedData = fs.readFileSync(cacheFilePath);
+           return cachedData;
+         }
         }
       }
     }
