@@ -11,7 +11,7 @@ async function downloadFileCache(url: string,IgnoreErr = true, overwrite = false
     // 下载文件
     // const data = await downloadFile(url,IgnoreErr)
     // 将下载的文件缓存起来
-    const data = await downloadFile(url,true,overwrite,retryCount)
+    const data = await downloadFile(url,IgnoreErr,overwrite,retryCount)
     if (data.equals(assetErrorImageBuffer)){
         return data;
     }
