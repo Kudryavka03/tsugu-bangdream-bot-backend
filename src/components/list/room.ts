@@ -41,12 +41,12 @@ export async function drawRoonInList(room: Room) {
     const timeNow = new Date().getTime()
 
     //头像
-    const Icon = await getUserIcon(room.avatarUrl)
-
+    const Icon = await getUserIcon()
+    // const Icon = await getUserIcon(room.avatarUrl)
     //文本
     const textList: Canvas[] = []
     textList.push(drawText({
-        text: `${room.userName} 来自${room.source} ${(timeNow - room.time) / 1000}秒前`,
+        text: `${room.userName} 来自${room.source} ${Math.floor((timeNow - room.time) / 1000)}秒前`,
         textSize: 30,
         maxWidth: maxWidthText
     }))
@@ -72,7 +72,7 @@ export async function drawRoonInList(room: Room) {
     ctxUp.fillStyle = '#a8a8a8'
     ctxUp.fillRect(200, 0, 5, height)
     let list = [canvasUp]
-    if (room.player != undefined) {
+    if (room.player != undefined && false) {
         const player = new Player(room.player.playerId, room.player.server)
         await player.initFull(true)
         if (player.isExist && !player.initError) {
