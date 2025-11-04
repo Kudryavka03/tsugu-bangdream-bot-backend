@@ -189,7 +189,7 @@ export class Song {
     }
     async getSongJacketImage(displayedServerList: Server[] = [Server.jp, Server.cn]): Promise<Image> {
         const jacketImageUrl = this.getSongJacketImageURL(displayedServerList)
-        var jacketImageBuffer = await downloadFileCache(jacketImageUrl)
+        var jacketImageBuffer = await downloadFile(jacketImageUrl)
         //下载失败自动尝试切换服务器下载
         if (jacketImageBuffer.equals(assetErrorImageBuffer)) {
             console.log("download failed, try to download jacket from other servers")
@@ -197,7 +197,7 @@ export class Song {
           var jacketImageName = this.jacketImage[this.jacketImage.length - 1];
           for (const server of servers) {
             const retryUrl = `${Bestdoriurl}/assets/${server}/musicjacket/musicjacket${this.getSongRip()}_rip/assets-star-forassetbundle-startapp-musicjacket-musicjacket${this.getSongRip()}-${jacketImageName}-jacket.png`;
-            jacketImageBuffer = await downloadFileCache(retryUrl, true, false, 1);
+            jacketImageBuffer = await downloadFile(retryUrl, true, false, 1);
             if (!jacketImageBuffer.equals(assetErrorImageBuffer)) break;
           }
         }

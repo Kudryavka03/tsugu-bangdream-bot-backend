@@ -43,7 +43,7 @@ export class Degree {
                 console.error(e)
             }
         }
-        let degreeImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
+        let degreeImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
         return loadImage(degreeImageBuffer)
     }
     async getDegreeFrame(server: Server): Promise<Image | Canvas> {
