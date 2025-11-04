@@ -124,7 +124,7 @@ namespace 预测线验证平台
                 if (eventType == "medley") { endRatio = 95; upRatio = 85; upEpRatio = 165; microUpRatio = 60; }
                 if (Convert.ToInt32(tier) > 1999) { upEpRatio = 120; microUpRatio = 110; upRatio = 82; endRatio = 97; } // t2000的曲线不再介入处理，仅保留冲刺抬升
                 if (Convert.ToInt32(tier) > 2999) { upEpRatio = 110; microUpRatio = 110; upRatio = 82; endRatio = 98; } // t2000的曲线不再介入处理，仅保留冲刺抬升
-                if (Convert.ToInt32(tier) > 5001) { upEpRatio = 100; microUpRatio = 110; upRatio = 105; endRatio = 100; } // t5000后不再做任何处理
+                if (Convert.ToInt32(tier) > 5001) { upEpRatio = 100; microUpRatio = 110; upRatio = 105; endRatio = 100; } // t5000后不再做任何处理vis
                 // 到这一步，均速计算完成了。开始读取最后一条记录的分数......
                 var lastRecord = cutoffDetails[cutoffDetailCounts - 1];
                 var lastRecordEp = ConvertToLong(cutoffDetails[cutoffDetailCounts - 1]["ep"].ToString());

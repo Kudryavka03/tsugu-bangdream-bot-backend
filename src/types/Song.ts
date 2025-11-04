@@ -1,6 +1,7 @@
 import { callAPIAndCacheResponse } from '@/api/getApi'
 import { Image, loadImage } from 'skia-canvas'
 import { downloadFile } from '@/api/downloadFile'
+import { downloadFileCache } from '@/api/downloadFileCache'
 import { getServerByPriority, Server } from '@/types/Server'
 import mainAPI from '@/types/_Main'
 import { Bestdoriurl } from '@/config'
@@ -188,7 +189,7 @@ export class Song {
     }
     async getSongJacketImage(displayedServerList: Server[] = [Server.jp, Server.cn]): Promise<Image> {
         const jacketImageUrl = this.getSongJacketImageURL(displayedServerList)
-        var jacketImageBuffer = await downloadFile(jacketImageUrl)
+        var jacketImageBuffer = await downloadFileCache(jacketImageUrl)
         //下载失败自动尝试切换服务器下载
         if (jacketImageBuffer.equals(assetErrorImageBuffer)) {
             console.log("download failed, try to download jacket from other servers")
@@ -196,7 +197,7 @@ export class Song {
           var jacketImageName = this.jacketImage[this.jacketImage.length - 1];
           for (const server of servers) {
             const retryUrl = `${Bestdoriurl}/assets/${server}/musicjacket/musicjacket${this.getSongRip()}_rip/assets-star-forassetbundle-startapp-musicjacket-musicjacket${this.getSongRip()}-${jacketImageName}-jacket.png`;
-            jacketImageBuffer = await downloadFile(retryUrl, true, false, 1);
+            jacketImageBuffer = await downloadFileCache(retryUrl, true, false, 1);
             if (!jacketImageBuffer.equals(assetErrorImageBuffer)) break;
           }
         }

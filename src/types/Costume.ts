@@ -1,5 +1,5 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
-import { downloadFile } from '@/api/downloadFile';
+import { downloadFileCache } from '@/api/downloadFileCache';
 import { Bestdoriurl, globalDefaultServer } from '@/config';
 import mainAPI from '@/types/_Main';
 import { Server, getServerByPriority } from '@/types/Server';
@@ -48,7 +48,7 @@ export class Costume {
     async getSdchara(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
         if (!displayedServerList) displayedServerList = globalDefaultServer
         var server = getServerByPriority(this.publishedAt, displayedServerList)
-        var sdCharaBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/characters/livesd/${this.sdResourceName}_rip/sdchara.png`)
+        var sdCharaBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/characters/livesd/${this.sdResourceName}_rip/sdchara.png`)
         return await loadImage(sdCharaBuffer)
     }
 }
