@@ -19,6 +19,7 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         return ['错误: 该卡池不存在']
     }
     await gacha.initFull()
+    if (gacha.rates[getServerByPriority(gacha.publishedAt)] == null) return ['错误: 该卡池未提供概率分布数据']
     let gachaImage: Canvas;
     if (times <= 10) {
         const cardImageList: Canvas[] = []
@@ -145,6 +146,7 @@ function getGachaRandomCard(gacha: Gacha, times: number) {
     const server = getServerByPriority(gacha.publishedAt)
     const gachaDetails = gacha.details[server]
     const gachaRates = gacha.rates[server]
+    if (gachaRates == null) return null
     //计算稀有度
     let cardRarity = parseInt(getRandomRarity(gachaRates))
     if (times % 10 == 9 && cardRarity < 3) {//第十发保底
