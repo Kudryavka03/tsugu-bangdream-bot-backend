@@ -2,7 +2,8 @@ import { downloadFileCache } from '@/api/downloadFileCache'
 import { loadImage, Image } from 'skia-canvas'
 import { globalDefaultServer, serverNameFullList } from '@/config'
 import { globalServerPriority, Bestdoriurl } from '@/config'
-import { loadImageFromPath, convertSvgToPngBuffer } from '@/image/utils';
+import { loadImageFromPath, convertSvgToPngBuffer, assetErrorImageBuffer } from '@/image/utils';
+import { logger } from '@/logger';
 
 
 //服务器列表，因为有TW而不适用country
@@ -43,15 +44,20 @@ export async function getIcon(server: Server): Promise<Image> {
         return serverIconCache[server]
     }
     let image: Image
+    let readyToCache = false
     if (server == Server.tw) {
         image = await loadImageFromPath('./assets/tw.png')
     }
     else {
         const iconSvgBuffer = await downloadFileCache(`${Bestdoriurl}/res/icon/${Server[server]}.svg`)
+        if (!iconSvgBuffer.equals(assetErrorImageBuffer)){
+            readyToCache = true
+            logger('getServerIcon','Not match cache and res Ready,cached.');
+        }
         const iconPngBuffer = await convertSvgToPngBuffer(iconSvgBuffer)
         image = await loadImage(iconPngBuffer)
     }
-    serverIconCache[server] = image
+    if (readyToCache) serverIconCache[server] = image
     return image
 }
 

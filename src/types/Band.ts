@@ -5,6 +5,8 @@ import { downloadFileCache } from '@/api/downloadFileCache';
 import { formatNumber } from '@/types/utils';
 import { Bestdoriurl } from "@/config"
 import { convertSvgToPngBuffer } from '@/image/utils'
+import { assetErrorImageBuffer } from "@/image/utils";
+import { logger } from '@/logger';
 
 export class Band {
     bandId: number;
@@ -56,9 +58,16 @@ export async function getBandIcon(bandId: number): Promise<Image> {
         return bandIconCache[bandId]
     }
     const iconSvgBuffer = await downloadFileCache(`${Bestdoriurl}/res/icon/band_${bandId}.svg`)
+    
     const iconPngBuffer = await convertSvgToPngBuffer(iconSvgBuffer)
+
+    // 在算力不足的CPU上，convertSvgToPngBuffer通常需要花费1秒钟左右的时间去运行，在程序开始就缓存起来对出图速度有很大的帮助。
     const image = await loadImage(iconPngBuffer)
-    bandIconCache[bandId] = image
+    if (!iconSvgBuffer.equals(assetErrorImageBuffer)){
+        bandIconCache[bandId] = image
+        logger('getBandIcon','Not match cache and res Ready,cached.');
+    }
+    
     return image
 }
 

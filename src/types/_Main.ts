@@ -4,6 +4,9 @@ import { readJSON } from '@/types/utils'
 import { readExcelFile } from '@/types/utils'
 import { logger } from '@/logger'
 import * as path from 'path'
+import { getBandIcon } from './Band'
+import { Server, getIcon } from './Server'
+import { Attribute, attributeIconCache } from './Attribute'
 
 const mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 
@@ -54,6 +57,26 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
+    logger('mainAPI', 'PreCache Icon...');
+    for(let i = 1;i<6;i++){
+       await getBandIcon(i)  // 用于缓存
+    }
+    await getBandIcon(21)  // 用于缓存Morfonica
+    await getBandIcon(45)  // 用于缓存MyGO
+
+    for (const key in Server) {
+        const value = Number(key)
+        if (!isNaN(value)) {
+            await getIcon(value as Server)
+        }
+    }
+    let attributeList = ["cool", "happy", "pure", "powerful"];
+    for(var attributeName of attributeList){
+        if(attributeIconCache[attributeName] == undefined){
+            await new Attribute(attributeName).getIcon()
+        }
+    }
+
     logger('mainAPI', 'mainAPI loaded')
 
 }
