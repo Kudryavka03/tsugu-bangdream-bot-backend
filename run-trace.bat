@@ -1,0 +1,1 @@
+npx tsc --generateTrace ./traces && npm run cpu
