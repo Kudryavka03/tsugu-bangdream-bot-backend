@@ -232,16 +232,21 @@ async function drawCardListLine(cardList: Card[]) {
             }
         }
     });
+    const promiseList: Promise<Canvas>[] = []; 
     //画卡牌，从左到右，宽度120，间隔20
     for (let i = 0; i < cardList.length; i++) {
         const tempCard = cardList[i];
-        const cardIcon = await drawCardIcon({
+
+        promiseList.push(drawCardIcon({
             card: tempCard,
             trainingStatus: true,
             cardIdVisible: true,
             skillTypeVisible: true
-        })
-        var ratio = 120 / cardIcon.width
+        }))
+    }
+    var result = await Promise.all(promiseList)
+    for (const [i, cardIcon] of result.entries()) {
+        const ratio = 120 / cardIcon.width
         ctx.drawImage(cardIcon, i * 140, 0, cardIcon.width * ratio, cardIcon.height * ratio)
     }
     return canvas

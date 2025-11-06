@@ -26,9 +26,14 @@ export async function drawCharacterInList({
         return canvas
     }
     else {
+        const promiseList: Promise<Image>[] = []; 
         for (let i = 0; i < content.length; i++) {
             const character = content[i];
-            list.push(await character.getIcon())
+            promiseList.push(character.getIcon())
+        }
+        var result = await Promise.all(promiseList)
+        for(var r of result){
+            list.push(r)
         }
         if (text != undefined) {
             list.push(text)

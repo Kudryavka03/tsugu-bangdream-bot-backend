@@ -44,6 +44,7 @@ export class Degree {
             }
         }
         let degreeImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
+        // console.log('getDegreeImage'+' '+`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
         return loadImage(degreeImageBuffer)
     }
     async getDegreeFrame(server: Server): Promise<Image | Canvas> {
@@ -53,6 +54,7 @@ export class Degree {
         }
 
         var degreeFrameBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${frameName}.png`)
+        // console.log('getDegreeFrame'+' '+`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${frameName}.png`)
         return loadImage(degreeFrameBuffer)
     }
     async getDegreeIcon(server: Server): Promise<Image | Canvas> {
@@ -61,6 +63,7 @@ export class Degree {
             return (new Canvas(1, 1))
         }
         var degreeIconBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${iconName}.png`)
+        // console.log('getDegreeIcon'+' '+`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${iconName}.png`)
         return loadImage(degreeIconBuffer)
     }
 }

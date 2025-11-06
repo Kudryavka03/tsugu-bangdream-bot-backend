@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as path from 'path';
 import * as fs from 'fs';
+import { logger } from '@/logger';
 
 const errUrl: string[] = [];
 
@@ -17,6 +18,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (fileName && directory) {
       if(!isApiRequest){
         if (fs.existsSync(cacheFilePath)){
+         console.log(`Match Cache! ${url}`)
           return fs.readFileSync(cacheFilePath);
         }
       }
@@ -37,6 +39,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
+	console.log(`Miss Cache! ${url}  is downloading...`)
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
       if (error.response && error.response.status === 304) {
@@ -83,6 +86,7 @@ function createDirIfNonExist(filepath: string) {
 }
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
+  logger('getJsonAndSave','Start Get API: '+url+' From:')
   try {
     if (directory != undefined && fileName != undefined) {
       createDirIfNonExist(directory);
@@ -99,6 +103,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
+          logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
           return cachedJson;
         }
       }
@@ -112,6 +117,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         //console.log(`ETag matches for "${url}". Using cached JSON data.`);
         const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
         const cachedJson = JSON.parse(cachedData);
+        logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
       } else {
         throw error;
@@ -132,6 +138,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
 
     //console.log(`Downloaded JSON data from "${url}"`);
+    logger('getJsonAndSave','API: '+url + ' is Downloaded.')
     return jsonObject;
   } catch (e) {
     throw new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`);

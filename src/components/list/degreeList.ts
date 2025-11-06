@@ -21,10 +21,14 @@ export async function drawDegreeListInList({
     key
 }: DegreeListInListOptions): Promise<Canvas> {
     var list: Array<Canvas> = []
+    const drawDegreeList: Promise<Canvas>[] = []; 
     for (let i = 0; i < degreeList.length; i++) {
         const element = degreeList[i];
-        var degreeImage = await drawDegree(element, server)
-        list.push(degreeImage)
+        drawDegreeList.push(drawDegree(element, server))
+    }
+    var result = await Promise.all(drawDegreeList)
+    for(var r of result){
+        list.push(r)
     }
     return drawList({
         key: key,
@@ -37,6 +41,7 @@ export async function drawDegreeListOfEvent(event: Event, displayedServerList: S
     event.initFull()
     var list = []
     let tempDegreeList = []
+    const listPromise: Promise<Canvas>[] = []; 
     var server = getServerByPriority(event.rankingRewards, displayedServerList)
     let rankingRewards = event.rankingRewards[server]
     for (let i = 0; i < rankingRewards.length; i++) {
@@ -45,7 +50,7 @@ export async function drawDegreeListOfEvent(event: Event, displayedServerList: S
             if (tempDegreeList.length >= 6) break
         }
     }
-    list.push(await drawDegreeListInList({
+    listPromise.push(drawDegreeListInList({
         key: "活动奖励", degreeList: tempDegreeList, server: server, displayedServerList: displayedServerList
     }))
     if (event.eventType == "versus" || event.eventType == "challenge" || event.eventType == "medley") {
@@ -58,7 +63,7 @@ export async function drawDegreeListOfEvent(event: Event, displayedServerList: S
                     if (tempDegreeList.length >= 6) break
                 }
             }
-            list.push(await drawDegreeListInList({
+            listPromise.push(drawDegreeListInList({
                 degreeList: tempDegreeList, server: server, displayedServerList: displayedServerList
             }))
             if (event.eventType == "medley") {
@@ -82,9 +87,13 @@ export async function drawDegreeListOfEvent(event: Event, displayedServerList: S
                 }
             }
         }
-        list.push(await drawDegreeListInList({
+        listPromise.push(drawDegreeListInList({
             degreeList: tempDegreeList, server: server
         }))
+    }
+    var result = await Promise.all(listPromise)
+    for(var r of result){
+        list.push(r)
     }
     return (stackImage(list))
 }

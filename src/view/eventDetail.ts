@@ -27,17 +27,21 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         return ['错误: 活动不存在']
     }
     await event.initFull()
-    var list: Array<Image | Canvas> = []
 
+
+    var list: Array<Image | Canvas> = []
+    const bannerImagePromise: Promise<Image>[] = []; 
+    const BGImagePromise: Promise<Image>[] = []; 
+    BGImagePromise.push(event.getEventBGImage());
+    // const [eventBannerImage,]
     //bannner
-    var eventBannerImage = await event.getBannerImage()
-    var eventBannerImageCanvas = drawBannerImageCanvas(eventBannerImage)
-    list.push(eventBannerImageCanvas)
-    list.push(new Canvas(800, 30))
+    bannerImagePromise.push(event.getBannerImage())     // GetBannerImage的多线程IO
+    // var eventBannerImage = await event.getBannerImage()     // 要改，往后
+    //var eventBannerImageCanvas = drawBannerImageCanvas(eventBannerImage)    // 这个不需要
+
 
     //标题
-    list.push(await drawListByServerList(event.eventName, '活动名称', displayedServerList))
-    list.push(line)
+
 
     //类型
     var typeImage = drawList({
@@ -49,31 +53,207 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         key: 'ID', text: event.eventId.toString()
     })
 
+
+
+
+
+
+    var characterList = event.getCharacterList()
+    /*
+    for (const i in characterList) {
+        if (Object.prototype.hasOwnProperty.call(characterList, i)) {
+            const element = characterList[i];
+            list.push(await drawCharacterInList({
+                content: element,
+                text: ` +${i}%`
+            }))
+        }
+    }
+    */
+    const drawCharacterInListPromise: Promise<Image | Canvas>[] = [];
+    for (const i in characterList) {
+        if (Object.prototype.hasOwnProperty.call(characterList, i)) {
+            const element = characterList[i];
+            // 不 await，直接把 Promise 放进数组
+            drawCharacterInListPromise.push(drawCharacterInList({
+                content: element,
+                text: ` +${i}%`
+            }));
+        }
+    }
+
+    // const characterListPromiseTask = await Promise.all(drawCharacterInListPromise);
+    /*
+    for(const i of characterListPromiseTask){
+        list.push(i)
+    }
+    */
+    
+
+
+
+    //牌子
+    const drawDegreeListOfEventPromise: Promise<Image | Canvas>[] = []; 
+    drawDegreeListOfEventPromise.push(drawDegreeListOfEvent(event, displayedServerList))
+
+
+    //有歌榜活动的歌榜歌曲
+    const drawSongListInListPromise: Promise<Image | Canvas>[] = []; 
+    const eventTypes: string[] = ['versus', 'challenge', 'medley']
+    if (eventTypes.includes(event.eventType) && event.musics != undefined && event.musics.length > 0) {
+        let songs: Song[] = []
+        let defaultServer = displayedServerList[0]
+        if (!event.musics[displayedServerList[0]]) {
+            defaultServer = Server.jp
+        }
+        for (let i = 0; i < event.musics[defaultServer].length; i++) {
+            songs.push(new Song(event.musics[defaultServer][i].musicId))
+        }
+        drawSongListInListPromise.push(drawSongListInList(songs))
+    }
+
+    //活动表情
+    const getRewardStampPromise: Promise<Image | Canvas>[] = []; 
+    getRewardStampPromise.push(event.getRewardStamp(displayedServerList[0]))
+    // const stampImage = await event.getRewardStamp(displayedServerList[0])
+
+    //奖励卡牌
+    var rewardCardList: Card[] = []
+    for (let i = 0; i < event.rewardCards.length; i++) {
+        const cardId = event.rewardCards[i];
+        rewardCardList.push(new Card(cardId))
+    }
+    const drawCardListInListPromise: Promise<Image | Canvas>[] = []; 
+    drawCardListInListPromise.push(drawCardListInList({
+        key: '奖励卡牌',
+        cardList: rewardCardList,
+        cardIdVisible: true,
+        skillTypeVisible: true,
+        cardTypeVisible: true,
+        trainingStatus: false
+    }))
+
+    var gachaCardList: Card[] = []
+    var gachaCardIdList: number[] = []//用于去重
+    var gachaImageList: Canvas[] = []
+    var gachaIdList: number[] = []//用于去重
+    const drawGachaDatablockPromise: Promise<Canvas>[] = [];     //这个是gachaImageList
+    //活动期间卡池卡牌
+    var getEventGachaAndCardPromiseList:Promise<{ gachaList, gachaCardList }>[]= []
+
+
+    for (var i = 0; i < displayedServerList.length; i++) {
+        var server = displayedServerList[i]
+        if (event.startAt[server] == null) {
+            continue
+        }
+        getEventGachaAndCardPromiseList.push(getEventGachaAndCardList(event, server))
+    }
+    const getEventGachaAndCardFinalList = await Promise.all(getEventGachaAndCardPromiseList);
+    for (var i = 0; i < getEventGachaAndCardFinalList.length; i++) {
+        var server = displayedServerList[i]
+        var EventGachaAndCardList = getEventGachaAndCardFinalList[i]
+        var tempGachaList = EventGachaAndCardList.gachaList
+        var tempGachaCardList = EventGachaAndCardList.gachaCardList
+        for (let i = 0; i < tempGachaList.length; i++) {
+            const tempGacha = tempGachaList[i];
+            if (gachaIdList.indexOf(tempGacha.gachaId) != -1) {
+                continue
+            }
+            if (i == 0) {
+                drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                //gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+            }
+            else {
+                drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha))
+                //gachaImageList.push(await drawGachaDatablock(tempGacha))
+            }
+            gachaIdList.push(tempGacha.gachaId)
+        }
+        for (let i = 0; i < tempGachaCardList.length; i++) {
+            const tempCard = tempGachaCardList[i];
+            if (gachaCardIdList.indexOf(tempCard.cardId) != -1) {
+                continue
+            }
+            gachaCardIdList.push(tempCard.cardId)
+            gachaCardList.push(tempCard)
+        }
+    }
+
+    drawCardListInListPromise.push(drawCardListInList({    // 这个是不需要等待IO的
+        key: '活动期间卡池卡牌',
+        cardList: gachaCardList,
+        cardIdVisible: true,
+        skillTypeVisible: true,
+        cardTypeVisible: true,
+        trainingStatus: false
+    }))
+
+
+
+    // const drawCardListInListPromise: Promise<Image | Canvas>[] = []; 
+    //歌曲
+
+
+
+    const allPromises = {
+        bannerImage: Promise.all(bannerImagePromise),
+        drawCharacterInList: Promise.all(drawCharacterInListPromise),
+        drawDegreeListOfEvent: Promise.all(drawDegreeListOfEventPromise),
+        drawSongListInList: Promise.all(drawSongListInListPromise),
+        getRewardStamp: Promise.all(getRewardStampPromise),
+        drawCardListInList: Promise.all(drawCardListInListPromise),
+        drawGachaDatablock: Promise.all(drawGachaDatablockPromise),
+    };
+
+    const results = await Promise.all([
+        Promise.all(bannerImagePromise),
+        Promise.all(drawCharacterInListPromise),
+        Promise.all(drawDegreeListOfEventPromise),
+        Promise.all(drawSongListInListPromise),
+        Promise.all(getRewardStampPromise),
+        Promise.all(drawCardListInListPromise),
+        Promise.all(drawGachaDatablockPromise),
+        Promise.all(BGImagePromise)
+    ]);
+    const [
+        bannerImageResult,
+        drawCharacterInListResult,
+        drawDegreeListOfEventResult,
+        drawSongListInListResult,
+        getRewardStampResult,
+        drawCardListInListResult,
+        drawGachaDatablockResult,
+        BGImageResult
+    ] = results;
+
+    var eventBannerImage = bannerImageResult[0]
+    var eventBannerImageCanvas = drawBannerImageCanvas(eventBannerImage)
+    list.push(eventBannerImageCanvas)
+    list.push(new Canvas(800, 30))
+    //标题
+    list.push(await drawListByServerList(event.eventName, '活动名称', displayedServerList)) // 这个已经缓存过的了，不需要并行加载
+    list.push(line)
     list.push(drawListMerge([typeImage, IdImage]))
     list.push(line)
-
-    //开始时间
-    list.push(await drawTimeInList({
+       //开始时间
+       list.push(await drawTimeInList({
         key: '开始时间',
         content: event.startAt,
         eventId: event.eventId,
         estimateCNTime: true
     }))
     list.push(line)
-
-    //结束时间
     list.push(await drawTimeInList({
         key: '结束时间',
         content: event.endAt
     }))
     list.push(line)
-
-
-    //活动属性加成
+        //活动属性加成
     list.push(drawList({
         key: '活动加成'
     }))
-    var attributeList = event.getAttributeList()
+    var attributeList = event.getAttributeList()    // 活动加成也上缓存了，不需要并行绘制
     for (const i in attributeList) {
         if (Object.prototype.hasOwnProperty.call(attributeList, i)) {
             const element = attributeList[i];
@@ -90,17 +270,11 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         key: '活动角色加成'
     }))
     var characterList = event.getCharacterList()
-    for (const i in characterList) {
-        if (Object.prototype.hasOwnProperty.call(characterList, i)) {
-            const element = characterList[i];
-            list.push(await drawCharacterInList({
-                content: element,
-                text: ` +${i}%`
-            }))
-        }
+    const characterListPromiseTask = drawCharacterInListResult;
+    for(const i of characterListPromiseTask){
+        list.push(i)
     }
     list.push(line)
-
     //活动偏科加成(stat)
     if (Object.keys(event.eventCharacterParameterBonus).length != 0) {
         var statText = ''
@@ -122,102 +296,33 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         }))
         list.push(line)
     }
-
-    //牌子
-    list.push(await drawDegreeListOfEvent(event, displayedServerList))
-    list.push(line)
-
-    //有歌榜活动的歌榜歌曲
-    const eventTypes: string[] = ['versus', 'challenge', 'medley']
-    if (eventTypes.includes(event.eventType) && event.musics != undefined && event.musics.length > 0) {
-        let songs: Song[] = []
-        let defaultServer = displayedServerList[0]
-        if (!event.musics[displayedServerList[0]]) {
-            defaultServer = Server.jp
-        }
-        for (let i = 0; i < event.musics[defaultServer].length; i++) {
-            songs.push(new Song(event.musics[defaultServer][i].musicId))
-        }
-        list.push(await drawSongListInList(songs))
+    for(const i of drawDegreeListOfEventResult){
+        list.push(i)
         list.push(line)
     }
-
-    //活动表情
-    const stampImage = await event.getRewardStamp(displayedServerList[0])
-    if(stampImage){
+    for(const i of drawSongListInListResult){
+        list.push(i)
+        list.push(line)
+    }
+    
+    if (getRewardStampResult[0]){
         list.push(
             await drawList({
                 key: '活动表情',
-                content: [stampImage],
+                content: [getRewardStampResult[0]],
                 textSize: 160,
                 lineHeight: 160
             })
         )
         list.push(line)
     }
-
-    //奖励卡牌
-    var rewardCardList: Card[] = []
-    for (let i = 0; i < event.rewardCards.length; i++) {
-        const cardId = event.rewardCards[i];
-        rewardCardList.push(new Card(cardId))
+    for(const i of drawCardListInListResult){
+        list.push(i)
     }
-    list.push(await drawCardListInList({
-        key: '奖励卡牌',
-        cardList: rewardCardList,
-        cardIdVisible: true,
-        skillTypeVisible: true,
-        cardTypeVisible: true,
-        trainingStatus: false
-    }))
+    for(const i of drawGachaDatablockResult){
+        gachaImageList.push(i)
+    }
     list.push(line)
-
-    var gachaCardList: Card[] = []
-    var gachaCardIdList: number[] = []//用于去重
-    var gachaImageList: Canvas[] = []
-    var gachaIdList: number[] = []//用于去重
-    //活动期间卡池卡牌
-    for (var i = 0; i < displayedServerList.length; i++) {
-        var server = displayedServerList[i]
-        if (event.startAt[server] == null) {
-            continue
-        }
-        var EventGachaAndCardList = await getEventGachaAndCardList(event, server)
-        var tempGachaList = EventGachaAndCardList.gachaList
-        var tempGachaCardList = EventGachaAndCardList.gachaCardList
-        for (let i = 0; i < tempGachaList.length; i++) {
-            const tempGacha = tempGachaList[i];
-            if (gachaIdList.indexOf(tempGacha.gachaId) != -1) {
-                continue
-            }
-            if (i == 0) {
-                gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
-            }
-            else {
-                gachaImageList.push(await drawGachaDatablock(tempGacha))
-            }
-            gachaIdList.push(tempGacha.gachaId)
-        }
-        for (let i = 0; i < tempGachaCardList.length; i++) {
-            const tempCard = tempGachaCardList[i];
-            if (gachaCardIdList.indexOf(tempCard.cardId) != -1) {
-                continue
-            }
-            gachaCardIdList.push(tempCard.cardId)
-            gachaCardList.push(tempCard)
-        }
-    }
-
-
-
-    list.push(await drawCardListInList({
-        key: '活动期间卡池卡牌',
-        cardList: gachaCardList,
-        cardIdVisible: true,
-        skillTypeVisible: true,
-        cardTypeVisible: true,
-        trainingStatus: false
-    }))
 
     var listImage = drawDatablock({ list })
     //创建最终输出数组
@@ -226,8 +331,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     all.push(drawTitle('查询', '活动'))
 
     all.push(listImage)
-
-    //歌曲
+    const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 
     for (let i = 0; i < displayedServerList.length; i++) {
         const server = displayedServerList[i];
         if (event.startAt[server] == null) {
@@ -242,17 +346,28 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             });
 
             if (!isDuplicate) {
-                all.push(await drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`));
+                // drawCardListInListPromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`))
+                drawSongListInListMorePromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`));
             }
         }
     }
+    const drawSongListInListMoreResult = await Promise.all(drawSongListInListMorePromise)
+    for(const i of drawSongListInListMoreResult){
+        all.push(i)
+    }
+
+
+
+
+
 
     //卡池
     for (let i = 0; i < gachaImageList.length; i++) {
         all.push(gachaImageList[i])
     }
-
+   
     var BGimage = await event.getEventBGImage()
+        BGimage = BGImageResult[0]
 
     var buffer = await outputFinalBuffer({
         imageList: all,
@@ -279,33 +394,46 @@ export async function getEventGachaAndCardList(event: Event, mainServer: Server,
         }
     }
     var gachaCardIdList: number[] = []
+    const promiseList: Promise<void>[] = []; 
+
+
     for (var i = 0; i < gachaList.length; i++) {
-        var tempGacha = gachaList[i]
-        if (tempGacha.type == 'birthday') {
-            continue
-        }
-        await tempGacha.initFull(!useCache)
-        var tempCardList = tempGacha.pickUpCardId
-        /*
-        //检查是否有超过7张稀有度2的卡牌，发布了太多2星卡的卡池会被跳过
-        var rarity2CardNum = 0
-        for (var j = 0; j < tempCardList.length; j++) {
-            let tempCard = new Card(tempCardList[j])
-            if (tempCard.rarity == 2) {
-                rarity2CardNum++
+
+
+        const p = (async function () {
+            var tempGacha = gachaList[i]
+            if (tempGacha.type == 'birthday') {
+                
             }
-        }
-        if (rarity2CardNum > 6) {
-            continue
-        }
-        */
-        for (var j = 0; j < tempCardList.length; j++) {
-            var tempCardId = tempCardList[j]
-            if (gachaCardIdList.indexOf(tempCardId) == -1) {
-                gachaCardIdList.push(tempCardId)
+            //console.log("tempGacha initFull 这里不应该一段一段出现。")
+            await tempGacha.initFull(!useCache)
+            // console.log(tempGacha.pickUpCardId)
+            var tempCardList = null;
+            tempCardList = tempGacha.pickUpCardId
+            /*
+            //检查是否有超过7张稀有度2的卡牌，发布了太多2星卡的卡池会被跳过
+            var rarity2CardNum = 0
+            for (var j = 0; j < tempCardList.length; j++) {
+                let tempCard = new Card(tempCardList[j])
+                if (tempCard.rarity == 2) {
+                    rarity2CardNum++
+                }
+            } 
+            if (rarity2CardNum > 6) {
+                continue
             }
-        }
+            */
+            for (var j = 0; j < tempCardList.length; j++) {
+                var tempCardId = tempCardList[j]
+                if (gachaCardIdList.indexOf(tempCardId) == -1) {
+                    gachaCardIdList.push(tempCardId)
+                }
+            }
+            
+        })();
+        promiseList.push(p)
     }
+    await Promise.all(promiseList)
     var gachaCardList: Card[] = []
     for (var i = 0; i < gachaCardIdList.length; i++) {
         var tempCardId = gachaCardIdList[i]

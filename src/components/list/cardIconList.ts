@@ -47,32 +47,38 @@ export async function drawCardListInList({
         lineHeight / 200 * 230
     }
     var list: Array<Canvas> = []
+
+    const drawCardIconList: Promise<Canvas>[] = []; 
     for (let i = 0; i < cardList.length; i++) {
         const element: Card = cardList[i];
         var cardIcon: Canvas
         if (trainingStatus != undefined) {
-            cardIcon = await drawCardIcon({
+            drawCardIconList.push(drawCardIcon({
                 card: element,
                 trainingStatus: trainingStatus,
                 cardIdVisible: cardIdVisible,
                 skillTypeVisible: skillTypeVisible,
                 cardTypeVisible: cardTypeVisible,
-            })
-            list.push(cardIcon)
+            }))
+            // list.push(cardIcon)
         }
         else {
             var getTrainingStatusList = element.getTrainingStatusList()
             for (let j = 0; j < getTrainingStatusList.length; j++) {
-                cardIcon = await drawCardIcon({
+                drawCardIconList.push(drawCardIcon({
                     card: element,
                     trainingStatus: getTrainingStatusList[j],
                     cardIdVisible: cardIdVisible,
                     skillTypeVisible: skillTypeVisible,
                     cardTypeVisible: cardTypeVisible,
-                })
-                list.push(cardIcon)
+                }))
+                // list.push(cardIcon)
             }
         }
+    }
+    var result = await Promise.all(drawCardIconList)
+    for(var r of result){
+        list.push(r)
     }
     return drawList({
         key: key,
