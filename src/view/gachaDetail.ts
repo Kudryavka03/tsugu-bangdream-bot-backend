@@ -22,11 +22,77 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     await gacha.initFull()
     var list: Array<Image | Canvas> = []
     //bannner
-    var gachaBannerImage = await gacha.getBannerImage()
-    var gachaBannerImageCanvas = drawBannerImageCanvas(gachaBannerImage)
-    list.push(gachaBannerImageCanvas)
-    list.push(new Canvas(800, 30))
+    var getBannerImagePromise:Promise<Image>[] = []
+    getBannerImagePromise.push(gacha.getBannerImage())
 
+    // list.push(gachaBannerImageCanvas)
+    
+    var server = getServerByPriority(gacha.publishedAt, displayedServerList)
+
+
+    var drawGashaPaymentMethodInListPromise:Promise<Canvas>[] = []
+    drawGashaPaymentMethodInListPromise.push(drawGashaPaymentMethodInList(gacha))
+
+
+    //概率分布
+    var drawGachaRateInListPromise:Promise<Canvas>[] = []
+    
+
+    try{
+    var drawGachaPickupInListPromise:Promise<Canvas>[] = []
+    drawGachaPickupInListPromise.push(drawGachaPickupInList(gacha, server))
+    }
+    catch(e){
+        console.log(e)
+    }
+    //卡池pickUp
+
+
+
+    //相关活动
+    var tempEventIdList = []//用于防止重复
+    var eventImageList: Array<Canvas | Image> = []
+    var drawEventDatablockPromise:Promise<Canvas>[] = []
+    for (let k = 0; k < displayedServerList.length; k++) {
+        let server = displayedServerList[k]
+        if (gacha.publishedAt[server] == null) {
+            continue
+        }
+        var relatedEvent = getPresentEvent(server, gacha.publishedAt[server])
+        if (relatedEvent != null && !tempEventIdList.includes(relatedEvent.eventId)) {
+            tempEventIdList.push(relatedEvent.eventId)
+            drawEventDatablockPromise.push(drawEventDatablock(relatedEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
+        }
+    }
+
+    var gachaBGImagePromise:Promise<Image>[] = []
+    gachaBGImagePromise.push(gacha.getGachaBGImage())
+    //const gachaBGImage = await gacha.getGachaBGImage(); // REMOVE
+
+    const results = await Promise.all([
+        Promise.all(getBannerImagePromise),
+        Promise.all(drawGashaPaymentMethodInListPromise),
+        Promise.all(drawEventDatablockPromise),
+        Promise.all(drawGachaRateInListPromise),
+        Promise.all(drawGachaPickupInListPromise),
+        Promise.all(gachaBGImagePromise),
+    ]);
+    const [
+        getBannerImageResult,
+        drawGashaPaymentMethodInListResult,
+        drawEventDatablockResult,
+        drawGachaRateInListResult,
+        drawGachaPickupInListResult,
+        gachaBGImageResult
+    ] = results
+
+
+    var gachaBannerImage = getBannerImageResult[0]
+    var gachaBannerImageCanvas = drawBannerImageCanvas(gachaBannerImage)
+
+
+
+    list.push(gachaBannerImageCanvas)
     //标题
     list.push(await drawListByServerList(gacha.gachaName, '卡池名称', displayedServerList))
     list.push(line)
@@ -61,54 +127,50 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     //描述
     list.push(await drawListByServerList(gacha.description, '描述', displayedServerList))
     list.push(line)
+    list.push(await drawGachaRateInList(gacha, server))
 
-    var server = getServerByPriority(gacha.publishedAt, displayedServerList)
+        //支付方法
+        for(var r of drawGachaRateInListResult){
+            list.push(r)
+        }
 
-    //支付方法
-    list.push(await drawGashaPaymentMethodInList(gacha))
     list.push(line)
+
+
 
     //概率分布
-    list.push(await drawGachaRateInList(gacha, server))
+    for(var r of drawGashaPaymentMethodInListResult){
+        list.push(r)
+    }
     list.push(line)
 
-    //卡池pickUp
-    try {
-        list.push(await drawGachaPickupInList(gacha, server))
+    for(var r of drawGachaPickupInListResult){
+        list.push(r)
     }
-    catch (e) {
-        console.log(e)
-    }
+    list.push(line)
+
 
     var listImage = drawDatablock({ list })
     var all = []
+
     all.push(drawTitle('查询', '卡池'))
+    list.push(new Canvas(800, 30))
+
+
     all.push(listImage)
-
-    //相关活动
-    var tempEventIdList = []//用于防止重复
-    var eventImageList: Array<Canvas | Image> = []
-
-    for (let k = 0; k < displayedServerList.length; k++) {
-        let server = displayedServerList[k]
-        if (gacha.publishedAt[server] == null) {
-            continue
-        }
-        var relatedEvent = getPresentEvent(server, gacha.publishedAt[server])
-        if (relatedEvent != null && !tempEventIdList.includes(relatedEvent.eventId)) {
-            tempEventIdList.push(relatedEvent.eventId)
-            eventImageList.push(await drawEventDatablock(relatedEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
-        }
+    for (let i = 0; i < drawEventDatablockResult.length; i++) {
+        all.push(drawEventDatablockResult[i])
     }
+    
 
-    for (let i = 0; i < eventImageList.length; i++) {
-        all.push(eventImageList[i])
-    }
-    const gachaBGImage = await gacha.getGachaBGImage();
+
+
+
+
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: useEasyBG,
-        BGimage: gachaBGImage,
+        BGimage: gachaBGImageResult[0],
         text: 'Gacha',
         compress: compress,
     })

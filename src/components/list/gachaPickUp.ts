@@ -33,14 +33,17 @@ export async function drawGachaPickupInList(gacha: Gacha, server: Server, key?: 
         }
         pickUpCardList[rarity][weight].push(card)
     }
+    var drawCardListInListPromise:Promise<Canvas>[] = []
     if (Object.keys(pickUpCardList).length != 0) {
         for (let rarity in pickUpCardList) {
             for (let weight in pickUpCardList[rarity]) {
                 const rate = parseInt(weight) / gacha.rates[server][rarity].weightTotal * gacha.rates[server][rarity].rate
-                list.push(drawList({
-                    text: `${rate.toFixed(2)}%: `,
-                }))
-                list.push(await drawCardListInList({
+                drawCardListInListPromise.push(Promise.resolve(
+                    drawList({
+                      text: `${rate.toFixed(2)}%: `,
+                    })
+                  ))
+                drawCardListInListPromise.push(drawCardListInList({
                     cardList: pickUpCardList[rarity][weight],
                     trainingStatus: false,
                     cardIdVisible: true,
@@ -48,6 +51,10 @@ export async function drawGachaPickupInList(gacha: Gacha, server: Server, key?: 
                     skillTypeVisible: true,
                 }))
             }
+        }
+        var result = await Promise.all(drawCardListInListPromise)
+        for(var r of result){
+            list.push(r)
         }
         return stackImage(list)
     }
