@@ -36,7 +36,7 @@ export async function drawPlayerCardInList(player: Player,key?:string,cardIdVisi
     }
     var result = await Promise.all(promiseList)
     for(var r of result){
-        cardDataList.push(r)
+        cardIconList.push(r)
     }
 
     return drawList({

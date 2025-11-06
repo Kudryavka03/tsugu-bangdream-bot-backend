@@ -32,7 +32,7 @@ export function getTextWidth(text: string, textSize: number, font: string) {
 }
 
 export function convertSvgToPngBuffer(svgBuffer: Buffer): Promise<Buffer> {
-  console.trace()
+  //console.trace()
     return new Promise((resolve, reject) => {
       // 将 SVG buffer 转换为字符串
       const svgString = svgBuffer.toString('utf-8');
