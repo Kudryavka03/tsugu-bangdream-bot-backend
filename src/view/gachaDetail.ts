@@ -37,10 +37,10 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     //概率分布
     var drawGachaRateInListPromise:Promise<Canvas>[] = []
     
-
-    try{
     var drawGachaPickupInListPromise:Promise<Canvas>[] = []
-    drawGachaPickupInListPromise.push(drawGachaPickupInList(gacha, server))
+    try{
+
+        drawGachaPickupInListPromise.push(drawGachaPickupInList(gacha, server))
     }
     catch(e){
         console.log(e)
@@ -74,7 +74,7 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
         Promise.all(drawGashaPaymentMethodInListPromise),
         Promise.all(drawEventDatablockPromise),
         Promise.all(drawGachaRateInListPromise),
-        Promise.all(drawGachaPickupInListPromise),
+        Promise.all(drawGachaPickupInListPromise).catch(err => {return []}),
         Promise.all(gachaBGImagePromise),
     ]);
     const [
@@ -144,8 +144,8 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     }
     list.push(line)
 
-    for(var r of drawGachaPickupInListResult){
-        list.push(r)
+    for(var r1 of drawGachaPickupInListResult){
+        list.push(r1)
     }
     list.push(line)
 
