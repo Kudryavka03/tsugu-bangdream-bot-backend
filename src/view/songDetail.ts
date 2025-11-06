@@ -24,19 +24,15 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     await song.initFull()
     var list: Array<Image | Canvas> = []
     //标题
-    list.push(await drawListByServerList(song.musicTitle, '歌曲名称'))
-    list.push(line)
+
     //乐队
     var band = new Band(song.bandId)
-    list.push(await drawListByServerList(band.bandName, '乐队', displayedServerList))
-    list.push(line)
 
     //时长
     var timeLength = drawList({
         key: '时长',
         text: formatSeconds(song.length)
     })
-
 
     //bpm
     var bpmList: number[] = []
@@ -59,8 +55,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
         key: 'BPM',
         text: bpm
     })
-    list.push(drawListMerge([timeLength, bpmData]))
-    list.push(line)
+
 
     //歌曲tag(类型)
     var typeImage = drawList({
@@ -70,15 +65,62 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     var IdImage = drawList({
         key: 'ID', text: song.songId.toString()
     })
+
+
+    //歌曲meta数据
+    var ferverStatusList = [true, false]
+
+    var drawSongMetaListDataBlockPromise:Promise<Canvas>[] = []
+    for (let j = 0; j < ferverStatusList.length; j++) {
+        const feverStatus = ferverStatusList[j];
+        // var songMetaListDataBlockImage = await drawSongMetaListDataBlock(feverStatus, song, `${feverStatus ? 'Fever' : '无Fever'}`, displayedServerList)
+        drawSongMetaListDataBlockPromise.push(drawSongMetaListDataBlock(feverStatus, song, `${feverStatus ? 'Fever' : '无Fever'}`, displayedServerList))
+       // all.push(songMetaListDataBlockImage)
+    }
+
+    var drawEventDatablockPromise:Promise<Canvas>[] = []
+    //相关活动
+    var eventIdList = []//防止重复
+    for (var i = 0; i < displayedServerList.length; i++) {
+        var server = displayedServerList[i]
+        if (song.publishedAt[server] == null) {
+            continue
+        }
+        var event = getPresentEvent(server, song.publishedAt[server])
+        if (event != undefined && eventIdList.indexOf(event.eventId) == -1) {
+            eventIdList.push(event.eventId)
+            drawEventDatablockPromise.push(drawEventDatablock(event, displayedServerList, `${serverNameFullList[server]}相关活动`))
+            // all.push(eventDatablockImage)
+        }
+    }
+    var drawSongDataBlockPromise:Promise<Canvas>[] = []
+    //顶部歌曲信息框
+    drawSongDataBlockPromise.push(drawSongDataBlock(song))
+    const results = await Promise.all([
+        Promise.all(drawSongDataBlockPromise),
+        Promise.all(drawSongMetaListDataBlockPromise),
+        Promise.all(drawEventDatablockPromise),
+    ]);
+    const [
+        drawSongDataBlockResult,
+        drawSongMetaListDataBlockResult,
+        drawEventDatablockResult
+    ] = results
+
+
+    list.push(await drawListByServerList(song.musicTitle, '歌曲名称'))
+    list.push(line)
+    list.push(await drawListByServerList(band.bandName, '乐队', displayedServerList))
+    list.push(line)
+    list.push(drawListMerge([timeLength, bpmData]))
+    list.push(line)
     list.push(drawListMerge([typeImage, IdImage]))
     list.push(line)
-
     list.push(drawListTextWithImages({
         key: 'Notes',
         content: [drawDifficulityListWithNotes(song)],
     }))
     list.push(line)
-    
     //作词
     list.push(await drawListByServerList(song.detail.lyricist, '作词', displayedServerList))
     list.push(line)
@@ -111,38 +153,24 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
         }))
     }
 
-    //创建最终输出数组
-    var listImage = drawDatablock({ list })
+
     var all = []
     all.push(drawTitle('查询', '歌曲'))
-
-    //顶部歌曲信息框
-    var songDataBlockImage = await drawSongDataBlock(song)
-    all.push(songDataBlockImage)
-
+    all.push(drawSongDataBlockResult[0])
+    var listImage = drawDatablock({ list })
+    console.log(listImage)
     all.push(listImage)
+    
+    //创建最终输出数组
+  
 
-    //歌曲meta数据
-    var ferverStatusList = [true, false]
-    for (let j = 0; j < ferverStatusList.length; j++) {
-        const feverStatus = ferverStatusList[j];
-        var songMetaListDataBlockImage = await drawSongMetaListDataBlock(feverStatus, song, `${feverStatus ? 'Fever' : '无Fever'}`, displayedServerList)
-        all.push(songMetaListDataBlockImage)
+    for(var r of drawSongMetaListDataBlockResult)
+    {
+        all.push(r)
     }
-
-    //相关活动
-    var eventIdList = []//防止重复
-    for (var i = 0; i < displayedServerList.length; i++) {
-        var server = displayedServerList[i]
-        if (song.publishedAt[server] == null) {
-            continue
-        }
-        var event = getPresentEvent(server, song.publishedAt[server])
-        if (event != undefined && eventIdList.indexOf(event.eventId) == -1) {
-            eventIdList.push(event.eventId)
-            var eventDatablockImage = await drawEventDatablock(event, displayedServerList, `${serverNameFullList[server]}相关活动`)
-            all.push(eventDatablockImage)
-        }
+    for(var r of drawEventDatablockResult)
+    {
+        all.push(r)
     }
 
     var buffer = await outputFinalBuffer({

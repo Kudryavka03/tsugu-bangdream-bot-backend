@@ -18,7 +18,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     const band = new Band(song.bandId)
     const bandName = band.bandName[server]
     const songChart = await song.getSongChart(difficultyId)
-
+    // 没有并行的可能。
     const tempcanv = await BestdoriPreview.DrawPreview({
         id: song.songId,
         title: song.musicTitle[server],

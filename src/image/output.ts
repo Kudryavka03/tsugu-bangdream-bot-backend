@@ -28,6 +28,7 @@ export var outputFinalCanv = async function ({ imageList,
     BGimage = BGDefaultImage
 }: outputFinalOptions
 ): Promise<Canvas> {
+    //console.log(imageList)
     let allH = 30
     if (startWithSpace) {
         allH += 50
