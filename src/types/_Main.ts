@@ -61,6 +61,7 @@ async function loadMainAPI(useCache: boolean = false) {
     for(let i = 1;i<6;i++){
        await getBandIcon(i)  // 用于缓存
     }
+    await getBandIcon(28)  // 用于缓存RAS
     await getBandIcon(21)  // 用于缓存Morfonica
     await getBandIcon(45)  // 用于缓存MyGO
 
