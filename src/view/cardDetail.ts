@@ -29,21 +29,22 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     var source = card.source
 
     var list: Array<Image | Canvas> = []
-
+    var drawCardPrefixInListPromise: Promise<Canvas>[] =[]
+    drawCardPrefixInListPromise.push(drawCardPrefixInList(card, displayedServerList))
     //标题
-    list.push(await drawCardPrefixInList(card, displayedServerList))
+    // list.push(await drawCardPrefixInList(card, displayedServerList))    //以我女朋友为例，这里是Poppin'Party标识+卡面描述+我女朋友姓名
     var trainingStatusList = card.getTrainingStatusList()
-    list.push(new Canvas(800, 30))
-
+    ///list.push(new Canvas(800, 30))
+    var drawCardIllustrationPromise: Promise<Canvas>[] = []
     //插画
     for (let i = 0; i < trainingStatusList.length; i++) {
         const element = trainingStatusList[i];
-        list.push(await drawCardIllustration({
+        drawCardIllustrationPromise.push(drawCardIllustration({
             card: card,
             trainingStatus: element,
             isList: true
         }))
-        list.push(new Canvas(800, 30))
+        ///list.push(new Canvas(800, 30))
     }
 
     //类型
@@ -56,13 +57,13 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
         key: 'ID', text: card.cardId.toString()
     })
 
-    list.push(drawListMerge([typeImage, IdImage]))
-    list.push(line)
+    ///list.push(drawListMerge([typeImage, IdImage]))
+    ///list.push(line)
 
 
     //综合力
-    list.push(await drawCardStatInList(card))
-    list.push(line)
+    ///list.push(await drawCardStatInList(card))
+    ///list.push(line)
 
     /*
     //乐队
@@ -83,16 +84,19 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     list.push(await drawRarityInList({ rarity: card.rarity }))
     list.push(line)
     */
+
+
     //技能
     var skill = new Skill(card.skillId)
-    list.push(await drawSkillInList({ key: '技能', card: card, content: skill }, displayedServerList))
-    list.push(line)
+    ///list.push(await drawSkillInList({ key: '技能', card: card, content: skill }, displayedServerList))
+    ///list.push(line)
 
     //标题
-    list.push(await drawListByServerList(card.prefix, '标题', displayedServerList))
-    list.push(line)
+    ///list.push(await drawListByServerList(card.prefix, '标题', displayedServerList))
+    ///list.push(line)
 
     //判断是否来自卡池
+    var drawListByServerListPromise: Promise<Canvas>[] = []
     for (let j = 0; j < displayedServerList.length; j++) {
         var releaseFromGacha = false
         var server = displayedServerList[j];
@@ -104,8 +108,10 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
             if (Object.prototype.hasOwnProperty.call(sourceOfServer, i)) {
                 if (i == 'gacha' && card.rarity > 2 && card.type != 'kirafes') {
                     //招募语
-                    list.push(await drawListByServerList(card.gachaText, '招募语', displayedServerList))
-                    list.push(line)
+                    ///list.push(await drawListByServerList(card.gachaText, '招募语', displayedServerList))
+                    ///list.push(line)
+
+                    drawListByServerListPromise.push(drawListByServerList(card.gachaText, '招募语', displayedServerList))
                     releaseFromGacha = true
                     break
                 }
@@ -119,42 +125,54 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
 
 
     //发售日期
-    list.push(await drawTimeInList({
-        key: '发布日期',
-        content: card.releasedAt
-    }, displayedServerList))
-    list.push(line)
-
+    ///list.push(await drawTimeInList({
+    ///    key: '发布日期',
+    ///    content: card.releasedAt
+    ///}, displayedServerList))
+    ///list.push(line)
+    var drawCardListInListPromise: Promise<Canvas>[] = []
     //缩略图
-    list.push(await drawCardListInList({
+    drawCardListInListPromise.push(drawCardListInList({
         key: '缩略图',
         cardList: [card],
         cardIdVisible: false,
         skillTypeVisible: false,
         cardTypeVisible: false,
     }))
-    list.push(line)
+    ///list.push(line)
 
     //演出缩略图
-    list.push(await drawSdcharaInList(card))
+    var drawSdcharaInListPromise: Promise<Canvas>[] = []
+    drawSdcharaInListPromise.push(drawSdcharaInList(card))
 
-    //创建最终输出数组
-    var listImage = drawDatablock({ list })
+
+
+
+
+
+
+
+
     var all = []
-    all.push(drawTitle('查询', '卡牌'))
-    all.push(listImage)
+    
+
     //相关来源
     var tempEventIdList = []//用于防止重复
     var tempGachaIdList = []
     var eventImageList: Array<Canvas | Image> = []
     var gachaImageList: Array<Canvas | Image> = []
+
+    var drawEventDatablockPromise: Promise<Canvas>[] = []
+    var gachaImageListPromise: Promise<Canvas>[] = []
+
     for (let k = 0; k < displayedServerList.length; k++) {
         let server = displayedServerList[k];
         //如果卡牌有关联活动
         if (card.releaseEvent[server].length != 0) {
             var tempEvent = new Event(card.releaseEvent[server][0])
             if (!tempEventIdList.includes(tempEvent.eventId)) {
-                eventImageList.push(await drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
+                //eventImageList.push(await drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
+                drawEventDatablockPromise.push(drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
                 tempEventIdList.push(tempEvent.eventId)
             }
         }
@@ -176,29 +194,91 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
             if (tempEventId != null) {
                 var tempEvent = new Event(tempEventId)
                 if (!tempEventIdList.includes(tempEvent.eventId)) {
-                    eventImageList.push(await drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
+                    drawEventDatablockPromise.push(drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
+                    // eventImageList.push(await drawEventDatablock(tempEvent, displayedServerList, `${serverNameFullList[server]}相关活动`))
                     tempEventIdList.push(tempEvent.eventId)
                 }
             }
             if (!tempGachaIdList.includes(tempGacha.gachaId)) {
-                gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                //gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                gachaImageListPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
                 tempGachaIdList.push(tempGacha.gachaId)
             }
 
         }
     }
-    for (var i = 0; i < eventImageList.length; i++) {
-        all.push(eventImageList[i])
+
+    var getCardIllustrationImagePromise = []
+    getCardIllustrationImagePromise.push(card.getCardIllustrationImage(true))
+
+
+
+
+
+
+    const results = await Promise.all([
+        Promise.all(drawCardPrefixInListPromise),
+        Promise.all(drawCardIllustrationPromise),
+        Promise.all(drawListByServerListPromise),
+        Promise.all(drawCardListInListPromise),
+        Promise.all(drawSdcharaInListPromise),
+        Promise.all(drawEventDatablockPromise),
+        Promise.all(gachaImageListPromise),
+        Promise.all(getCardIllustrationImagePromise),
+    ]);
+    const [
+        drawCardPrefixInListResult,
+        drawCardIllustrationResult,
+        drawListByServerListResult,
+        drawCardListInListResult,
+        drawSdcharaInListResult,
+        drawEventDatablockResult,
+        gachaImageListResult,
+        getCardIllustrationImageResult
+    ] = results;
+
+    list.push(drawCardPrefixInListResult[0])
+    list.push(new Canvas(800, 30))
+    for(var r of drawCardIllustrationResult){
+        list.push(r)
+        list.push(new Canvas(800, 30))
     }
-    for (var i = 0; i < gachaImageList.length; i++) {
-        all.push(gachaImageList[i])
+    list.push(drawListMerge([typeImage, IdImage]))
+    list.push(line)
+    list.push(await drawCardStatInList(card))
+    list.push(line)
+    list.push(await drawSkillInList({ key: '技能', card: card, content: skill }, displayedServerList))
+    list.push(line)
+    for(var r of drawListByServerListResult){
+        list.push(r)
+        list.push(line)
+    }
+    list.push(await drawTimeInList({
+        key: '发布日期',
+        content: card.releasedAt
+    }, displayedServerList))
+    list.push(line)
+    list.push(drawCardListInListResult[0])
+    list.push(line)
+    for(var r of drawSdcharaInListResult){
+        list.push(r)
+    }
+    var listImage = drawDatablock({ list })
+    var all = []
+    all.push(drawTitle('查询', '卡牌'))
+    all.push(listImage)
+    for(var r of drawEventDatablockResult){
+        all.push(r)
+    }
+    for(var r of gachaImageListResult){
+        all.push(r)
     }
 
     if (card.rarity < 3) {
         var BGimage: Image
     }
     else {
-        var BGimage = await card.getCardIllustrationImage(true)
+        var BGimage:Image = getCardIllustrationImageResult[0]
     }
 
     var buffer = await outputFinalBuffer({

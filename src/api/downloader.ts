@@ -9,6 +9,7 @@ export async function download(url: string, directory?: string, fileName?: strin
   if (directory != undefined && fileName != undefined) {
     createDirIfNonExist(directory);
   }
+  //console.trace()
   try {
     if (errUrl.includes(url)) {
       throw new Error("downloadFile: errUrl.includes(url)");
