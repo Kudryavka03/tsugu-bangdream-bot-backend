@@ -41,6 +41,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     let response;
     try {
 	console.log(`Miss Cache! ${url}  is downloading...`)
+  //console.trace()
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
       if (error.response && error.response.status === 304) {
@@ -88,6 +89,7 @@ function createDirIfNonExist(filepath: string) {
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
   logger('getJsonAndSave','Start Get API: '+url+' From:')
+  console.trace()
   try {
     if (directory != undefined && fileName != undefined) {
       createDirIfNonExist(directory);

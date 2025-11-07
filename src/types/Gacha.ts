@@ -200,7 +200,8 @@ export class Gacha {
 export async function getPresentGachaList(server: Server, start: number = Date.now(), end: number = Date.now()): Promise<Array<Gacha>> {
     var gachaList: Array<Gacha> = []
     var gachaListMain = mainAPI['gacha']
-
+    var gachaListTemp: Array<Gacha> = []
+    var gachaInitFullPromise:Promise<Gacha>[]=[]
     for (const gachaId in gachaListMain) {
         if (Object.prototype.hasOwnProperty.call(gachaListMain, gachaId)) {
             const gacha = new Gacha(parseInt(gachaId))
@@ -213,15 +214,28 @@ export async function getPresentGachaList(server: Server, start: number = Date.n
                 if (gacha.type == 'free') {
                     continue
                 }
+               
                 if (gacha.gachaName[Server.jp] != null) {
-                    await gacha.initFull(false)
-                    if (gacha.gachaPeriod[Server.jp] == '期限なし') {
-                        continue
-                    }
+                    gachaListTemp.push(gacha)
+
                 }
-                gachaList.push(gacha)
+                // gachaList.push(gacha)
             }
         }
+    }
+    for (let i = 0; i < gachaListTemp.length; i++) {
+        const promise = (async function () {
+            await gachaListTemp[i].initFull(false);
+            return gachaListTemp[i];
+        })();
+        gachaInitFullPromise.push(promise);
+    }
+    const result = await Promise.all(gachaInitFullPromise)
+    for(var r of result){
+        if (r.gachaPeriod[Server.jp] == '期限なし') {
+            continue
+        }
+        gachaList.push(r)
     }
 
     return gachaList

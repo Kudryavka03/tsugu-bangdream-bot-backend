@@ -16,7 +16,7 @@ import { getEventGachaAndCardList } from './eventDetail'
 import { drawDottedLine } from '@/image/dottedLine'
 import { statConfig } from '@/components/list/stat'
 import { globalDefaultServer } from '@/config';
-
+import { Image } from 'skia-canvas';
 
 const maxHeight = 7000
 const maxColumns = 7
@@ -151,42 +151,50 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     await event.initFull(false)
     var textSize = 25 * 3 / 4;
     var content = []
+    var Tips = []
     //活动类型
     content.push(`ID: ${event.eventId.toString()}  ${await event.getTypeName()}\n`)
     //活动时间
     var numberOfServer = Math.min(displayedServerList.length, 2)
     const currentEvent = getPresentEvent(getServerByName("cn"));
+    var getIconPromise:Promise<Image>[] = []
     for (var i = 0; i < numberOfServer; i++) {
         let server = displayedServerList[i]
         if (server == getServerByName('cn') && event.startAt[server] == null && event.eventId > currentEvent.eventId) {
-            content.push(await getIcon(server), `${changeTimefomant(GetProbablyTimeDifference(event.eventId, currentEvent))} (预计开放时间)\n`)
+            getIconPromise.push(getIcon(server))
+            Tips.push(`${changeTimefomant(GetProbablyTimeDifference(event.eventId, currentEvent))} (预计开放时间)\n`)
         }
         else {
-            content.push(await getIcon(server), `${changeTimefomant(event.startAt[server])} - ${changeTimefomant(event.endAt[server])}\n`)
+            getIconPromise.push(getIcon(server))
+            Tips.push(`${changeTimefomant(event.startAt[server])} - ${changeTimefomant(event.endAt[server])}\n`)
         }
     }
     //活动加成
     //属性
+    var attributeListPromise:Promise<Image>[] = []
     var attributeList = event.getAttributeList()
+    var attributePrecent = []
     for (var precent in attributeList) {
         for (var i = 0; i < attributeList[precent].length; i++) {
-            content.push(await attributeList[precent][i].getIcon())
+            attributeListPromise.push(attributeList[precent][i].getIcon())
         }
-        content.push(`+${precent}% `)
+        attributePrecent.push(`+${precent}% `)
     }
-
+    var characterListPromise:Promise<Image>[] = []
     //角色
+
+    var characterPrecent = []
     var characterList = event.getCharacterList()
     for (var precent in characterList) {
         for (var i = 0; i < characterList[precent].length; i++) {
-            content.push(await characterList[precent][i].getIcon())
+            characterListPromise.push(characterList[precent][i].getIcon())
         }
-        content.push(`+${precent}% `)
+        characterPrecent.push(`+${precent}% `)
     }
-
+    var statText = ''
     //偏科，如果有的话
     if (Object.keys(event.eventCharacterParameterBonus).length != 0) {
-        var statText = ''
+        
         for (const i in event.eventCharacterParameterBonus) {
             if (i == 'eventId') {
                 continue
@@ -199,8 +207,61 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
                 statText += ` ${statConfig[i].name} +${element}%`
             }
         }
-        content.push(statText)
+        //content.push(statText)
     }
+    var getBannerImagePromise:Promise<Image | Canvas>[] = []
+    getBannerImagePromise.push(event.getBannerImage())
+
+
+    //活动期间卡池卡牌
+    var cardList: Card[] = []
+    var cardIdList: number[] = []//用于去重
+    var getEventGachaAndCardListPromise = []
+    for (var i = 0; i < displayedServerList.length; i++) {
+        var server = displayedServerList[i]
+        var EventGachaAndCardList = await getEventGachaAndCardList(event, server, true)
+        getEventGachaAndCardListPromise.push(getEventGachaAndCardList(event, server, true))
+    }
+
+
+    const results = await Promise.all([
+        Promise.all(getIconPromise),
+        Promise.all(attributeListPromise),
+        Promise.all(characterListPromise),
+        Promise.all(getBannerImagePromise),
+        Promise.all(getEventGachaAndCardListPromise)
+    ]);
+    const [
+        getIconResult,
+        attributeListResult,
+        characterListResult,
+        getBannerImageResult,
+        getEventGachaAndCardListResult
+    ] = results
+
+    for(var i = 0;i<getIconResult.length;i++){
+        content.push(getIconResult[i], Tips[i])
+    }
+
+    for(var ap of attributePrecent){
+        for(var r1 of attributeListResult){
+            content.push(r1)
+        }
+        content.push(`${ap}`)
+    }
+
+
+
+    for(var cp of characterPrecent){
+        for(var r2 of characterListResult){
+            content.push(r2)
+        }
+        content.push(`${cp}`)
+    }
+
+    content.push(statText)
+    var bannerImageR = getBannerImageResult[0]
+
 
     var textImage = drawTextWithImages({
         content: content,
@@ -208,18 +269,15 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         maxWidth: 500
     })
     const eventBannerImage = resizeImage({
-        image: await event.getBannerImage(),
+        image: bannerImageR,
         heightMax: 100
     })
     var imageUp = stackImageHorizontal([eventBannerImage, new Canvas(20, 1), textImage])
 
-    //活动期间卡池卡牌
-    var cardList: Card[] = []
-    var cardIdList: number[] = []//用于去重
-    for (var i = 0; i < displayedServerList.length; i++) {
-        var server = displayedServerList[i]
-        var EventGachaAndCardList = await getEventGachaAndCardList(event, server, true)
-        var tempGachaCardList = EventGachaAndCardList.gachaCardList
+    //const getEventGachaAndCardListResult = await Promise.all(getEventGachaAndCardListPromise)
+
+    for(var getEventGachaAndCardListResultSub of getEventGachaAndCardListResult){
+        var tempGachaCardList = getEventGachaAndCardListResultSub.gachaCardList
         for (let i = 0; i < tempGachaCardList.length; i++) {
             const tempCard = tempGachaCardList[i];
             if (cardIdList.indexOf(tempCard.cardId) != -1) {
@@ -229,6 +287,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
             cardList.push(tempCard)
         }
     }
+
     var rewardCards = event.rewardCards
     for (var i = 0; i < rewardCards.length; i++) {
         cardList.push(new Card(rewardCards[i]))
