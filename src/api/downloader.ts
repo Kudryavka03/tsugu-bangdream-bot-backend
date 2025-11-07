@@ -19,7 +19,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (fileName && directory) {
       if(!isApiRequest){
         if (fs.existsSync(cacheFilePath)){
-         console.log(`Match Cache! ${url}`)
+          logger('download',`Match Cache! ${url}`)
           return fs.readFileSync(cacheFilePath);
         }
       }
@@ -40,7 +40,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
-	console.log(`Miss Cache! ${url}  is downloading...`)
+	logger('download',`Miss Cache! ${url}  is downloading...`)
   //console.trace()
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
