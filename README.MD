@@ -26,6 +26,7 @@
 9. 修复无概率卡池查询&抽卡模拟问题
 10. 按照自己想法做的预测线，支持预测走势线，但其实没准过
 11. YCM指令生成图片移除玩家头像、牌子数据获取，加快出图速度
+12. 查活动、查卡、查曲、查卡池的异步优化、查活动列表异步优化、玩家状态异步优化、抽卡模拟异步优化
 
 
 ## 🚪 MAY DO
@@ -34,10 +35,7 @@
 
 ## 🚪 IN PROGRESS
 
-1. 异步优化
-已完成：查活动、查卡、查曲、查卡池的异步优化、查活动列表异步优化、玩家状态异步优化、抽卡模拟异步优化
-
-进行中：查活动异步优化
+暂时应该没什么要搞了
 
 ## 🚪 WON'T DO
 
@@ -45,13 +43,16 @@
 
 ## 🏠 后端部署
 
+> 需要Extra后端，为预测线2提供服务，可自行去除预测线2功能，则不需要Extra后端
+
+> 如果您对本项目满意，别忘了点一个KiraKira DokiDoki的星标哦~
+
 > 需要 `nodejs` 18+ 环境以及 `npm` 等包管理工具
 
   [![nodejs官网](https://img.shields.io/badge/nodejs官网-18.16.0+-green?style=flat-square)](https://nodejs.org/zh-cn/download/)
 
 ```bash
-cd tsugu-bangdream-bot
-cd backend
+cd tsugu-bangdream-bot-backend
 npm install -g ts-node
 npm install -g pm2
 npm install 
@@ -64,6 +65,14 @@ npm start
 
 > 相关文章: https://www.bilibili.com/read/cv24464090 
 
+
+## 📖 性能监测
+
+```bash
+npm run cpu
+```
+
+查活动 >1 零缓存下40s出图（异步优化后）
 
 
 
