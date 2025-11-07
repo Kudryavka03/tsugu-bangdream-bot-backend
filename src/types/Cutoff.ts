@@ -66,12 +66,16 @@ export class Cutoff {
         //如果cutoff的活动已经结束，则使用缓存
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 24 * 2) {
-            cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`)
-            pCutoffData = await callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`)
+            var cutoffPromise = []
+            cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
+            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
+            var cutoffResult = Promise.all(cutoffPromise)
+            cutoffData = cutoffResult[0]
+            pCutoffData = cutoffResult[1]
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
-            pCutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            pCutoffData = cutoffData
         }
         if (cutoffData == undefined) {
             this.isExist = false;
