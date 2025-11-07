@@ -69,7 +69,8 @@ export class Cutoff {
             var cutoffPromise = []
             cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
             cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
-            var cutoffResult = Promise.all(cutoffPromise)
+            var cutoffResult = await Promise.all(cutoffPromise)
+            //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
             pCutoffData = cutoffResult[1]
         }

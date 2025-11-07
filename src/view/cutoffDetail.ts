@@ -20,9 +20,10 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     }
     const initPromise = cutoff.initFull();
+    var event = new Event(eventId)
     const drawPromise = drawEventDatablock(event, [mainServer]);
     const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
-    await cutoff.initFull()
+    //await cutoff.initFull()
     /*
     if (cutoff.isExist == false) {
         return '错误: 活动或档线数据错误'
@@ -31,20 +32,19 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     var all = []
     all.push(drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
     var list: Array<Image | Canvas> = []
-    var event = new Event(eventId)
 
-    list.push(drawResult)
+    all.push(drawResult)
+   
 
     //状态
     var time = new Date().getTime()
-    var promiseResult;
+   
 
     //如果活动在进行中    
     if (cutoff.status == 'in_progress') {
         
         cutoff.predict()
         cutoff.predict2()
-        list.push(promiseResult[0])
         if (cutoff.predictEP == null || cutoff.predictEP == 0) {
             var predictText = '?'
             var predictText2 = '数据不足'
