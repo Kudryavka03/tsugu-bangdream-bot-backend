@@ -19,12 +19,18 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         return ['错误: 该卡池不存在']
     }
     await gacha.initFull()
+    const drawBannerPromise = drawGachaBanner(gacha)
     if (gacha.rates[getServerByPriority(gacha.publishedAt)] == null) return ['错误: 该卡池未提供概率分布数据']
     let gachaImage: Canvas;
     if (times <= 10) {
         const cardImageList: Canvas[] = []
+        var promiseLess10 = []
         for (let i = 0; i < times; i++) {
-            cardImageList.push(await drawGachaCard(getGachaRandomCard(gacha, i)))
+            promiseLess10.push(drawGachaCard(getGachaRandomCard(gacha, i)))
+        }
+        var pl10Result = await Promise.all(promiseLess10)
+        for(var pl10 of pl10Result){
+            cardImageList.push(pl10)
         }
         gachaImage = drawTextWithImages({
             textSize: 230,
@@ -90,7 +96,7 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         list: [gachaImage]
     }))
     //下方banner与ok按钮
-    all.push(await drawGachaBanner(gacha))
+    all.push(await drawBannerPromise)
 
     var buffer = await outputFinalBuffer({
         imageList: all,

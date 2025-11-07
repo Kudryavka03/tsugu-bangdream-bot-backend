@@ -31,18 +31,29 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
 
     var all = []
     all.push(drawTitle('历史的档线对比', `${serverNameFullList[mainServer]} ${tier}档线`))
-    all.push(await drawEventDatablock(event, [mainServer]))
+    const bannerImageBox = drawEventDatablock(event, [mainServer])
+    
 
     const list: Array<Image | Canvas> = []
 
     //初始化档线列表
     var cutoffList: Array<Cutoff> = []
     const eventList = getRecentEventListByEventAndServer(event, mainServer, 5, true)
+    var cutoffPromise = []
     for (let i = eventList.length - 1; i >= 0; i--) {
         const cutoff = new Cutoff(eventList[i].eventId, mainServer, tier)
-        await cutoff.initFull()
-        cutoffList.push(cutoff)
+        const cop = (async()=>{
+            await cutoff.initFull() 
+            return cutoff;
+        })()
+        cutoffPromise.push(cop)
     }
+    var cutoffPromiseR = await Promise.all(cutoffPromise)
+    for(var cor of cutoffPromiseR){
+        cutoffList.push(cor)
+    }
+    console.log(cutoffPromiseR)
+    
     //每个档线详细数据
     for (let i in cutoffList) {
         const cutoff = cutoffList[i]
@@ -90,6 +101,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}`)
         }
         else if (cutoff.status == 'ended') {
+            console.log(cutoff)
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
         }
 
@@ -106,7 +118,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
 
     //创建最终输出数组
     var listImage = drawDatablock({ list })
-
+    all.push(await bannerImageBox)
     all.push(listImage)
     /*
     all.push(drawTips({
