@@ -8,10 +8,11 @@ import { drawTitle } from '@/components/title'
 import { outputFinalBuffer } from '@/image/output'
 import { Cutoff } from "@/types/Cutoff";
 import { drawCutoffChart } from '@/components/chart/cutoffChart'
-import { serverNameFullList } from '@/config';
+import { assetsRootPath, serverNameFullList } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { statusName } from '@/config';
 import { loadImageFromPath } from '@/image/utils';
+import { drawTips } from '@/components/tips';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoff = new Cutoff(eventId, mainServer, tier)
@@ -24,21 +25,25 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         return '错误: 活动或档线数据错误'
     }
     */
+    var cutoffPromise = []
     var all = []
     all.push(drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
     var list: Array<Image | Canvas> = []
     var event = new Event(eventId)
-    all.push(await drawEventDatablock(event, [mainServer]))
+
+    cutoffPromise.push(await drawEventDatablock(event, [mainServer]))
 
     //状态
     var time = new Date().getTime()
-
+    var promiseResult;
 
     //如果活动在进行中    
     if (cutoff.status == 'in_progress') {
-        cutoff.predict()
-        cutoff.predict2()
-
+        
+        cutoffPromise.push(cutoff.predict())
+        cutoffPromise.push(cutoff.predict2())
+        promiseResult = Promise.all(cutoffPromise)
+        list.push(promiseResult[0])
         if (cutoff.predictEP == null || cutoff.predictEP == 0) {
             var predictText = '?'
             var predictText2 = '数据不足'
@@ -98,6 +103,8 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
     }
     else if (cutoff.status == 'ended') {
+        promiseResult = Promise.all(cutoffPromise)
+        list.push(promiseResult[0])
         list.push(drawList({
             key: '状态',
             text: statusName[cutoff.status]
@@ -121,12 +128,12 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     var listImage = drawDatablock({ list })
 
     all.push(listImage)
-    /*
+    
     all.push(drawTips({
-        text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n也可以扫描右侧二维码进行上传\n手机可以长按图片扫描二维码\n我们会尽快将数据上传至服务器',
-        image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
+        text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n我们会尽快将数据上传至服务器',
+        //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
-    */
+    
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,
