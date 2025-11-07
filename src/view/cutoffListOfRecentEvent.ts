@@ -8,11 +8,13 @@ import { drawTitle } from '@/components/title'
 import { outputFinalBuffer } from '@/image/output'
 import { Cutoff } from "@/types/Cutoff";
 import { drawCutoffChart } from '@/components/chart/cutoffChart'
-import { serverNameFullList } from '@/config';
+import { assetsRootPath, serverNameFullList } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { drawAttributeInList } from '@/components/list/attribute'
 import { drawCharacterInList } from '@/components/list/character'
 import { loadImageFromPath } from '@/image/utils';
+import { drawTips } from '@/components/tips';
+import path from 'path';
 
 export async function drawCutoffListOfRecentEvent(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     //检查
@@ -52,7 +54,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
     for(var cor of cutoffPromiseR){
         cutoffList.push(cor)
     }
-    console.log(cutoffPromiseR)
+    //console.log(cutoffPromiseR)
     
     //每个档线详细数据
     for (let i in cutoffList) {
@@ -101,7 +103,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}`)
         }
         else if (cutoff.status == 'ended') {
-            console.log(cutoff)
+            //console.log(cutoff)
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
         }
 
@@ -120,12 +122,12 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
     var listImage = drawDatablock({ list })
     all.push(await bannerImageBox)
     all.push(listImage)
-    /*
+    
     all.push(drawTips({
         text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n也可以扫描右侧二维码进行上传\n手机可以长按图片扫描二维码\n我们会尽快将数据上传至服务器',
         image: await loadImageFromPath(path.join(assetsRootPath, 'shimowendang.png'))
     }))
-    */
+    
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,

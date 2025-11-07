@@ -13,6 +13,7 @@ import { drawEventDatablock } from '@/components/dataBlock/event';
 import { statusName } from '@/config';
 import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
+import path from 'path';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoff = new Cutoff(eventId, mainServer, tier)
@@ -130,7 +131,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     
     all.push(drawTips({
         text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n我们会尽快将数据上传至服务器',
-        //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
+        image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
     
     var buffer = await outputFinalBuffer({
