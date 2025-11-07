@@ -265,13 +265,21 @@ export class Player {
             technique: 0,
             visual: 0,
         }
+        var calcStatPromise:Promise<any>[] = []
         for (let i = 0; i < cardDataList.length; i++) {
             const cardData = cardDataList[i];
             var card = new Card(cardData.situationId)
             var trainingStatus = cardData.trainingStatus === 'done' ? true : false
-            var tempStat = await card.calcStat(cardData)
-            addStat(cardStat, tempStat)
-            cardStatList.push(tempStat)
+            const calcStatAsync = (async()=>{
+                return card.calcStat(cardData)
+            })()
+            calcStatPromise.push(calcStatAsync)
+        }   // 多线程优化
+        var promises = await Promise.all(calcStatPromise)
+        for(var p of promises){
+            var tempStatAsync0 = p
+            addStat(cardStat, tempStatAsync0)
+            cardStatList.push(tempStatAsync0)
         }
         //计算区域道具属性
         var extraStat: Stat = {//所有卡牌的额外属性总和

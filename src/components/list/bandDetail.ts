@@ -18,14 +18,31 @@ interface drawBandDetailsInListOptions {
 //画乐队详情
 async function drawBandDetailsInList(BandDetailsInListOptions: drawBandDetailsInListOptions, key?: string) {
 
+    var getIconPromise:Promise<Image>[] = []
+    // 异步优化：牺牲一点CPU换来少一点的IO等待
+    for(let i in BandDetailsInListOptions){
+         const tempBandAsync = new Band(parseInt(i))
+         const fx = (async()=>{
+              return tempBandAsync.getLogo()
+         })()
+         getIconPromise.push(fx)
+    }
+    var getIconResult = await Promise.all(getIconPromise)
+    var iconCache:Image[] = []
+    for(var fy of getIconResult){
+         iconCache.push(fy)
+    }
+
     const bandAndContentList: Array<Canvas> = []
+    var iconIndex = 0;
     for (let i in BandDetailsInListOptions) {
         const tempBand = new Band(parseInt(i))
         const content = BandDetailsInListOptions[i]
         const maxWidth = 152
         const logoWidth = 110
+
         const tempBandIcon = resizeImage({
-            image: await tempBand.getLogo(),
+            image: iconCache[iconIndex],
             widthMax: logoWidth
         })
         const canvas = new Canvas(maxWidth, 100)
@@ -38,6 +55,7 @@ async function drawBandDetailsInList(BandDetailsInListOptions: drawBandDetailsIn
         })
         ctx.drawImage(tempBandRankText, (maxWidth / 2) - tempBandRankText.width / 2, 50)
         bandAndContentList.push(canvas)
+        iconIndex++
     }
     const bandAndContentListImage = drawList({
         key,

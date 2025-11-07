@@ -11,6 +11,33 @@ import { getIcon } from '@/types/Server';
 
 export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<Canvas> {
     var list: Array<Canvas | Image> = []
+
+    // 获取玩家牌子
+    var userProfileDegreeMap = player.profile.userProfileDegreeMap.entries
+    var drawDegreePromise = []
+    for (var i in userProfileDegreeMap) {
+        var tempDegree = userProfileDegreeMap[i]
+        const drawDegreeAsyncGet = (async()=>{
+            return drawDegree(new Degree(tempDegree.degreeId), player.server)
+        })()
+        drawDegreePromise.push(drawDegreeAsyncGet)
+    }
+    //var drawDegreeResult = await Promise.all(drawDegreePromise)   // 需要改为全部的
+
+    //获取玩家首页卡面插画
+    var getCardTrimImagePromise = []
+    const userIllustData = player.profile.userIllust
+    const illustCard = new Card(userIllustData.cardId)
+    getCardTrimImagePromise.push(illustCard.getCardTrimImage(userIllustData.trainingStatus))
+
+    const results = await Promise.all([
+        Promise.all(drawDegreePromise),
+        Promise.all(getCardTrimImagePromise),
+    ]);
+    const [drawDegreeResult,getCardTrimImageResult] = results
+
+
+
     //玩家名
     var playerText = drawText({
         text: player.profile.userName,
@@ -28,11 +55,9 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     list.push(new Canvas(1, 25))
     //degree(牌子)列表
     var degreeImageList: Array<Canvas | Image> = []
-    var userProfileDegreeMap = player.profile.userProfileDegreeMap.entries
-    for (var i in userProfileDegreeMap) {
-        var tempDegree = userProfileDegreeMap[i]
-        var tempDegreeImage = await drawDegree(new Degree(tempDegree.degreeId), player.server)
-        degreeImageList.push(tempDegreeImage)
+
+    for(var dGR of drawDegreeResult){
+        degreeImageList.push(dGR)
         degreeImageList.push(new Canvas(20, 1))
     }
     degreeImageList.pop()
@@ -60,11 +85,11 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
         textSize: 35
     })
     list.push(drawImageListCenter([idText]))
+
     var dataBlock = drawDatablock({ list, opacity: 1 })
     //获取玩家首页卡面插画
-    const userIllustData = player.profile.userIllust
-    const illustCard = new Card(userIllustData.cardId)
-    var illust = await illustCard.getCardTrimImage(userIllustData.trainingStatus)
+    var illust = getCardTrimImageResult[0]
+
     //最终绘图
     var titleImage = drawTitle('查询', '玩家信息')
     var canvas = new Canvas(1000, 900 + dataBlock.height)

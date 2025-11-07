@@ -84,13 +84,22 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
         list.push(line)
     }
     //hsr
+
+    // 与玩家信息顶部框一起异步优化
+    var promiseList = []
+
     if (player.profile.publishHighScoreRatingFlg) {
-        list.push(drawList({
+        promiseList.push(drawList({
             key: 'High Score Rating',
             text: player.calcHSR().toString()
         }))
-        list.push(line)
+        // list.push(line)
     }
+    //与顶部框一起
+    promiseList.push(drawPlayerDetailBlockWithIllust(player))
+    var promises = await Promise.all(promiseList)
+    list.push(promises[0])
+
     //角色等级
     if (player.profile.publishCharacterRankFlg) {
         list.push(await drawCharacterRankInList(player, '角色等级'))
@@ -100,7 +109,8 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     list.pop()
     const all: Array<Canvas | Image> = []
     //玩家信息 顶部 
-    all.push(await drawPlayerDetailBlockWithIllust(player))
+    //all.push(await drawPlayerDetailBlockWithIllust(player))
+    all.push(promises[1])
     var listImage = drawDatablock({ list })
     all.push(listImage)
     var buffer = await outputFinalBuffer({

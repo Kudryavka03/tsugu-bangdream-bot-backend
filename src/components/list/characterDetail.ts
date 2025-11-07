@@ -12,13 +12,29 @@ interface drawBandDetailsInListOptions {
 //画角色等级
 async function drawCharacterInList(CharacterDetailsInListOptions: drawBandDetailsInListOptions, key?: string) {
      const characterAndContentList: Array<Canvas> = []
+     var getIconPromise:Promise<Image>[] = []
+     // 异步优化：牺牲一点CPU换来少一点的IO等待
+     for(let i in CharacterDetailsInListOptions){
+          const tempCharacterAsync = new Character(parseInt(i))
+          const fx = (async()=>{
+               return tempCharacterAsync.getIcon()
+          })()
+          getIconPromise.push(fx)
+     }
+     var getIconResult = await Promise.all(getIconPromise)
+     var iconCache:Image[] = []
+     for(var y of getIconResult){
+          iconCache.push(y)
+     }
+     var iconIndex = 0;
+
      for (let i in CharacterDetailsInListOptions) {
           const tempCharacter = new Character(parseInt(i))
-          const content = CharacterDetailsInListOptions[i]
+          const content = CharacterDetailsInListOptions[parseInt(i)]
           const maxWidth = 76
           const logoWidth = 50
           const tempCharacterIcon = resizeImage({
-               image: await tempCharacter.getIcon(),
+               image: iconCache[iconIndex],
                widthMax: logoWidth
           })
           const canvas = new Canvas(maxWidth, 100)
@@ -31,6 +47,7 @@ async function drawCharacterInList(CharacterDetailsInListOptions: drawBandDetail
           })
           ctx.drawImage(tempCharacterRankText, (maxWidth / 2) - tempCharacterRankText.width / 2, 50)
           characterAndContentList.push(canvas)
+          iconIndex++
      }
      const characterAndContentListImage = drawList({
           key,
