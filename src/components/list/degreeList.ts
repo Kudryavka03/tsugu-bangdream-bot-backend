@@ -44,11 +44,16 @@ export async function drawDegreeListOfEvent(event: Event, displayedServerList: S
     const listPromise: Promise<Canvas>[] = []; 
     var server = getServerByPriority(event.rankingRewards, displayedServerList)
     let rankingRewards = event.rankingRewards[server]
+    var DegreePromise = []
     for (let i = 0; i < rankingRewards.length; i++) {
         if (rankingRewards[i].rewardType == "degree") {
-            tempDegreeList.push(new Degree(rankingRewards[i].rewardId))
-            if (tempDegreeList.length >= 6) break
+            DegreePromise.push(new Degree(rankingRewards[i].rewardId))
+            if (DegreePromise.length >= 6) break
         }
+    }
+    var DegreeResult = await Promise.all(DegreePromise)
+    for(var dr of DegreeResult){
+        tempDegreeList.push(dr)
     }
     listPromise.push(drawDegreeListInList({
         key: "活动奖励", degreeList: tempDegreeList, server: server, displayedServerList: displayedServerList
