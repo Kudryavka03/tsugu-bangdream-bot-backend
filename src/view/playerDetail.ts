@@ -13,6 +13,7 @@ import { drawPlayerBandRankInList, drawPlayerStageChallengeRankInList, drawPlaye
 import { drawPlayerDifficultyDetailInList } from '@/components/list/difficultyDetail'
 import { drawCharacterRankInList } from '@/components/list/characterDetail'
 import { loadImageFromPath } from '@/image/utils';
+import { Result } from 'express-validator';
 
 let BGDefaultImage: Image
 async function loadImageOnce() {
@@ -45,74 +46,101 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     */
 
     const list: Array<Canvas | Image> = []
+    var drawPlayerDetailBlockWithIllustTask = drawPlayerDetailBlockWithIllust(player)
     //卡组
-    list.push(await drawPlayerCardInList(player, '卡牌信息', true))
-    list.push(line)
+    var drawPlayerCardInListTask = null
+    drawPlayerCardInListTask = drawPlayerCardInList(player, '卡牌信息', true)
+    
     //综合力
+    var TotalDeckPowerFlg = null;
     if (player.profile.publishTotalDeckPowerFlg) {
-        var stat = await player.calcStat()
-        list.push(await drawStatInList(stat))
-        list.push(line)
+        TotalDeckPowerFlg = drawStatInList(await player.calcStat())
     }
-
     //难度完成信息
+    var MusicClearedFlg = null
     if (player.profile.publishMusicClearedFlg) {
-        list.push(drawPlayerDifficultyDetailInList(player, 'clearedMusicCount', '完成歌曲数'))
-        list.push(line)
+        MusicClearedFlg = drawPlayerDifficultyDetailInList(player, 'clearedMusicCount', '完成歌曲数')
     }
+    var MusicFullComboFlg = null
     if (player.profile.publishMusicFullComboFlg) {
-        list.push(drawPlayerDifficultyDetailInList(player, 'fullComboMusicCount', 'FullCombo 歌曲数'))
-        list.push(line)
+        MusicFullComboFlg = drawPlayerDifficultyDetailInList(player, 'fullComboMusicCount', 'FullCombo 歌曲数')
     }
+    var MusicAllPerfectFlg = null
     if (player.profile.publishMusicAllPerfectFlg) {
-        list.push(drawPlayerDifficultyDetailInList(player, 'allPerfectMusicCount', 'AllPerfect 歌曲数'))
-        list.push(line)
+        MusicAllPerfectFlg = drawPlayerDifficultyDetailInList(player, 'allPerfectMusicCount', 'AllPerfect 歌曲数')
     }
     //乐队等级
+    var BandRankFlg = null
     if (player.profile.publishBandRankFlg) {
-        list.push(await drawPlayerBandRankInList(player, "乐队等级"))
-        list.push(line)
+        BandRankFlg = drawPlayerBandRankInList(player, "乐队等级")
     }
     //stageChallenge完成情况
+    var StageChallengeAchievementConditionsFlg = null
     if (player.profile.publishStageChallengeAchievementConditionsFlg && player.profile.publishStageChallengeFriendRankingFlg) {
-        list.push(await drawPlayerStageChallengeRankInList(player, '舞台挑战 达成情况'))
-        list.push(line)
+        StageChallengeAchievementConditionsFlg = drawPlayerStageChallengeRankInList(player, '舞台挑战 达成情况')
     }
+
     //乐队编成等级
+    var DeckRankFlg = null;
     if (player.profile.publishDeckRankFlg) {
-        list.push(await drawPlayerDeckTotalRatingInList(player, '乐队编成等级'))
-        list.push(line)
+        DeckRankFlg = drawPlayerDeckTotalRatingInList(player, '乐队编成等级')
     }
     //hsr
-
-    // 与玩家信息顶部框一起异步优化
-    var promiseList = []
-
+    var HighScoreRatingFlg = null;
     if (player.profile.publishHighScoreRatingFlg) {
-        promiseList.push(drawList({
+        HighScoreRatingFlg = drawList({
             key: 'High Score Rating',
             text: player.calcHSR().toString()
-        }))
-        // list.push(line)
+        })
     }
-    //与顶部框一起
-    promiseList.push(drawPlayerDetailBlockWithIllust(player))
-    var promises = await Promise.all(promiseList)
-    list.push(promises[0])
-
-    //角色等级
+    var CharacterRankFlg = null;
     if (player.profile.publishCharacterRankFlg) {
-        list.push(await drawCharacterRankInList(player, '角色等级'))
+        CharacterRankFlg = drawCharacterRankInList(player, '角色等级')
+    }
+
+    // taskAll.push(drawPlayerDetailBlockWithIllustTask)
+    const taskAll = [
+        drawPlayerDetailBlockWithIllustTask,
+        drawPlayerCardInListTask,
+        TotalDeckPowerFlg,
+        MusicClearedFlg,
+        MusicFullComboFlg,
+        MusicAllPerfectFlg,
+        BandRankFlg,
+        StageChallengeAchievementConditionsFlg,
+        DeckRankFlg,
+        HighScoreRatingFlg,
+        CharacterRankFlg
+    ].filter(Boolean)
+
+    const results = await Promise.all(taskAll)
+
+    for(var n = 1;n<results.length;n++){
+        list.push(results[n])
         list.push(line)
     }
+    console.log(list)
+    
+
+
+
+
+
+    //与顶部框一起
+
+    //console.log(promises)
+
+    //角色等级
+
 
     list.pop()
     const all: Array<Canvas | Image> = []
     //玩家信息 顶部 
     //all.push(await drawPlayerDetailBlockWithIllust(player))
-    all.push(promises[1])
+    all.push(results[0])
     var listImage = drawDatablock({ list })
     all.push(listImage)
+    console.log(all)
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: useEasyBG,

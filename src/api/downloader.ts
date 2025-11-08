@@ -2,14 +2,19 @@ import axios from 'axios';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from '@/logger';
-
+const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
+  if (pendingDownloads.has(url)) {
+    logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
+    return pendingDownloads.get(url)!;
+  }
+  const task = (async () => {
   if (directory != undefined && fileName != undefined) {
     createDirIfNonExist(directory);
   }
-  //console.trace()
+  // console.trace()
   try {
     if (errUrl.includes(url)) {
       throw new Error("downloadFile: errUrl.includes(url)");
@@ -74,6 +79,13 @@ export async function download(url: string, directory?: string, fileName?: strin
       throw new Error(`Failed to download file from "${url}". Error: ${e.message}`);
     }
   }
+  finally{
+    // 下载完成后无论成功或失败，都要清除 pending 状态
+    pendingDownloads.delete(url);
+  }
+})();
+pendingDownloads.set(url, task);
+return task;
 }
 
 function createDirIfNonExist(filepath: string) {
