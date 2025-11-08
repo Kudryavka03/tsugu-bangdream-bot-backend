@@ -25,10 +25,18 @@ const line = drawDottedLine({
 export async function drawSongMetaList(mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     const feverMode = [true, false]
     const imageList = []
+    var drawMetaRankListDatablockPromise = []
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
-        imageList.push(await drawMetaRankListDatablock(element, mainServer))
+        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer))
+        // imageList.push(await drawMetaRankListDatablock(element, mainServer))
     }
+    const drawMetaRankListDatablockResult = await Promise.all(drawMetaRankListDatablockPromise)
+    for(var dataRankList of drawMetaRankListDatablockResult){
+        imageList.push(dataRankList)
+    }
+
+
     var all = []
     all.push(drawTitle('查询', `${serverNameFullList[mainServer]} 分数排行榜`))
     all.push(stackImageHorizontal(imageList))
@@ -44,14 +52,21 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server): Pr
     const metaRanking = getMetaRanking(Fever, mainServer);
     const maxMeta = metaRanking[0].meta
     let list: Array<Canvas> = []
+    var drawSongInListPromise = []
     for (let i = 0; i < 50; i++) {
         let song = new Song(metaRanking[i].songId)
         let difficultyId = metaRanking[i].difficulty
         let precent = metaRanking[i].meta / maxMeta * 100
         precent = Math.round(precent * 100) / 100
-        list.push(await drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+        //list.push(await drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+        drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+        //list.push(line)
+    }
+    for(var resultSong of await Promise.all(drawSongInListPromise)){
+        list.push(resultSong)
         list.push(line)
     }
+
     list.pop()
     const topLeftText = Fever ? '有Fever' : '无Fever'
     return (drawDatablock({ list, topLeftText }))

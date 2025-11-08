@@ -149,7 +149,13 @@ export async function drawCardIllustration({
     isList = false,
 }: drawCardIllustrationOptions): Promise<Canvas> {
     trainingStatus = card.ableToTraining(trainingStatus)
-    var CardIllustrationImage = await card.getCardIllustrationImage(trainingStatus)
+    var PromiseList = []
+    //var CardIllustrationImage = await card.getCardIllustrationImage(trainingStatus)
+    PromiseList.push(card.getCardIllustrationImage(trainingStatus))
+    PromiseList.push(getCardIllustrationFrame(card.rarity, card.attribute))
+    var PromiseResult = await Promise.all(PromiseList)
+    
+    var CardIllustrationImage = PromiseResult[0]
     const canvas = new Canvas(1360, 905)
     var ctx = canvas.getContext("2d")
     //将cardIllustration等比例缩放至宽度为1334
@@ -160,7 +166,8 @@ export async function drawCardIllustration({
     illustrationCtx.drawImage(CardIllustrationImage, 0, (879 / 2) - (illustrationHeight / 2), 1334, illustrationHeight)
     ctx.drawImage(illustrationCanvas, 13, 13)
     //获得框
-    var Frame = await getCardIllustrationFrame(card.rarity, card.attribute)
+    //var Frame = await getCardIllustrationFrame(card.rarity, card.attribute)
+    var Frame = PromiseResult[1]
     ctx.drawImage(Frame, 0, 0, 1360, 905)
     var attributeIcon = await new Attribute(card.attribute).getIcon()
     ctx.drawImage(attributeIcon, 1195, 11, 150, 150)
