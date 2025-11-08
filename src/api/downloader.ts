@@ -89,7 +89,7 @@ export async function download(url: string, directory?: string, fileName?: strin
   }
   finally{
     const wasDeleted = pendingDownloads.delete(url); // 捕获返回值
-    logger('download', `Delete successful for ${url}? ${wasDeleted}`); // 打印结果
+    if (!wasDeleted) logger('download', `Delete Task Faild for ${url}? ${wasDeleted}!!!`); // 打印结果
   }
 })();
 pendingDownloads.set(url, task);
