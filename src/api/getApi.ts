@@ -2,7 +2,7 @@ import { getJsonAndSave } from '@/api/downloader';
 import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
 import { logger } from '@/logger';
 
-async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 1): Promise<object> {
+async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 2): Promise<object> {
   const cacheDir = getCacheDirectory(url);
   const fileName = getFileNameFromUrl(url);
 
@@ -16,7 +16,7 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
         throw e; // Rethrow the error if all retries fail
       }
       //等待3秒后重试
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
   throw new Error(`Failed to get JSON from "${url}" after ${retryCount} attempts`);
