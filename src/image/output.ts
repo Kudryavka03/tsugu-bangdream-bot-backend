@@ -93,7 +93,7 @@ export var outputFinalBuffer = async function ({
     })
     var tempBuffer: Buffer
     if (compress != undefined && compress) {
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.7 })
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')

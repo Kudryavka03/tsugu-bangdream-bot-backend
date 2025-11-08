@@ -15,7 +15,7 @@ export async function drawRoomList(roomList: Room[], compress: boolean): Promise
         imageList: all,
         useEasyBG: true,
         startWithSpace: false,
-        compress: false,
+        compress: true,
     });
     return [buffer];
 }
