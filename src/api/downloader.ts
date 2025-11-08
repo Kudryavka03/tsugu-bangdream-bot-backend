@@ -8,16 +8,20 @@ const errUrl: string[] = [];
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (pendingDownloads.has(url)) {
     logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
+    //console.log(pendingDownloads)
     return pendingDownloads.get(url)!;
   }
   const task = (async () => {
+    await Promise.resolve();
   if (directory != undefined && fileName != undefined) {
     createDirIfNonExist(directory);
   }
   // console.trace()
   try {
     if (errUrl.includes(url)) {
+      //pendingDownloads.delete(url);
       throw new Error("downloadFile: errUrl.includes(url)");
+      
     }
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
@@ -25,6 +29,7 @@ export async function download(url: string, directory?: string, fileName?: strin
       if(!isApiRequest){
         if (fs.existsSync(cacheFilePath)){
           logger('download',`Match Cache! ${url}`)
+          //pendingDownloads.delete(url);
           return fs.readFileSync(cacheFilePath);
         }
       }
@@ -52,8 +57,10 @@ export async function download(url: string, directory?: string, fileName?: strin
       if (error.response && error.response.status === 304) {
         //console.log(`ETag matches for "${url}". Using cached file.`);
         const cachedData = fs.readFileSync(cacheFilePath);
+        //pendingDownloads.delete(url);
         return cachedData;
       } else {
+        //pendingDownloads.delete(url);
         throw error;
       }
     }
@@ -72,6 +79,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     //console.log(`Downloaded file from "${url}"`);
     return fileBuffer;
   } catch (e) {
+    //pendingDownloads.delete(url);
     errUrl.push(url);
     if (url.includes('.png')) {
       throw e;
@@ -80,8 +88,8 @@ export async function download(url: string, directory?: string, fileName?: strin
     }
   }
   finally{
-    // 下载完成后无论成功或失败，都要清除 pending 状态
-    pendingDownloads.delete(url);
+    const wasDeleted = pendingDownloads.delete(url); // 捕获返回值
+    logger('download', `Delete successful for ${url}? ${wasDeleted}`); // 打印结果
   }
 })();
 pendingDownloads.set(url, task);
