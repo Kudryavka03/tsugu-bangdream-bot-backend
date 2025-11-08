@@ -102,10 +102,17 @@ export async function drawEventStageSongHorizontal(stage: Stage, meta: boolean =
 
     const canvas = new Canvas(800, 800 / 8 / 180 * 210 + 10);
     const ctx = canvas.getContext('2d');
+    var drawEventStageSongHorizontalPromise = []
     for (let i = 0; i < songIdList.length; i++) {
         const song = new Song(songIdList[i]);
-        ctx.drawImage(await drawSongInEventStageSongHorizontal(song, meta), 800 / 8 * i, 0);
+        drawEventStageSongHorizontalPromise.push(drawSongInEventStageSongHorizontal(song, meta))
     }
-
+    var results = await Promise.all(drawEventStageSongHorizontalPromise)
+    var j = 0;
+    for(var r of results){
+        ctx.drawImage(r, 800 / 8 * j, 0);
+        j++
+    }
+    
     return canvas;
 }

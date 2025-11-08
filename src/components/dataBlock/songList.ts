@@ -19,8 +19,13 @@ const line = drawDottedLine({
 
 export async function drawSongListDataBlock(songList: Song[], topLeftText?: string) {
     var list: Array<Image | Canvas> = []
+    var drawSongInListPromise = []
     for (let i = 0; i < songList.length; i++) {
-        list.push(await drawSongInList(songList[i]))
+        drawSongInListPromise.push(drawSongInList(songList[i]))
+    }
+    var drawSongInListResult = await Promise.all(drawSongInListPromise)
+    for(var r of drawSongInListResult){
+        list.push(r)
         list.push(line)
     }
     list.pop()
