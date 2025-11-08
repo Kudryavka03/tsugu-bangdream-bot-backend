@@ -20,31 +20,48 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     if (event.startAt[mainServer] == undefined) {
         return ['活动在该服务器不存在']
     }
+    const bannerImageBox = drawEventDatablock(event, [mainServer])
     var all = []
-    all.push(drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
-    all.push(await drawEventDatablock(event, [mainServer]))
+
+    
 
     const list: Array<Image | Canvas> = []
 
     //初始化档线列表
     var tierList = tierListOfServer[Server[mainServer]]
     var cutoffList: Array<Cutoff> = []
+
+    var cutoffPromise = []
     for (var i in tierList) {
-        var tempCutoff = new Cutoff(eventId, mainServer, tierList[i])
-        await tempCutoff.initFull()
-        if (tempCutoff.status == 'in_progress') {
-            tempCutoff.predict()
-        }
-        cutoffList.push(tempCutoff)
+        const tempCutoff = new Cutoff(eventId, mainServer, tierList[i])
+        const cop = (async()=>{
+            await tempCutoff.initFull() 
+            if (tempCutoff.status == 'in_progress') {
+                tempCutoff.predict()
+            }
+            return tempCutoff;
+        })()
+        cutoffPromise.push(cop)
     }
 
-    //状态
+
+
+
+
+
+    var cutoffPromiseR = await Promise.all(cutoffPromise)
+    for(var cor of cutoffPromiseR){
+        cutoffList.push(cor)
+    }
+
+        //状态
     list.push(drawList({
         key: '状态',
         text: statusName[cutoffList[0].status]
     }))
-
+    
     list.push(line)
+
     //每个档线详细数据
     for (var i in cutoffList) {
         const cutoff = cutoffList[i]
@@ -80,7 +97,8 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
 
     //创建最终输出数组
     var listImage = drawDatablock({ list })
-
+    all.push(drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
+    all.push(await drawEventDatablock(event, [mainServer]))
     all.push(listImage)
     /*
     all.push(drawTips({

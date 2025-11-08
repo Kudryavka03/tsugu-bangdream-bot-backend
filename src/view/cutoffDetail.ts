@@ -23,7 +23,9 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     const initPromise = cutoff.initFull();
     var event = new Event(eventId)
     const drawPromise = drawEventDatablock(event, [mainServer]);
-    const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
+    await initPromise;
+
+    //const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
     //await cutoff.initFull()
     /*
     if (cutoff.isExist == false) {
@@ -34,7 +36,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     all.push(drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
     var list: Array<Image | Canvas> = []
 
-    all.push(drawResult)
+
    
 
     //状态
@@ -126,7 +128,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
     //创建最终输出数组
     var listImage = drawDatablock({ list })
-
+    all.push(await drawPromise)
     all.push(listImage)
     
     all.push(drawTips({
