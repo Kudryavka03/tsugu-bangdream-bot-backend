@@ -25,25 +25,33 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     all.push(drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
     var list: Array<Image | Canvas> = [];
     var event = new Event(eventId);
-    all.push(await drawEventDatablock(event, [mainServer]));
-
+    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer])
+    // all.push(await drawEventDatablock(event, [mainServer]));
+    var drawPlayerRankingInListPromise = []
+    const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer)
     //前十名片
     var userInRankings = cutoffEventTop.getLatestRanking();
     for (let i = 0; i < userInRankings.length; i++) {
         var color = i % 2 == 0 ? 'white' : '#f1f1f1';
         var user = cutoffEventTop.getUserByUid(userInRankings[i].uid);
-        var playerRankingImage = await drawPlayerRankingInList(user, color, mainServer);
-        if (playerRankingImage != undefined) {
-            list.push(playerRankingImage);
+        //var playerRankingImage = await drawPlayerRankingInList(user, color, mainServer);
+        drawPlayerRankingInListPromise.push(drawPlayerRankingInList(user, color, mainServer))
+
+    }
+    var drawPlayerRankingInListResult = await Promise.all(drawPlayerRankingInListPromise)
+    for(var r of drawPlayerRankingInListResult){
+        if (r != undefined) {
+          list.push(r);
         }
     }
 
     list.push(new Canvas(800, 50))
-
+    
     //折线图
-    list.push(await drawCutoffEventTopChart(cutoffEventTop, false, mainServer))
+    list.push(await drawCutoffEventTopChartPromise)
 
     var listImage = drawDatablock({ list });
+    all.push(await drawEventDatablockPromise)
     all.push(listImage);
 
     var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
@@ -52,6 +60,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
 }
 
 export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+    // 因为没用上所以凭感觉优化了一下，不知道能不能用
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
     if (!cutoffEventTop.isExist) {
@@ -80,17 +89,29 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         // all.push(await drawEventDatablock(event, [mainServer]));
         //名片
         var userInRankings = cutoffEventTop.getLatestRanking();
+        var drawPlayerRankingInListPromise1 = []
         for (let i = 0; i < userInRankings.length; i++) {
             if (playerId && userInRankings[i].uid != playerId || tier && tier != i + 1) {
                 continue
             }
             playerId = userInRankings[i].uid
             var user = cutoffEventTop.getUserByUid(playerId);
+            drawPlayerRankingInListPromise1.push(drawPlayerRankingInList(user, 'white', mainServer))
+            /*
             var playerRankingImage = await drawPlayerRankingInList(user, 'white', mainServer);
+
             if (playerRankingImage != undefined) {
                 list.push(resizeImage({ image: playerRankingImage, widthMax }));
             }
+            */
         }
+        var drawPlayerRankingInListResult1 = await Promise.all(drawPlayerRankingInListPromise1)
+        for(var r of drawPlayerRankingInListResult1){
+            if (r != undefined) {
+              list.push(r);
+            }
+        }
+
         if (list.length > 0) {
             all.push(drawDatablock({ list, maxWidth: widthMax }))
         }

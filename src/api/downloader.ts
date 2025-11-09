@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import { logger } from '@/logger';
 const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
+const resDebug = true
+const apiDebug = true
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (pendingDownloads.has(url)) {
@@ -16,7 +18,7 @@ export async function download(url: string, directory?: string, fileName?: strin
   if (directory != undefined && fileName != undefined) {
     createDirIfNonExist(directory);
   }
-  // console.trace()
+  if (resDebug)console.trace()
   try {
     if (errUrl.includes(url)) {
       //pendingDownloads.delete(url);
@@ -28,7 +30,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (fileName && directory) {
       if(!isApiRequest){
         if (fs.existsSync(cacheFilePath)){
-          logger('download',`Match Cache! ${url}`)
+          if (resDebug) logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
           return fs.readFileSync(cacheFilePath);
         }
@@ -50,7 +52,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
-	logger('download',`Miss Cache! ${url}  is downloading...`)
+      if (resDebug) logger('download',`Miss Cache! ${url}  is downloading...`)
   //console.trace()
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
@@ -108,8 +110,8 @@ function createDirIfNonExist(filepath: string) {
 }
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
-  logger('getJsonAndSave','Start Get API: '+url+' From:')
-  //console.trace()
+  if (apiDebug)logger('getJsonAndSave','Start Get API: '+url+' From:')
+  if (apiDebug)console.trace()
   try {
     if (directory != undefined && fileName != undefined) {
       createDirIfNonExist(directory);
@@ -126,7 +128,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
-          logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
+          if (apiDebug) logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
           return cachedJson;
         }
       }
@@ -140,7 +142,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         //console.log(`ETag matches for "${url}". Using cached JSON data.`);
         const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
         const cachedJson = JSON.parse(cachedData);
-        logger('getJsonAndSave','API: '+url + ' is using Cached data.')
+        // if (apiDebug) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
       } else {
         throw error;
@@ -161,7 +163,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
 
     //console.log(`Downloaded JSON data from "${url}"`);
-    logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+    if (apiDebug) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
     return jsonObject;
   } catch (e) {
     throw new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`);
