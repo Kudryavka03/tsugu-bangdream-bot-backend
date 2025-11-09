@@ -4,10 +4,11 @@ import * as fs from 'fs';
 import { logger } from '@/logger';
 const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
-const resDebug = true
-const apiDebug = true
+const resDebug = false
+const apiDebug = false
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
+  if (resDebug) console.trace()
   if (pendingDownloads.has(url)) {
     logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
     //console.log(pendingDownloads)

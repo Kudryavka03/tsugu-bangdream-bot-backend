@@ -37,10 +37,12 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     if (user.ranking == undefined) {
         return;
     }
-    else if (user.ranking > 0 && user.ranking <= 3) {
-        const rankIamgeBuffer = await downloadFileCache(`${Bestdoriurl}/res/image/${Server[server]}_${user.ranking}.png`)
-        rankingImage = await loadImage(rankIamgeBuffer);
-        ctx.drawImage(rankingImage, 12, 45, 45, 21);
+    var rankImageBuffer = null
+    if (user.ranking > 0 && user.ranking <= 3) {
+        rankImageBuffer = downloadFileCache(`${Bestdoriurl}/res/image/${Server[server]}_${user.ranking}.png`)
+        //rankImageBufferPromise.push(downloadFileCache(`${Bestdoriurl}/res/image/${Server[server]}_${user.ranking}.png`))
+        //rankingImage = await loadImage(rankImageBuffer);
+        ///ctx.drawImage(rankingImage, 12, 45, 45, 21);
     }
     else {
         rankingImage = drawText({
@@ -52,14 +54,14 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     }
 
     //头像
-    var headShotImage = await drawCardIcon({
+    var headShotImage = drawCardIcon({
         card: new Card(user.sid),
         trainingStatus: user.strained == 0 ? false : true,
         cardIdVisible: false,
         skillTypeVisible: false,
         cardTypeVisible: false
     });
-    ctx.drawImage(headShotImage, 85, 10, 90, 90);
+
 
     //玩家昵称
     var playerNameImage = drawText({
@@ -67,14 +69,28 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
         textSize: 23,
         maxWidth: 450
     });
-    ctx.drawImage(playerNameImage, 210, 10);
 
+    var degreeImagePromise = []
     //牌子
     for (let i = 0; i < user.degrees.length; i++) {
-        var degreeImage = await drawDegree(new Degree(user.degrees[i]), server);
+        //var degreeImage = await drawDegree(new Degree(user.degrees[i]), server);
+        degreeImagePromise.push(drawDegree(new Degree(user.degrees[i]), server))
+
+    }
+    var degreeImageResultAsync = Promise.all(degreeImagePromise)
+
+    if (rankImageBuffer != null) ctx.drawImage(await loadImage(await rankImageBuffer), 12, 45, 45, 21);
+    ctx.drawImage(await headShotImage, 85, 10, 90, 90);
+    ctx.drawImage(playerNameImage, 210, 10);
+    var degreeImageResult = await degreeImageResultAsync
+    for (let i = 0; i < user.degrees.length; i++) {
+        //var degreeImage = await drawDegree(new Degree(user.degrees[i]), server);
+        //degreeImagePromise.push(drawDegree(new Degree(user.degrees[i]), server))
+        var degreeImage = degreeImageResult[i]
         ctx.drawImage(degreeImage, 210 + (degreeImage.width / 2 + 10) * i, 46, degreeImage.width / 2, degreeImage.height / 2);
     }
 
+    // ctx.drawImage(degreeImage, 210 + (degreeImage.width / 2 + 10) * i, 46, degreeImage.width / 2, degreeImage.height / 2);
     //简介
     var playerIntroductionImage = drawText({
         text: removeBraces(user.introduction),
