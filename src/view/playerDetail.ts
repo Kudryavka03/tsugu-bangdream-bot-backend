@@ -119,7 +119,7 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
         list.push(results[n])
         list.push(line)
     }
-    console.log(list)
+    // console.log(list)
     
 
 
@@ -140,7 +140,7 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     all.push(results[0])
     var listImage = drawDatablock({ list })
     all.push(listImage)
-    console.log(all)
+    //console.log(all)
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: useEasyBG,

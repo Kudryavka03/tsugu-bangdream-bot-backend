@@ -111,7 +111,7 @@ function createDirIfNonExist(filepath: string) {
 }
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
-  if (apiDebug)logger('getJsonAndSave','Start Get API: '+url+' From:')
+  logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
   try {
     if (directory != undefined && fileName != undefined) {
@@ -129,7 +129,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
-          if (apiDebug) logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
+          logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
           return cachedJson;
         }
       }
