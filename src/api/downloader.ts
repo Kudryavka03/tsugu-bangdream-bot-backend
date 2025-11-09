@@ -53,7 +53,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
-      logger('download',`Miss Cache! ${url}  is downloading...`)
+      //logger('download',`Miss Cache! ${url}  is downloading...`)
   //console.trace()
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
@@ -79,6 +79,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (directory && fileName) {
       fs.writeFileSync(path.join(directory, fileName), fileBuffer);
     }
+    logger('download',`Download finish and cache for ${url}.`)
     //console.log(`Downloaded file from "${url}"`);
     return fileBuffer;
   } catch (e) {
@@ -143,7 +144,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         //console.log(`ETag matches for "${url}". Using cached JSON data.`);
         const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
         const cachedJson = JSON.parse(cachedData);
-        // if (apiDebug) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
+        logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
       } else {
         throw error;
@@ -164,7 +165,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
 
     //console.log(`Downloaded JSON data from "${url}"`);
-    if (apiDebug) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+     logger('getJsonAndSave','API: '+url + ' is Downloaded.')
     return jsonObject;
   } catch (e) {
     throw new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`);

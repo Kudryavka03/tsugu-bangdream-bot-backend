@@ -34,8 +34,8 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
         logger(`downloader`, `Retrying download for "${url}" (attempt ${attempt + 1}/${retryCount})`);
       }
       try {
+        logger(`downloader`, `Download for "${url}"......`);
         const data = await download(url, cacheDir, fileName, cacheTime);
-        // logger(`downloader`, `Download for "${url}"......`);
         if (data.toString().startsWith("<!DOCTYPE html>")) {
           fs.unlinkSync(path.join(cacheDir, fileName));
           assetNotExists = true;
