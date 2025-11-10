@@ -61,36 +61,59 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
     //如果角色数量大于5，则颜色作为X轴，角色作为Y轴
     if (characterIdList.length > 5) {
         let promise = []
+        let drawCardListLinePromise = []
+        let drawCharacterIconImageListPromise = []
         var tempAttributeImageList: Canvas[] = []//每一个颜色的所有角色的列
         for (let i = 0; i < attributeList.length; i++) {
             const attribute = attributeList[i];
-            var tempAttributeCardImageList: Canvas[] = []//这个颜色的所有角色的行
+            
             for (let j = 0; j < characterIdList.length; j++) {
                 const characterId = characterIdList[j];
                 var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
-                promise.push(tempAttributeCardImageList.push(await drawCardListLine(tempAttributeCardList)));
+                //const cardTask = drawCardListLine(tempAttributeCardList).then(result => tempAttributeCardImageList.push(result));
+                drawCardListLinePromise.push(drawCardListLine(tempAttributeCardList))
+                //promise.push(tempAttributeCardImageList.push(await drawCardListLine(tempAttributeCardList)));
+                //promise.push(cardTask)
                 //画角色头像
                 if (i == 0) {
-                    promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
+                //const iconTask = drawCharacterIcon(characterId).then(result => characterIconImageList.push(result));
+                   // promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
+                   //promise.push(iconTask)
+                   drawCharacterIconImageListPromise.push(drawCharacterIcon(characterId))
                 }
+            }
+
+        }
+        const L5Result = await Promise.all([Promise.all(drawCardListLinePromise),Promise.all(drawCharacterIconImageListPromise)])
+        //await Promise.all(promise)
+        var k = 0;
+        for (let i = 0; i < attributeList.length; i++) {
+            var tempAttributeCardImageList: Canvas[] = []//这个颜色的所有角色的行
+            for (let j = 0; j < characterIdList.length; j++) {
+                tempAttributeCardImageList.push(L5Result[0][k++])
             }
             tempAttributeImageList.push(stackImage(
                 tempAttributeCardImageList
             ));
-
+            //characterIconImageList.push(L5Result[1][i])
         }
-        await Promise.all(promise)
+        for(var l5r2 of L5Result[1]){
+            characterIconImageList.push(l5r2)
+        }
+        //console.log(tempAttributeCardImageList)
         const characterIconImage = stackImage(characterIconImageList);
         tempAttributeImageList.unshift(characterIconImage);
         cardListImage = drawDatablockHorizontal({
             list: tempAttributeImageList,
         })
+        console.log(tempAttributeImageList.length)
         if (cardListImage.width > maxWidth) {
+            console.log("Output......")
             let times = 0
             let tempImageList: Array<Buffer | string> = []
             tempImageList.push('卡牌列表过长，已经拆分输出')
             for (let i = 0; i < tempAttributeImageList.length; i++) {
-
+                console.log(i)
                 const tempCanv = tempAttributeImageList[i];
                 if (tempCanv == characterIconImage) {
                     continue
@@ -119,26 +142,47 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
     else {
         var tempCardImageList: Canvas[] = []//总列
         let promise = []
+        let promiseList =[]
         for (let i = 0; i < characterIdList.length; i++) {
             const characterId = characterIdList[i];
             let icon = true
             for (let j = 0; j < attributeList.length; j++) {
                 const attribute = attributeList[j];
                 var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
+               
                 if (tempAttributeCardList.length != 0) {
-                    promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
+                    //promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
+                    //const drawLine =drawCardListLine(tempAttributeCardList).then(ra=>tempCardImageList.push(ra))
+                    //promise.push(drawLine)
+                    promiseList.push(drawCardListLine(tempAttributeCardList))
                     //画角色头像
                     if (icon) {
-                        promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
-                        icon = false
+                      //icon = false
+                        //promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
+                        //const drawIconTask = drawCharacterIcon(characterId).then(rb=>characterIconImageList.push(rb))
+                        //promise.push(drawIconTask)
+                        promise.push(drawCharacterIcon(characterId))
+                      icon = false
+                      
                     }
                     else {
-                        promise.push(characterIconImageList.push(await drawCharacterIcon(null)));
+                    //const drawIconTask = drawCharacterIcon(null).then(rc=>characterIconImageList.push(rc))
+                        //promise.push(characterIconImageList.push(await drawCharacterIcon(null)));
+                        //promise.push(drawIconTask)
+                        promise.push(drawCharacterIcon(null))
                     }
                 }
             }
         }
-        await Promise.all(promise)
+        let results = await Promise.all([await Promise.all(promiseList),await Promise.all(promise)])
+        
+        for(var n = 0;n<results[0].length;n++){
+            tempCardImageList.push(results[0][n])
+            characterIconImageList.push(results[1][n])
+        }
+
+
+        
         const cardListImageWithoutCharacterIcon = await stackImage(
             tempCardImageList,
         )

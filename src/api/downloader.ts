@@ -33,6 +33,7 @@ export async function download(url: string, directory?: string, fileName?: strin
         if (fs.existsSync(cacheFilePath)){
           logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
+          if(resDebug) console.trace()
           return fs.readFileSync(cacheFilePath);
         }
       }
