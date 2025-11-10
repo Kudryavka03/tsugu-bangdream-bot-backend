@@ -100,6 +100,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     //有歌榜活动的歌榜歌曲
     const drawSongListInListPromise: Promise<Image | Canvas>[] = []; 
     const eventTypes: string[] = ['versus', 'challenge', 'medley']
+    let degreeSongs:Song[] = []
     if (eventTypes.includes(event.eventType) && event.musics != undefined && event.musics.length > 0) {
         let songs: Song[] = []
         let defaultServer = displayedServerList[0]
@@ -107,10 +108,31 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             defaultServer = Server.jp
         }
         for (let i = 0; i < event.musics[defaultServer].length; i++) {
-            songs.push(new Song(event.musics[defaultServer][i].musicId))
+            degreeSongs.push(new Song(event.musics[defaultServer][i].musicId))
         }
         drawSongListInListPromise.push(drawSongListInList(songs))
     }
+
+    const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 
+    for (let i = 0; i < displayedServerList.length; i++) {
+        const server = displayedServerList[i];
+        if (event.startAt[server] == null) {
+            continue
+        }
+        const songList: Song[] = getPresentSongList(server, event.startAt[server], event.endAt[server] + 1000 * 60 * 60);
+
+        if (songList.length !== 0) {
+            const isDuplicate = isSameSongList(degreeSongs,songList)    // 这里使用原本的实现， 节省cpu
+
+            if (!isDuplicate) {
+                // drawCardListInListPromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`))
+                drawSongListInListMorePromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`));
+            }
+        }
+    }
+
+
+
 
     //活动表情
     const getRewardStampPromise: Promise<Image | Canvas>[] = []; 
@@ -214,7 +236,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         Promise.all(getRewardStampPromise),
         Promise.all(drawCardListInListPromise),
         Promise.all(drawGachaDatablockPromise),
-        Promise.all(BGImagePromise)
+        Promise.all(BGImagePromise),
+        Promise.all(drawSongListInListMorePromise)
     ]);
     const [
         bannerImageResult,
@@ -224,7 +247,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         getRewardStampResult,
         drawCardListInListResult,
         drawGachaDatablockResult,
-        BGImageResult
+        BGImageResult,
+        drawSongListInListMoreResult
     ] = results;
 
     var eventBannerImage = bannerImageResult[0]
@@ -331,27 +355,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     all.push(drawTitle('查询', '活动'))
 
     all.push(listImage)
-    const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 
-    for (let i = 0; i < displayedServerList.length; i++) {
-        const server = displayedServerList[i];
-        if (event.startAt[server] == null) {
-            continue
-        }
-        const songList: Song[] = getPresentSongList(server, event.startAt[server], event.endAt[server] + 1000 * 60 * 60);
 
-        if (songList.length !== 0) {
-            const isDuplicate = all.some((block) => {
-                // 检查当前的songList是否与已存在的块的songList完全相同
-                return JSON.stringify(block.songList) === JSON.stringify(songList);
-            });
-
-            if (!isDuplicate) {
-                // drawCardListInListPromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`))
-                drawSongListInListMorePromise.push(drawSongListDataBlock(songList, `${serverNameFullList[server]}相关歌曲`));
-            }
-        }
-    }
-    const drawSongListInListMoreResult = await Promise.all(drawSongListInListMorePromise)
+    //const drawSongListInListMoreResult = await Promise.all(drawSongListInListMorePromise)
     for(const i of drawSongListInListMoreResult){
         all.push(i)
     }
@@ -379,6 +384,22 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
     return [buffer];
 }
+function isSameSongSet(a: Song[], b: Song[]): boolean {     //此实现考虑了内容一致但顺序不一样的清空
+    if (a.length !== b.length) return false;
+    const setA = new Set(a.map(s => s.songId));
+    for (const s of b) {
+        if (!setA.has(s.songId)) return false;
+    }
+    return true;
+}
+function isSameSongList(a: Song[], b: Song[]): boolean {    // 这是原本的实现，不考虑顺序。
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i].songId !== b[i].songId) return false;
+    }
+    return true;
+}
+
 
 export async function getEventGachaAndCardList(event: Event, mainServer: Server, useCache = false) {
     var gachaList: Gacha[] = []
