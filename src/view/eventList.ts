@@ -74,7 +74,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
 
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;
-
+    await Promise.all(tempEventList.map(e => e.initFull(false)));
     for (var i = 0; i < tempEventList.length; i++) {
         eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
     }
@@ -148,7 +148,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
 }
 
 async function drawEventInList(event: Event, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
-    await event.initFull(false)
+    //await event.initFull(false) //优化调度
     var textSize = 25 * 3 / 4;
     var content = []
     var Tips = []
@@ -219,7 +219,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     var getEventGachaAndCardListPromise = []
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
-        var EventGachaAndCardList = await getEventGachaAndCardList(event, server, true)
+        // var EventGachaAndCardList = await getEventGachaAndCardList(event, server, true)
         getEventGachaAndCardListPromise.push(getEventGachaAndCardList(event, server, true))
     }
 
