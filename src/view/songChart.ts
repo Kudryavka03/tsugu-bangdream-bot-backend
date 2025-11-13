@@ -10,7 +10,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     if (!song.isExist) {
         return ['没找到这首歌']
     }
-    const songChartDownload = song.getSongChart(difficultyId)   //  提前下载，这里我们假设用户所输入的是正确的
+    const songChartDownload = song.getSongChart(difficultyId)   //  Preload Charts.
     await song.initFull()
     if (!song.difficulty[difficultyId]) {
         return ['没找到这难度']
@@ -21,7 +21,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     const bandName = band.bandName[server]
     var songChart = await songChartDownload
     if (songChart == null){
-        return ['谱面数据下载，再试一次看看']
+        return ['谱面数据没法下载，再试一次看看']
     }
     // 没有并行的可能。
     const tempcanv = await BestdoriPreview.DrawPreview({
