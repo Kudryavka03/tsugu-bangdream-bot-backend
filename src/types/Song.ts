@@ -221,9 +221,14 @@ export class Song {
         }
         return tagNameList[this.tag]
     }
-    async getSongChart(difficultyId: number): Promise<Object> {
-        const songChart = await callAPIAndCacheResponse(`${Bestdoriurl}/api/charts/${this.songId}/${difficultyName[difficultyId]}.json`)
-        return songChart
+    async getSongChart(difficultyId: number,retry = false): Promise<Object> {
+        try{
+            const songChart = await callAPIAndCacheResponse(`${Bestdoriurl}/api/charts/${this.songId}/${difficultyName[difficultyId]}.json`)
+            return songChart
+        }
+        catch(e){
+            return null
+        }
     }
 
     /*

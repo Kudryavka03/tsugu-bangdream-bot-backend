@@ -8,16 +8,21 @@ import { globalDefaultServer, serverNameFullList } from '@/config';
 export async function drawSongChart(songId: number, difficultyId: number, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
     const song = new Song(songId)
     if (!song.isExist) {
-        return ['歌曲不存在']
+        return ['没找到这首歌']
     }
+    const songChartDownload = song.getSongChart(difficultyId)   //  提前下载，这里我们假设用户所输入的是正确的
     await song.initFull()
     if (!song.difficulty[difficultyId]) {
-        return ['难度不存在']
+        return ['没找到这难度']
     }
+
     const server = getServerByPriority(song.publishedAt, displayedServerList)
     const band = new Band(song.bandId)
     const bandName = band.bandName[server]
-    const songChart = await song.getSongChart(difficultyId)
+    var songChart = await songChartDownload
+    if (songChart == null){
+        return ['谱面数据下载，再试一次看看']
+    }
     // 没有并行的可能。
     const tempcanv = await BestdoriPreview.DrawPreview({
         id: song.songId,
