@@ -4,6 +4,7 @@ import { Card } from '@/types/Card';
 import { listToBase64 } from '@/routers/utils';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { getDoujinshiSayoHina } from './searchCard';
 
 const router = express.Router();
 
@@ -30,6 +31,9 @@ router.post('/',
 
 async function commandGetCardIllustration(cardId: number): Promise<Array<Buffer | string>> {
   let card = new Card(cardId);
+  if (card.cardId == 947){
+    return getDoujinshiSayoHina()
+  }
   if (!card.isExist) {
     return ['错误: 该卡不存在']
   }

@@ -48,7 +48,9 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
         if (isInteger(input)) {
-            return await drawCardDetail(parseInt(input), displayedServerList, useEasyBG, compress)
+            var inputId = parseInt(input)
+            if (inputId = 947) return getDoujinshiSayoHina()
+            return await drawCardDetail(inputId, displayedServerList, useEasyBG, compress)
         }
         fuzzySearchResult = fuzzySearch(input)
     } else {
@@ -62,6 +64,24 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
 
     return await drawCardList(fuzzySearchResult, displayedServerList,useEasyBG, compress)
 
+};
+
+export async function getDoujinshiSayoHina(){
+    var DoujinshiSayoHinaList = [
+        "(Bang Dream! SayoHina doujin) ki君mi - B62544-冰川雙子《大切な人》-v3",
+        "(C97) [Daisan-keitai (Kura)] Doushite Saikin Kuttsuku no? (BanG Dream!)",
+        "(C97) [VOLUTES (Kurogane Kenn)] The Desert on the Horizon (BanG Dream!)",
+        "(C99) [VOLUTES (Kurogane Kenn)] Futago no Kyuusoku - Le Repos des Jumelles | The Twins' Relaxation (BanG Dream!) [English] [/u/ scanlations]",
+        "(C97) [Hatakewotagayasudake (Various)] 3417 Omnibus (BanG Dream!)",
+        "(BanG Dreamer's Party! 7th STAGE) [Ishiyakiimo (Various)] Kyou wa Issho ni Netemo Ii? (BanG Dream!)",
+    ]
+    var text = []
+    const max = DoujinshiSayoHinaList.length;
+    const randomInt = Math.floor(Math.random() * (max  -1));
+    //text.join(DoujinshiSayoHinaList[randomInt])
+    text.push(DoujinshiSayoHinaList[randomInt])
+    //console.log(DoujinshiSayoHinaList[randomInt])
+    return text
 }
 
 export { router as searchCardRouter }
