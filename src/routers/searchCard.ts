@@ -49,7 +49,7 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
     if (typeof input === 'string') {
         if (isInteger(input)) {
             var inputId = parseInt(input)
-            if (inputId = 947) return getDoujinshiSayoHina()
+            if (inputId == 947) return getDoujinshiSayoHina()
             return await drawCardDetail(inputId, displayedServerList, useEasyBG, compress)
         }
         fuzzySearchResult = fuzzySearch(input)
