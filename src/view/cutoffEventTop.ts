@@ -14,6 +14,7 @@ import { drawList, drawListMerge } from '@/components/list';
 import { drawDottedLine } from '@/image/dottedLine';
 import { resizeImage } from '@/components/utils';
 import { stackImage } from '@/components/utils';
+import { logger } from '@/logger';
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
@@ -25,10 +26,16 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     all.push(drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
     var list: Array<Image | Canvas> = [];
     var event = new Event(eventId);
-    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer])
+    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
     // all.push(await drawEventDatablock(event, [mainServer]));
     var drawPlayerRankingInListPromise = []
-    const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer)
+    const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer).catch(err => {
+        logger('drawCutoffEventTopChart error:', err);
+        return null;
+    });
     //前十名片
     var userInRankings = cutoffEventTop.getLatestRanking();
     for (let i = 0; i < userInRankings.length; i++) {

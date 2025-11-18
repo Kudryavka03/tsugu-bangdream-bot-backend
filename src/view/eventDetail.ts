@@ -218,16 +218,6 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
 
 
-    const allPromises = {
-        bannerImage: Promise.all(bannerImagePromise),
-        drawCharacterInList: Promise.all(drawCharacterInListPromise),
-        drawDegreeListOfEvent: Promise.all(drawDegreeListOfEventPromise),
-        drawSongListInList: Promise.all(drawSongListInListPromise),
-        getRewardStamp: Promise.all(getRewardStampPromise),
-        drawCardListInList: Promise.all(drawCardListInListPromise),
-        drawGachaDatablock: Promise.all(drawGachaDatablockPromise),
-    };
-
     const results = await Promise.all([
         Promise.all(bannerImagePromise),
         Promise.all(drawCharacterInListPromise),

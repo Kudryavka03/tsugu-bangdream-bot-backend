@@ -15,6 +15,7 @@ import { drawCharacterInList } from '@/components/list/character'
 import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
 import path from 'path';
+import { logger } from '@/logger';
 
 export async function drawCutoffListOfRecentEvent(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     //检查
@@ -33,7 +34,10 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
 
     var all = []
     all.push(drawTitle('历史的档线对比', `${serverNameFullList[mainServer]} ${tier}档线`))
-    const bannerImageBox = drawEventDatablock(event, [mainServer])
+    const bannerImageBox = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
     
 
     const list: Array<Image | Canvas> = []

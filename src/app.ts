@@ -1,3 +1,10 @@
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[UNHANDLED REJECTION]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[UNCAUGHT EXCEPTION]', err);
+});
 import express from 'express';
 import { gachaSimulateRouter } from '@/routers/gachaSimulate';
 import { cardIllustrationRouter } from '@/routers/getCardIllustration';

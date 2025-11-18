@@ -113,6 +113,7 @@ function createDirIfNonExist(filepath: string) {
 }
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
+  if (url.includes('312')) throw new Error("模拟错误返回")
   logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
   try {
@@ -169,6 +170,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
      logger('getJsonAndSave','API: '+url + ' is Downloaded.')
     return jsonObject;
   } catch (e) {
-    throw new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`);
+    return Promise.reject(
+      new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`)
+  );
   }
 }

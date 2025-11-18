@@ -46,15 +46,24 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     */
 
     const list: Array<Canvas | Image> = []
-    var drawPlayerDetailBlockWithIllustTask = drawPlayerDetailBlockWithIllust(player)
+    var drawPlayerDetailBlockWithIllustTask = drawPlayerDetailBlockWithIllust(player).catch(err => {
+        console.error('drawPlayerDetailBlockWithIllust error:', err);
+        return null;
+    });
     //卡组
     var drawPlayerCardInListTask = null
-    drawPlayerCardInListTask = drawPlayerCardInList(player, '卡牌信息', true)
+    drawPlayerCardInListTask = drawPlayerCardInList(player, '卡牌信息', true).catch(err => {
+        console.error('drawPlayerCardInList error:', err);
+        return null;
+    });
     
     //综合力
     var TotalDeckPowerFlg = null;
     if (player.profile.publishTotalDeckPowerFlg) {
-        TotalDeckPowerFlg = drawStatInList(await player.calcStat())
+        TotalDeckPowerFlg = drawStatInList(await player.calcStat()).catch(err => {
+            console.error('drawStatInList error:', err);
+            return null;
+        });
     }
     //难度完成信息
     var MusicClearedFlg = null
@@ -72,18 +81,27 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     //乐队等级
     var BandRankFlg = null
     if (player.profile.publishBandRankFlg) {
-        BandRankFlg = drawPlayerBandRankInList(player, "乐队等级")
+        BandRankFlg = drawPlayerBandRankInList(player, "乐队等级").catch(err => {
+            console.error('drawPlayerBandRankInList error:', err);
+            return null;
+        });
     }
     //stageChallenge完成情况
     var StageChallengeAchievementConditionsFlg = null
     if (player.profile.publishStageChallengeAchievementConditionsFlg && player.profile.publishStageChallengeFriendRankingFlg) {
-        StageChallengeAchievementConditionsFlg = drawPlayerStageChallengeRankInList(player, '舞台挑战 达成情况')
+        StageChallengeAchievementConditionsFlg = drawPlayerStageChallengeRankInList(player, '舞台挑战 达成情况').catch(err => {
+            console.error('drawPlayerStageChallengeRankInList error:', err);
+            return null;
+        });
     }
 
     //乐队编成等级
     var DeckRankFlg = null;
     if (player.profile.publishDeckRankFlg) {
-        DeckRankFlg = drawPlayerDeckTotalRatingInList(player, '乐队编成等级')
+        DeckRankFlg = drawPlayerDeckTotalRatingInList(player, '乐队编成等级').catch(err => {
+            console.error('drawPlayerDeckTotalRatingInList error:', err);
+            return null;
+        });
     }
     //hsr
     var HighScoreRatingFlg = null;
@@ -95,7 +113,10 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     }
     var CharacterRankFlg = null;
     if (player.profile.publishCharacterRankFlg) {
-        CharacterRankFlg = drawCharacterRankInList(player, '角色等级')
+        CharacterRankFlg = drawCharacterRankInList(player, '角色等级').catch(err => {
+            console.error('drawCharacterRankInList error:', err);
+            return null;
+        });
     }
 
     // taskAll.push(drawPlayerDetailBlockWithIllustTask)

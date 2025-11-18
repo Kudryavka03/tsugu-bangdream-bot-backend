@@ -51,7 +51,7 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
 
     //相关活动
     var tempEventIdList = []//用于防止重复
-    var eventImageList: Array<Canvas | Image> = []
+    // var eventImageList: Array<Canvas | Image> = []
     var drawEventDatablockPromise:Promise<Canvas>[] = []
     for (let k = 0; k < displayedServerList.length; k++) {
         let server = displayedServerList[k]

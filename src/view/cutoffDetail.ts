@@ -14,6 +14,7 @@ import { statusName } from '@/config';
 import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
 import path from 'path';
+import { logger } from '@/logger';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoff = new Cutoff(eventId, mainServer, tier)
@@ -22,7 +23,10 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     }
     const initPromise = cutoff.initFull();
     var event = new Event(eventId)
-    const drawPromise = drawEventDatablock(event, [mainServer]);
+    const drawPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
     await initPromise;
 
     //const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
@@ -132,8 +136,8 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     all.push(listImage)
     
     all.push(drawTips({
-        text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n我们会尽快将数据上传至服务器',
-        image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
+        text: '预测线1为Tsugu原版预测线\n预测线2为个人想法，对于 <=100 的档线，不具备预测性，请以前排最新结果为准或参考Tsugu原版预测线',
+        //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
     
     var buffer = await outputFinalBuffer({

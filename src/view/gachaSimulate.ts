@@ -19,7 +19,10 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         return ['错误: 该卡池不存在']
     }
     await gacha.initFull()
-    const drawBannerPromise = drawGachaBanner(gacha)
+    const drawBannerPromise = drawGachaBanner(gacha).catch(err => {
+        console.error('drawGachaBanner error:', err);
+        return null;
+    });
     if (gacha.rates[getServerByPriority(gacha.publishedAt)] == null) return ['错误: 该卡池未提供概率分布数据']
     let gachaImage: Canvas;
     if (times <= 10) {

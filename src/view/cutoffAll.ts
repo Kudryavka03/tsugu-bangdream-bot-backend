@@ -20,7 +20,10 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     if (event.startAt[mainServer] == undefined) {
         return ['活动在该服务器不存在']
     }
-    const bannerImageBox = drawEventDatablock(event, [mainServer])
+    const bannerImageBox = drawEventDatablock(event, [mainServer]).catch(err => {
+        console.error('drawEventDatablock error:', err);
+        return null;
+    });
     var all = []
 
     
@@ -98,7 +101,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     //创建最终输出数组
     var listImage = drawDatablock({ list })
     all.push(drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
-    all.push(await drawEventDatablock(event, [mainServer]))
+    all.push(await bannerImageBox)
     all.push(listImage)
     /*
     all.push(drawTips({

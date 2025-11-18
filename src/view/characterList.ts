@@ -43,9 +43,15 @@ export async function drawCharacterList(matches: FuzzySearchResult, displayedSer
         return (await drawCharacterDetail(tempCharacterList[0].characterId, displayedServerList, compress))
     }
     const characterImageList: Canvas[] = []
+    const characterImageListPromise = []
     for (let i = 0; i < tempCharacterList.length; i++) {
         const element = tempCharacterList[i];
-        characterImageList.push(await drawCharacterHalfBlock(element, displayedServerList))
+        characterImageListPromise.push(drawCharacterHalfBlock(element, displayedServerList))
+        //characterImageList.push(await drawCharacterHalfBlock(element, displayedServerList))
+    }
+    const characterImageListResult = await Promise.all(characterImageListPromise)
+    for(var i of characterImageListResult){
+        characterImageList.push(i)
     }
     const characterListImage = drawList({
         content: characterImageList,
