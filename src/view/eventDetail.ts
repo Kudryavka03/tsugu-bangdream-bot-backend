@@ -110,7 +110,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         for (let i = 0; i < event.musics[defaultServer].length; i++) {
             degreeSongs.push(new Song(event.musics[defaultServer][i].musicId))
         }
-        drawSongListInListPromise.push(drawSongListInList(songs))
+        drawSongListInListPromise.push(drawSongListInList(degreeSongs))
     }
 
     const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 
