@@ -2,13 +2,13 @@ import { getJsonAndSave } from '@/api/downloader';
 import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
 import { logger } from '@/logger';
 
-async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3): Promise<object> {
+async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true): Promise<object> {
   const cacheDir = getCacheDirectory(url);
   const fileName = getFileNameFromUrl(url);
 
   for (let attempt = 0; attempt < retryCount; attempt++) {
     try {
-      const data = await getJsonAndSave(url, cacheDir, fileName, cacheTime);
+      const data = await getJsonAndSave(url, cacheDir, fileName, cacheTime,isForceUseCache);
       return data;
     } catch (e) {
       logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);

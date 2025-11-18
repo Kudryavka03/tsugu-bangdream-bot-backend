@@ -17,10 +17,10 @@ async function loadMainAPI(useCache: boolean = false) {
     const promiseAll = Object.keys(BestdoriapiPath).map(async (key) => {
         const maxRetry = 3
         if (useCache) {
-            return mainAPI[key] = await callAPIAndCacheResponse(Bestdoriurl + BestdoriapiPath[key], 1 / 0);
+            return mainAPI[key] = await callAPIAndCacheResponse(Bestdoriurl + BestdoriapiPath[key], 1 / 0,3,false);
         } else {
             try {
-                return mainAPI[key] = await callAPIAndCacheResponse(Bestdoriurl + BestdoriapiPath[key]);
+                return mainAPI[key] = await callAPIAndCacheResponse(Bestdoriurl + BestdoriapiPath[key],0,3,false);
             } catch (e) {
                 logger('mainAPI', `load ${key} failed`)
             }

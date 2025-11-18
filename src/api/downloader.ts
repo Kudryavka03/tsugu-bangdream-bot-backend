@@ -112,7 +112,7 @@ function createDirIfNonExist(filepath: string) {
   }
 }
 
-export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
+export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
   logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
@@ -128,11 +128,26 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
       if (fs.existsSync(cacheFilePath)) {
         const stat = fs.statSync(cacheFilePath);
         const now = Date.now();
-        if (now - stat.mtimeMs < cacheTime * 1000) {
+        var isReadCache = false;  // 不读取缓存，做一系列的判断先
+        var isUnExpired = now - stat.mtimeMs < cacheTime * 1000;  // 通过检查是否过期确定是否要读取缓存。
+        if (isForceUseCache){// 如果要强制使用缓存
+          isReadCache = true
+        if(url.includes("tier") && url.includes("tracker")) {  // 如果是档线数据
+          isReadCache = isUnExpired  // 档线数据不使用过期缓存
+        }
+        if((url.includes("cutoffs?") || url.includes("ycx?")|| url.includes("eventtop")|| url.includes("api/player"))) { // 如果是档线数据或玩家数据
+          isReadCache = isUnExpired  // 档线数据及玩家数据不使用过期缓存
+        }
+      }
+      else{ // 如果不强制使用缓存（API）则观察资源是否过期
+        isReadCache = isUnExpired
+      }
+        // 经过上述判断后，对于基础API，档线数据，玩家数据，则通过缓存判断是否需要使用缓存
+        if (isReadCache) {
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
-          logger('getJsonAndSave','API: '+url + ' is Ready and Cached.')
+          logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
         }
       }
