@@ -113,7 +113,7 @@ function createDirIfNonExist(filepath: string) {
 }
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0): Promise<object> {
-  if (url.includes('312')) throw new Error("模拟错误返回")
+ // if (url.includes('312')) throw new Error("模拟错误返回")
   logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
   try {
