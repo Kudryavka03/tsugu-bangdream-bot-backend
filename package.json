@@ -22,8 +22,10 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node -r tsconfig-paths/register src/app.ts",
+    "start2":"node dist/app.js",
     "cpu": "node --inspect-brk -r  ts-node/register -r tsconfig-paths/register src/app.ts",
-    "cpu2": "node --inspect-brk  dist/app.js"
+    "cpu2": "node --inspect-brk  dist/app.js",
+    "build": "npx tsc && npx tsc-alias"
   },
   "keywords": [
     "chatbot",
