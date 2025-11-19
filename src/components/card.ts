@@ -84,10 +84,41 @@ export async function drawCardIcon({
 }: drawCardIconOptions): Promise<Canvas> {
     trainingStatus = card.ableToTraining(trainingStatus)
     illustTrainingStatus ??= trainingStatus
+
     const canvas: Canvas = cardIdVisible ? new Canvas(180, 210) : new Canvas(180, 180);
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(await card.getCardIconImage(illustTrainingStatus), 0, 0, 180, 180);
-    //如果显示卡牌ID，画面高度为210，在下方显示
+
+    // ★ 所有异步操作先不 await，而是创建 Promise
+    const pCardIcon = card.getCardIconImage(illustTrainingStatus);
+    const pFrame = getCardIconFrame(card.rarity, card.attribute);
+    const pAttributeIcon = new Attribute(card.attribute).getIcon();
+    const pBandIcon = new Band(card.bandId).getIcon();
+
+    let pSkillTypeIcon: Promise<Canvas> | undefined;
+    if (skillTypeVisible) {
+        const skill = new Skill(card.skillId)
+        pSkillTypeIcon = drawCardIconSkill(skill)
+    }
+
+    // ★ 等待所有 Promise 一次性并发完成
+    const [
+        cardIcon,
+        frame,
+        attributeIcon,
+        bandIcon,
+        skillTypeIcon
+    ] = await Promise.all([
+        pCardIcon,
+        pFrame,
+        pAttributeIcon,
+        pBandIcon,
+        pSkillTypeIcon ?? Promise.resolve(undefined)
+    ]);
+
+    // === 从这里开始完全与你原来的绘图逻辑一致 ===
+
+    ctx.drawImage(cardIcon, 0, 0, 180, 180);
+
     if (cardIdVisible) {
         ctx.textAlign = 'start'
         ctx.textBaseline = 'middle'
@@ -95,7 +126,7 @@ export async function drawCardIcon({
         ctx.fillStyle = '#a7a7a7'
         ctx.fillText(`ID:${card.cardId}`, 4, 195)
     }
-    //如果显示技能类型，在右上显示
+
     if (skillLevel != undefined) {
         ctx.fillStyle = '#ff0000'
         ctx.fillRect(138, 91, 35, 39)
@@ -103,25 +134,20 @@ export async function drawCardIcon({
         ctx.textAlign = 'center'
         setFontStyle(ctx, 35, 'old')
         ctx.fillText(skillLevel.toString(), 155.5, 107.5)
-    }
-    //如果显示技能类型，在右上显示
-    else if (cardTypeVisible) {
+    } else if (cardTypeVisible) {
         if (cardTypeIconList[card.type] != undefined) {
             ctx.drawImage(cardTypeIconList[card.type], 138, 91)
         }
     }
-    if (skillTypeVisible) {
-        var skill = new Skill(card.skillId)
-        var skillTypeIcon = await drawCardIconSkill(skill)
+
+    if (skillTypeIcon) {
         ctx.drawImage(skillTypeIcon, 180 - skillTypeIcon.width, 142)
     }
-    //获得框
-    var Frame = await getCardIconFrame(card.rarity, card.attribute)
-    ctx.drawImage(Frame, 0, 0);
-    var attributeIcon = await new Attribute(card.attribute).getIcon()
-    ctx.drawImage(attributeIcon, 132.5, 3, 45.26, 45.26)
-    var bandIcon = await new Band(card.bandId).getIcon()
-    ctx.drawImage(bandIcon, 0, 0, 45, 45)
+
+    ctx.drawImage(frame, 0, 0);
+    ctx.drawImage(attributeIcon, 132.5, 3, 45.26, 45.26);
+    ctx.drawImage(bandIcon, 0, 0, 45, 45);
+
     if (limitBreakRank != 0) {
         ctx.drawImage(limitBreakIcon, 137, 51, 39, 39)
         setFontStyle(ctx, 25, 'old')
@@ -130,11 +156,13 @@ export async function drawCardIcon({
         ctx.textBaseline = 'middle'
         ctx.fillText(limitBreakRank.toString(), 155, 70)
     }
-    var star = starList[trainingStatus ? 'trained' : 'normal']
-    for (var i = 0; i < card.rarity; i++) {//星星数量
+
+    const star = starList[trainingStatus ? 'trained' : 'normal']
+    for (var i = 0; i < card.rarity; i++) {
         ctx.drawImage(star, 4, 150 - 26 * i, 29, 29)
     }
-    return canvas
+
+    return canvas;
 }
 
 interface drawCardIllustrationOptions {
