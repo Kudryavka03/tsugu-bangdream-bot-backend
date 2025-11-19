@@ -1,5 +1,5 @@
 chcp 10000
 :start
-npm start
+node dist/app.js
 goto start
 pause

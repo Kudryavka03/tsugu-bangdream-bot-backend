@@ -58,8 +58,8 @@ npm install -g ts-node
 npm install -g pm2
 npm install 
 # 此时安装时间可能较长，并且需要可以完善编译 canvas 的环境
-# 启动后端
-npm start
+# 编译并启动后端
+npx tsc && npx tsc-alias
 ```
 
 ## 📖 文章

@@ -6,11 +6,12 @@ const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
+const showDownloadLog = false
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
   if (pendingDownloads.has(url)) {
-    logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
+    if(showDownloadLog) logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
     //console.log(pendingDownloads)
     return pendingDownloads.get(url)!;
   }
@@ -31,7 +32,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (fileName && directory) {
       if(!isApiRequest){
         if (fs.existsSync(cacheFilePath)){
-          logger('download',`Match Cache! ${url}`)
+          if(showDownloadLog) logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
           if(resDebug) console.trace()
           return fs.readFileSync(cacheFilePath);
@@ -114,7 +115,7 @@ function createDirIfNonExist(filepath: string) {
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
-  logger('getJsonAndSave','Start Get API: '+url+' From:')
+ if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
   try {
     if (directory != undefined && fileName != undefined) {
@@ -124,28 +125,41 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
       if (fs.existsSync(cacheFilePath)) {
-        const stat = fs.statSync(cacheFilePath);
-        const now = Date.now();
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
-        var isUnExpired = now - stat.mtimeMs < cacheTime * 1000;  // 通过检查是否过期确定是否要读取缓存。
+        var isCheckIfUnExpired = false
+        var isUnExpired = false
         if (isForceUseCache){// 如果要强制使用缓存
           isReadCache = true
         if(url.includes("tier") && url.includes("tracker")) {  // 如果是档线数据
-          isReadCache = isUnExpired  // 档线数据不使用过期缓存
+          //isReadCache = isUnExpired  // 档线数据不使用过期缓存
+          isCheckIfUnExpired = true
         }
         if((url.includes("cutoffs?") || url.includes("ycx?")|| url.includes("eventtop")|| url.includes("api/player"))) { // 如果是档线数据或玩家数据
-          isReadCache = isUnExpired  // 档线数据及玩家数据不使用过期缓存
+          //isReadCache = isUnExpired  // 档线数据及玩家数据不使用过期缓存
+          isCheckIfUnExpired = true
+        }
+        if (isCheckIfUnExpired){
+          const stat = fs.statSync(cacheFilePath);
+          const now = Date.now();
+          isUnExpired = now - stat.mtimeMs < cacheTime * 1000
+          if (isUnExpired){ // 如果缓存没有过期，则读取缓存
+            isReadCache = true
+          }
         }
       }
-      else{ // 如果不强制使用缓存（API）则观察资源是否过期
-        isReadCache = isUnExpired
+      else {
+        const stat = fs.statSync(cacheFilePath);
+        const now = Date.now();
+        if (now - stat.mtimeMs < cacheTime * 1000){ // 如果不是强制读取，且缓存没过期，则读取缓存
+          isReadCache = true
+        }
       }
         // 经过上述判断后，对于基础API，档线数据，玩家数据，则通过缓存判断是否需要使用缓存
         if (isReadCache) {
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
-          logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
+          if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
         }
       }
@@ -161,7 +175,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         //console.log(`ETag matches for "${url}". Using cached JSON data.`);
         const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
         const cachedJson = JSON.parse(cachedData);
-        logger('getJsonAndSave','API: '+url + ' is using Cached data.')
+        if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
       } else {
         throw error;
@@ -182,7 +196,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
 
     //console.log(`Downloaded JSON data from "${url}"`);
-     logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+    if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
     return jsonObject;
   } catch (e) {
     return Promise.reject(

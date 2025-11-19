@@ -1,5 +1,5 @@
 chcp 10000
 :start
-npm start
+npm run cpu2
 goto start
 pause
