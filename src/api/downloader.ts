@@ -123,8 +123,6 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      const eTagFilePath = path.join(directory, `${fileName}.etag`);
-      eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
       if (fs.existsSync(cacheFilePath)) {
         const stat = fs.statSync(cacheFilePath);
         const now = Date.now();
@@ -152,6 +150,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         }
       }
     }
+    const eTagFilePath = path.join(directory, `${fileName}.etag`);
+    eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
