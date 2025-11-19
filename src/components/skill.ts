@@ -13,7 +13,13 @@ async function loadImageOnce() {
     skillIcon.damage = await loadImageFromPath(path.join(assetsRootPath, '/Skill/damage.png'));
 }
 loadImageOnce()
-
+let textbasePromise: Promise<Image> | null = null;  // 缓存/Card/text.png
+function getTextBase(): Promise<Image> {
+    if (!textbasePromise) {
+        textbasePromise = loadImageFromPath(path.join(assetsRootPath, '/Card/text.png'));
+    }
+    return textbasePromise;
+}
 //卡牌Icon右下角的技能描述图标
 export async function drawCardIconSkill(skill: Skill): Promise<Canvas> {
     var content: Array<Image | string> = []
@@ -62,7 +68,7 @@ export async function drawCardIconSkill(skill: Skill): Promise<Canvas> {
         color: '#ffffff',
         font: 'old'
     })
-    const textbase = await loadImageFromPath(path.join(assetsRootPath, '/Card/text.png'));
+    const textbase = await  getTextBase();
     const canvas = new Canvas(stringWithImage.width + 15, 45)
     const ctx = canvas.getContext('2d')
     ctx.drawImage(textbase, stringWithImage.width + 15 - textbase.width, 0)

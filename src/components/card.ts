@@ -84,7 +84,7 @@ export async function drawCardIcon({
 }: drawCardIconOptions): Promise<Canvas> {
     trainingStatus = card.ableToTraining(trainingStatus)
     illustTrainingStatus ??= trainingStatus
-
+    //console.log("drawCardIcon")
     const canvas: Canvas = cardIdVisible ? new Canvas(180, 210) : new Canvas(180, 180);
     const ctx = canvas.getContext('2d');
 
