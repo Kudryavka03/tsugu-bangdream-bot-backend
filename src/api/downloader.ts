@@ -126,10 +126,11 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     if (fileName && directory) {
       if (fs.existsSync(cacheFilePath)) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
-        var isCheckIfUnExpired = false
+        // var isCheckIfUnExpired = false
         var isUnExpired = false
         if (isForceUseCache){// 如果要强制使用缓存
           isReadCache = true
+          /*
         if(url.includes("tier") && url.includes("tracker")) {  // 如果是档线数据
           //isReadCache = isUnExpired  // 档线数据不使用过期缓存
           isCheckIfUnExpired = true
@@ -148,6 +149,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
             isReadCache = true
           }
         }
+        */
       }
       else {
         const stat = fs.statSync(cacheFilePath);

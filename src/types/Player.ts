@@ -186,7 +186,7 @@ export class Player {
         }
         var cacheTime = useCache ? 1 / 0 : 0;
         try {
-            var playerData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/player/${Server[this.server]}/${this.playerId}?mode=${mode}`, cacheTime, 1);
+            var playerData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/player/${Server[this.server]}/${this.playerId}?mode=${mode}`, cacheTime, 1,false);
         }
         catch {
             this.isExist = false;

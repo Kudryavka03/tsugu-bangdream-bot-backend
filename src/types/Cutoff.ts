@@ -67,16 +67,20 @@ export class Cutoff {
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 24 * 2) {
             var cutoffPromise = []
+            console.log(time)
+            console.log(this.endAt)
+            console.log(this.endAt + 1000 * 60 * 60 * 1)    // 一个小时后就结束，够了
             //cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
-            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
-            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
+            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`),0,3,false)
+            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`),0,3,false)
             var cutoffResult = await Promise.all(cutoffPromise)
             //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
             pCutoffData = cutoffResult[1]
         }
         else {
-            cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            //cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            cutoffData = await callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
             pCutoffData = cutoffData
         }
         if (cutoffData == undefined) {
