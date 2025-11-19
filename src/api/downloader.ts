@@ -133,10 +133,12 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         if(url.includes("tier") && url.includes("tracker")) {  // 如果是档线数据
           //isReadCache = isUnExpired  // 档线数据不使用过期缓存
           isCheckIfUnExpired = true
+          isReadCache = false
         }
         if((url.includes("cutoffs?") || url.includes("ycx?")|| url.includes("eventtop")|| url.includes("api/player"))) { // 如果是档线数据或玩家数据
           //isReadCache = isUnExpired  // 档线数据及玩家数据不使用过期缓存
           isCheckIfUnExpired = true
+          isReadCache = false
         }
         if (isCheckIfUnExpired){
           const stat = fs.statSync(cacheFilePath);
