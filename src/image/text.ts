@@ -223,7 +223,9 @@ function warpTextWithImages({
                     tempX += measuredWidth;
                     break;
                 } else {
+                    /*
                     let splitIndex = 0;
+                    
                     for (let j = temptext.length - 1; j >= 0; j--) {
                         const substr = temptext.slice(0, j);
                         const substrWidth = cachedMeasureText(ctx, substr);
@@ -232,6 +234,8 @@ function warpTextWithImages({
                             break;
                         }
                     }
+                    */
+                    const splitIndex = findSplitIndex(ctx, temptext, remainingWidth);
                     const substring = temptext.slice(0, splitIndex);
                     temp[lineNumber].push(substring);
                     newLine();
@@ -258,6 +262,22 @@ function warpTextWithImages({
         numberOfLines: temp.length,
         wrappedText: temp,
     };
+}
+
+// 二分查找
+function findSplitIndex(ctx, text, maxWidth) {
+    let left = 0;
+    let right = text.length;
+
+    while (left < right) {
+        const mid = (left + right) >> 1;
+        const part = text.slice(0, mid);
+        const w = cachedMeasureText(ctx, part);
+
+        if (w <= maxWidth) left = mid + 1;
+        else right = mid;
+    }
+    return left - 1; // 最终可用长度
 }
 
 export var setFontStyle = function (ctx: CanvasRenderingContext2D, textSize: number, font: string) {//设置字体大小
