@@ -158,7 +158,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     all.push(drawTitle('查询', '歌曲'))
     all.push(drawSongDataBlockResult[0])
     var listImage = drawDatablock({ list })
-    console.log(listImage)
+    //console.log(listImage)
     all.push(listImage)
     
     //创建最终输出数组
