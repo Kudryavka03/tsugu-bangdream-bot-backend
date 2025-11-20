@@ -101,10 +101,11 @@ interface TextWithImagesOptions {
     font?: "default" | "old"
 }
 const measureCache  = new Map<string, number>();
-function cachedMeasureText(ctx, text) {                             // 缓存Measure
-    if (measureCache.has(text)) return measureCache.get(text);
+function cachedMeasureText(ctx, text,textSize, font) {                             // 缓存Measure+
+    const key = `${textSize}:${font}:${text}`;
+    if (measureCache.has(key)) return measureCache.get(key);
     const w = ctx.measureText(text).width;
-    measureCache.set(text, w);
+    measureCache.set(key, w);
     return w;
 }
 // 画文字包含图片
@@ -132,8 +133,8 @@ export function drawTextWithImages({
         for (var n = 0; n < wrappedText[0].length; n++) {
             if (typeof wrappedText[0][n] === "string") {
                 //Width += ctx.measureText(wrappedText[0][n] as string).width
-                var flags = wrappedText[0][n] as string + textSize + font
-                Width += cachedMeasureText(ctx, flags)
+                //var flags = wrappedText[0][n] as string + textSize + font
+                Width += cachedMeasureText(ctx, wrappedText[0][n] as string,textSize, font)
             } else {
                 //等比例缩放图片，至高度与textSize相同
                 let tempImage = wrappedText[0][n] as Canvas | Image
@@ -160,8 +161,7 @@ export function drawTextWithImages({
             if (typeof wrappedText[i][n] === "string") {
                 ctx.fillText(wrappedText[i][n] as string, tempX, y);
                 //tempX += ctx.measureText(wrappedText[i][n] as string).width
-                var flags = wrappedText[i][n] as string + textSize + font
-                tempX += cachedMeasureText(ctx, flags)
+                tempX += cachedMeasureText(ctx, wrappedText[i][n] as string,textSize, font)
 
             } else {
                 //等比例缩放图片，至高度与textSize相同
@@ -219,7 +219,7 @@ function warpTextWithImages({
                 }
 
                 const remainingWidth = maxWidth - tempX;
-                const measuredWidth = cachedMeasureText(ctx, temptext);
+                const measuredWidth = cachedMeasureText(ctx, temptext,textSize, font);
                 if (remainingWidth >= measuredWidth) {
                     temp[lineNumber].push(temptext);
                     tempX += measuredWidth;
@@ -230,8 +230,8 @@ function warpTextWithImages({
                     
                     for (let j = temptext.length - 1; j >= 0; j--) {
                         const substr = temptext.slice(0, j);
-                        var flags = substr + textSize + font
-                        const substrWidth = cachedMeasureText(ctx, flags);
+                        //var flags = substr + textSize + font
+                        const substrWidth = cachedMeasureText(ctx, substr,textSize, font);
                         if (substrWidth <= remainingWidth) {
                             splitIndex = j;
                             break;

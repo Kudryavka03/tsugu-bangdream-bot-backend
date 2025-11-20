@@ -6,7 +6,7 @@ const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
-const showDownloadLog = false
+export const showDownloadLog = false
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
@@ -112,7 +112,7 @@ function createDirIfNonExist(filepath: string) {
     }
   }
 }
-
+const memoryCache = new Map<string, any>();
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
  if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
@@ -130,26 +130,6 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         var isUnExpired = false
         if (isForceUseCache){// 如果要强制使用缓存
           isReadCache = true
-          /*
-        if(url.includes("tier") && url.includes("tracker")) {  // 如果是档线数据
-          //isReadCache = isUnExpired  // 档线数据不使用过期缓存
-          isCheckIfUnExpired = true
-          isReadCache = false
-        }
-        if((url.includes("cutoffs?") || url.includes("ycx?")|| url.includes("eventtop")|| url.includes("api/player"))) { // 如果是档线数据或玩家数据
-          //isReadCache = isUnExpired  // 档线数据及玩家数据不使用过期缓存
-          isCheckIfUnExpired = true
-          isReadCache = false
-        }
-        if (isCheckIfUnExpired){
-          const stat = fs.statSync(cacheFilePath);
-          const now = Date.now();
-          isUnExpired = now - stat.mtimeMs < cacheTime * 1000
-          if (isUnExpired){ // 如果缓存没有过期，则读取缓存
-            isReadCache = true
-          }
-        }
-        */
       }
       else {
         const stat = fs.statSync(cacheFilePath);
@@ -161,8 +141,13 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         // 经过上述判断后，对于基础API，档线数据，玩家数据，则通过缓存判断是否需要使用缓存
         if (isReadCache) {
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
+          if (memoryCache.has(cacheFilePath)) {
+            const cached = memoryCache.get(cacheFilePath);
+            return cached;
+        }
           const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
           const cachedJson = JSON.parse(cachedData);
+          memoryCache.set(cacheFilePath, cachedJson);
           if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
         }
@@ -177,8 +162,13 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     } catch (error) {
       if (error.response && error.response.status === 304) {
         //console.log(`ETag matches for "${url}". Using cached JSON data.`);
+        if (memoryCache.has(cacheFilePath)) {
+          const cached = memoryCache.get(cacheFilePath);
+          return cached;
+      }
         const cachedData = fs.readFileSync(cacheFilePath, 'utf-8');
         const cachedJson = JSON.parse(cachedData);
+        memoryCache.set(cacheFilePath, cachedJson);
         if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
       } else {

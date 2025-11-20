@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { assetsRootPath } from '@/config';
 import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
-import { download } from '@/api/downloader';
+import { download, showDownloadLog } from '@/api/downloader';
 import { Buffer } from 'buffer';
 import { assetErrorImageBuffer } from '@/image/utils';
 import { logger } from '@/logger';
@@ -34,7 +34,7 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
         logger(`downloader`, `Retrying download for "${url}" (attempt ${attempt + 1}/${retryCount})`);
       }
       try {
-        //logger(`downloader`, `Download for "${url}"......`);
+        if(showDownloadLog)logger(`downloader`, `Download for "${url}"......`);
         const data = await download(url, cacheDir, fileName, cacheTime);
         if (data.toString().startsWith("<!DOCTYPE html>")) {
           fs.unlinkSync(path.join(cacheDir, fileName));
