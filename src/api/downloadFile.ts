@@ -9,9 +9,9 @@ import * as fs from 'fs';
 
 // 错误 URL 列表和错误缓存过期时间
 const errUrl: { [key: string]: number } = {};
-const ERROR_CACHE_EXPIRY = 12 * 60 * 60 * 1000; // 1 天
+const ERROR_CACHE_EXPIRY = 12 * 60 * 60 * 1000; // 半天
 
-async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 1): Promise<Buffer> {
+async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 3): Promise<Buffer> {
   try {
     const currentTime = Date.now();
     if(url.includes('undefined')) {
@@ -39,7 +39,7 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
         if (data.toString().startsWith("<!DOCTYPE html>")) {
           fs.unlinkSync(path.join(cacheDir, fileName));
           assetNotExists = true;
-          console.trace;
+          //console.trace;
           throw new Error("downloadFile: data.toString().startsWith(\"<!DOCTYPE html>\")");
         }
         return data;

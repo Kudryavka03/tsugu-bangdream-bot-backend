@@ -132,7 +132,8 @@ export function drawTextWithImages({
         for (var n = 0; n < wrappedText[0].length; n++) {
             if (typeof wrappedText[0][n] === "string") {
                 //Width += ctx.measureText(wrappedText[0][n] as string).width
-                Width += cachedMeasureText(ctx, wrappedText[0][n] as string)
+                var flags = wrappedText[0][n] as string + textSize + font
+                Width += cachedMeasureText(ctx, flags)
             } else {
                 //等比例缩放图片，至高度与textSize相同
                 let tempImage = wrappedText[0][n] as Canvas | Image
@@ -159,7 +160,8 @@ export function drawTextWithImages({
             if (typeof wrappedText[i][n] === "string") {
                 ctx.fillText(wrappedText[i][n] as string, tempX, y);
                 //tempX += ctx.measureText(wrappedText[i][n] as string).width
-                tempX += cachedMeasureText(ctx, wrappedText[i][n] as string)
+                var flags = wrappedText[i][n] as string + textSize + font
+                tempX += cachedMeasureText(ctx, flags)
 
             } else {
                 //等比例缩放图片，至高度与textSize相同
@@ -223,19 +225,20 @@ function warpTextWithImages({
                     tempX += measuredWidth;
                     break;
                 } else {
-                    /*
+                    
                     let splitIndex = 0;
                     
                     for (let j = temptext.length - 1; j >= 0; j--) {
                         const substr = temptext.slice(0, j);
-                        const substrWidth = cachedMeasureText(ctx, substr);
+                        var flags = substr + textSize + font
+                        const substrWidth = cachedMeasureText(ctx, flags);
                         if (substrWidth <= remainingWidth) {
                             splitIndex = j;
                             break;
                         }
                     }
-                    */
-                    const splitIndex = findSplitIndex(ctx, temptext, remainingWidth);
+                    
+                    //const splitIndex = findSplitIndex(ctx, temptext, remainingWidth);
                     const substring = temptext.slice(0, splitIndex);
                     temp[lineNumber].push(substring);
                     newLine();
@@ -264,21 +267,6 @@ function warpTextWithImages({
     };
 }
 
-// 二分查找
-function findSplitIndex(ctx, text, maxWidth) {
-    let left = 0;
-    let right = text.length;
-
-    while (left < right) {
-        const mid = (left + right) >> 1;
-        const part = text.slice(0, mid);
-        const w = cachedMeasureText(ctx, part);
-
-        if (w <= maxWidth) left = mid + 1;
-        else right = mid;
-    }
-    return left - 1; // 最终可用长度
-}
 
 export var setFontStyle = function (ctx: CanvasRenderingContext2D, textSize: number, font: string) {//设置字体大小
     ctx.font = textSize + 'px ' + font + ",Microsoft Yahei"

@@ -81,7 +81,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     if (directory && fileName) {
       fs.writeFileSync(path.join(directory, fileName), fileBuffer);
     }
-    //logger('download',`Download finish and cache for ${url}.`)
+    if(showDownloadLog) logger('download',`Download finish and cache for ${url}.`)
     //console.log(`Downloaded file from "${url}"`);
     return fileBuffer;
   } catch (e) {
