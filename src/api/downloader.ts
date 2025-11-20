@@ -6,7 +6,7 @@ const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
-export const showDownloadLog = false
+export const showDownloadLog = true
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
@@ -191,6 +191,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
 
     //console.log(`Downloaded JSON data from "${url}"`);
     if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+    memoryCache.set(cacheFilePath, jsonObject);
     return jsonObject;
   } catch (e) {
     return Promise.reject(

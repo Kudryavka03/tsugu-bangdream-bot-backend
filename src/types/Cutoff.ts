@@ -73,8 +73,8 @@ export class Cutoff {
             console.log(this.endAt + 1000 * 60 * 60 * 1)    // 一个小时后就结束，够了
             */
             //cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`))
-            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`),0,3,false)
-            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`),0,3,false)
+            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
+            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
             var cutoffResult = await Promise.all(cutoffPromise)
             //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
