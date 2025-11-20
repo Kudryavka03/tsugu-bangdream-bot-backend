@@ -9,11 +9,29 @@ export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`
 
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
-    if (!fs.existsSync(path)) {
+    if (!await existsAsync(path)) {
         return loadImage(assetErrorImageBuffer);
     }
-    const buffer = fs.readFileSync(path);
+    const buffer = await fs.promises.readFile(path);
     return await loadImage(buffer);
+}
+
+async function existsAsync(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function loadImageFromPath0(path: string): Promise<Image> {
+  //判断文件是否存在
+  if (!fs.existsSync(path)) {
+      return loadImage(assetErrorImageBuffer);
+  }
+  const buffer = fs.readFileSync(path);
+  return await loadImage(buffer);
 }
 
 
