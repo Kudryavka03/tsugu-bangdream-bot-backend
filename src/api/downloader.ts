@@ -157,7 +157,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if (await existsAsync(cacheFilePath)) {
+      if (fs.existsSync(cacheFilePath)) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
         // var isCheckIfUnExpired = false
         var isUnExpired = false
@@ -187,7 +187,9 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
       }
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
-    eTag = await fs.promises.readFile(eTagFilePath,'utf-8');
+
+    fs.existsSync(eTagFilePath)? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
+
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {

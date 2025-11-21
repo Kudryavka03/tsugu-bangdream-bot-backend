@@ -116,6 +116,8 @@ export var outputFinalBuffer = async function ({
     })
     var tempBuffer: Buffer
     
+  
+    
     if (compress != undefined && compress) {
         tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
     }
@@ -124,16 +126,19 @@ export var outputFinalBuffer = async function ({
     }
     return (tempBuffer)
     
+    
+    
 
 /*
     const ctx = tempcanv.getContext('2d');
     const { width, height } = tempcanv;
     const imageData = ctx.getImageData(0, 0, width, height);
 
-*//*
+
     //var tempBuffer: Buffer
     if (compress != undefined && compress) {
         //console.log("renderToBufferInWorker start");
+        //tempBuffer = await tempcanv.toBuffer('raw', { quality: 0.6 })
         tempBuffer = await renderToBufferInWorker(tempcanv, 'jpeg',  0.6 )
         //console.log("renderToBufferInWorker OK");
     }
@@ -144,31 +149,34 @@ export var outputFinalBuffer = async function ({
     }
     //console.log(typeof(tempBuffer))
     return (Buffer.from(tempBuffer))
+    
     */
 }
 
-function renderToBufferInWorker(canvas, format: 'png'|'jpeg' = 'png', quality = 0.8) {
-    return new Promise<Buffer>((resolve, reject) => {
-      
-  
-      const ctx = canvas.getContext('2d');
-      const width = Math.floor(canvas.width);
-const height = Math.floor(canvas.height);
-      const imageData = ctx.getImageData(0, 0, width, height);
-      const id = Math.random();
-      pending.set(id, { resolve, reject });
-      // 发送像素数据给 Worker
-      worker.postMessage({
-        id,
-        width,
-        height,
-        pixels: imageData.data,
-        format,
-        quality
-      }, [imageData.data.buffer]);
+function renderToBufferInWorker(canvas: Canvas, format: 'png' | 'jpeg' = 'png', quality = 0.6) {
+    return new Promise<Buffer>(async (resolve, reject) => {
+        const width = Math.floor(canvas.width);
+        const height = Math.floor(canvas.height);
 
+        const id = Math.random();
+        pending.set(id, { resolve, reject });
+
+        try {
+            // 获取 raw RGBA buffer
+            const rawBuffer = await canvas.toBuffer('raw');
+            worker.postMessage({
+                id,
+                width,
+                height,
+                pixels: rawBuffer,
+                format,
+                quality
+            }, [rawBuffer.buffer]); // 0复制
+        } catch (e) {
+            reject(e);
+        }
     });
-  }
+}
 
   // Worker思想就是Post过去然后接收器接收。await就是等待message的
   // 然后现在新开一个Worker给Canvas。由于toBuffer本身是使用skia线程池的，因此理论上可以占满CPU

@@ -36,6 +36,8 @@ parentPort.on('message', async ({ id, action, text }) => {
       }
         case 'readTags': {
             result = (fs.existsSync(text)) ? await fs.promises.readFile(text, 'utf-8') : undefined;
+            parentPort.postMessage({ id, result },[result.buffer]);
+            return;
             break;
         }
         default:
