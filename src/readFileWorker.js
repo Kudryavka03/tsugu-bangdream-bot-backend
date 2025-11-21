@@ -1,13 +1,16 @@
 import { parentPort } from 'node:worker_threads';
 import fs from 'fs';
 
-parentPort.on('message', ({ id, action, text }) => {
+parentPort.on('message', async ({ id, action, text }) => {
     try {
       let result;
         //console.log(`${action} ${text}`)
       switch (action) {
         case 'readFile': {
-          result = fs.readFileSync(text);
+          //result = fs.readFileSync(text);
+          result = await fs.promises.readFile(text);
+          parentPort.postMessage({ id, result },[result.buffer]);
+          return;
           //console.log("read OK!")
           break;
         }
@@ -32,7 +35,7 @@ parentPort.on('message', ({ id, action, text }) => {
           break;
       }
         case 'readTags': {
-            result = (fs.existsSync(text)) ? fs.readFileSync(text, 'utf-8') : undefined;
+            result = (fs.existsSync(text)) ? await fs.promises.readFile(text, 'utf-8') : undefined;
             break;
         }
         default:

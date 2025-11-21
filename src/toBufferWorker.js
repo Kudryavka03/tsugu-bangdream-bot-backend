@@ -1,26 +1,27 @@
 const { Canvas, Image, loadImage } = require('skia-canvas');
 const { parentPort } = require('worker_threads');
 
-parentPort.on('message', async ({ id, width, height, pixels, format, quality }) => {
+parentPort.on('message', async ({  id,width, height, pixels,format, quality }) => {
     try {
         const canvas = new Canvas(width, height);
+        //console.log("new Canvas(width, height)")
         const ctx = canvas.getContext('2d');
-
-        // 通过 raw buffer 创建 ImageData
+        //console.log("canvas.getContext('2d')")
         const imageData = ctx.createImageData(width, height);
+        //console.log("ctx.createImageData(width, height)")
 
-        // 注意：skia-canvas 的 raw buffer 是 premultiplied alpha
-        // 直接 set 会显示正确
         imageData.data.set(pixels);
+        //console.log("imageData.data.set(pixels)")
         ctx.putImageData(imageData, 0, 0);
-
-        // 输出 PNG/JPEG
-        const buffer = format === 'jpeg'
-            ? await canvas.toBuffer('jpeg', { quality })
+        //console.log("ctx.putImageData(imageData, 0, 0)")
+        const buffer = format === 'jpeg' 
+            ? await canvas.toBuffer('jpeg', { quality }) 
             : await canvas.toBuffer('png');
+        //console.log(buffer)
+        parentPort.postMessage({id,buffer}, [buffer.buffer]);
 
-        parentPort.postMessage({ id, buffer }, [buffer.buffer]);
     } catch (e) {
-        parentPort.postMessage({ id, error: e.stack || e.message });
+        console.log(e)
+        parentPort.postMessage({ error: e.stack || e.message });
     }
 });
