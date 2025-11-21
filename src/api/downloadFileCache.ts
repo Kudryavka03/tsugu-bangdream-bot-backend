@@ -12,6 +12,7 @@ async function downloadFileCache(url: string,IgnoreErr = true): Promise<Buffer> 
     // const data = await downloadFile(url,IgnoreErr)
     // 将下载的文件缓存起来
     const data = await downloadFile(url,IgnoreErr)
+    //const bufferData = Buffer.from(data)//console.log(data)
     if (data.equals(assetErrorImageBuffer)){
         return data;
     }

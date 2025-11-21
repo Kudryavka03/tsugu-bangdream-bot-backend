@@ -8,6 +8,34 @@ const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
 export const showDownloadLog = false
+import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+
+//const jsonWorker = new Worker('./jsonWorker.js');
+const workerPath = path.resolve(__dirname, "../readFileWorker.js");
+const readFileWorker = new Worker(workerPath);
+const pending = new Map();
+readFileWorker.on('message', msg => {
+  const { id, result, error } = msg;
+  const handler = pending.get(id);
+  if (!handler) return;
+
+  if (error) handler.reject(new Error(error));
+  else handler.resolve(result);
+
+  pending.delete(id);
+});
+
+async function callWorker<T>(action: string, text: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = Math.random();
+    pending.set(id, { resolve, reject });
+
+    readFileWorker.postMessage({ id, action, text });
+  });
+}
+
+
+
 
 export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
@@ -32,12 +60,12 @@ export async function download(url: string, directory?: string, fileName?: strin
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
       if(!isApiRequest){
-        const exists = await existsAsync(cacheFilePath);
+        const exists = await callWorker<boolean>('exist',cacheFilePath);
         if (exists){
           if(showDownloadLog) logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
           if(resDebug) console.trace()
-          return await fs.promises.readFile(cacheFilePath);
+          return Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
         }
       }
       else{
@@ -64,7 +92,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     } catch (error) {
       if (error.response && error.response.status === 304) {
         //console.log(`ETag matches for "${url}". Using cached file.`);
-        const cachedData = fs.promises.readFile(cacheFilePath);
+        const cachedData = Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
         //pendingDownloads.delete(url);
         return cachedData;
       } else {
@@ -117,7 +145,7 @@ function createDirIfNonExistOrigin(filepath: string) {
   }
 }
 const memoryCache = new Map<string, any>();
-export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
+export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
  if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
@@ -128,7 +156,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if (await existsAsync(cacheFilePath)) {
+      if (await callWorker<boolean>('exist',cacheFilePath)) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
         // var isCheckIfUnExpired = false
         var isUnExpired = false
@@ -136,7 +164,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           isReadCache = true
       }
       else {
-        const stat = await fs.promises.stat(cacheFilePath);
+        const stat = await callWorker<fs.Stats>('stat',cacheFilePath);
         const now = Date.now();
         if (now - stat.mtimeMs < cacheTime * 1000){ // 如果不是强制读取，且缓存没过期，则读取缓存
           isReadCache = true
@@ -149,8 +177,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
             const cached = memoryCache.get(cacheFilePath);
             return cached;
         }
-          const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
-          const cachedJson = await JSON.parse(cachedData);
+          //const cachedData = callWorker(cacheFilePath, 'utf-8');
+          const cachedJson = callWorker<any>('readJson',cacheFilePath);
           memoryCache.set(cacheFilePath, cachedJson);
           if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
@@ -158,7 +186,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
       }
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
-    eTag = (await existsAsync(eTagFilePath)) ? await fs.promises.readFile(eTagFilePath, 'utf-8') : undefined;
+    eTag = await callWorker<string>('readTags',eTagFilePath);
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
@@ -170,8 +198,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           const cached = memoryCache.get(cacheFilePath);
           return cached;
       }
-        const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
-        const cachedJson = JSON.parse(cachedData);
+        //const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
+        const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
         memoryCache.set(cacheFilePath, cachedJson);
         if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
@@ -291,7 +319,7 @@ export async function getJsonAndSave2(url: string, directory?: string, fileName?
    }
  }
 
-export async function download2(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
+export async function download1(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
   if (pendingDownloads.has(url)) {
     if(showDownloadLog) logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存

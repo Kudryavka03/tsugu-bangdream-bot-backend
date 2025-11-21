@@ -7,13 +7,40 @@ const assetsRootPath: string = path.join(__dirname, '../../assets');
 
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
 
+import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+
+//const jsonWorker = new Worker('./jsonWorker.js');
+const workerPath = path.resolve(__dirname, "../readFileWorker.js");
+const readFileWorker = new Worker(workerPath);
+const pending = new Map();
+readFileWorker.on('message', msg => {
+  const { id, result, error } = msg;
+  const handler = pending.get(id);
+  if (!handler) return;
+
+  if (error) handler.reject(new Error(error));
+  else handler.resolve(result);
+
+  pending.delete(id);
+});
+
+async function callWorker<T>(action: string, text: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = Math.random();
+    pending.set(id, { resolve, reject });
+
+    readFileWorker.postMessage({ id, action, text });
+  });
+}
+
+
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
-    if (!await existsAsync(path)) {
+    if (!await callWorker<boolean>('exist',path)) {
         return loadImage(assetErrorImageBuffer);
     }
-    const buffer = await fs.promises.readFile(path);
-    return await loadImage(buffer);
+    //const buffer = await callWorker<Buffer>('readFile',path);
+    return await loadImage(Buffer.from(await callWorker<Uint8Array>('readFile',path)));
 }
 
 async function existsAsync(filePath: string): Promise<boolean> {
