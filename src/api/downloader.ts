@@ -12,7 +12,8 @@ import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
-const readFileWorker = new Worker(workerPath);
+//console.log(workerPath)
+const readFileWorker = new Worker(workerPath); // 如果需要性能监测请使用new Worker(workerPath,{execArgv: ['--inspect=9231']})
 const pending = new Map();
 readFileWorker.on('message', msg => {
   const { id, result, error } = msg;
@@ -414,12 +415,7 @@ return task;
 }
 
 async function existsAsync(filePath: string): Promise<boolean> {
-  try {
-    await fs.promises.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
+  return await callWorker('exist',filePath)
 }
 
 async function createDirIfNonExist(filepath: string) {

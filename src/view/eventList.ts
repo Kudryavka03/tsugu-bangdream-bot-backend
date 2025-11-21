@@ -112,6 +112,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         let times = 0
         let tempImageList: Array<string | Buffer> = []
         tempImageList.push('活动列表过长，已经拆分输出')
+        var outputFinalBufferPromise:Promise<Buffer>[] = []
         for (let i = 0; i < eventImageListHorizontal.length; i++) {
             const tempCanv = eventImageListHorizontal[i];
             if (tempCanv == line2) {
@@ -122,12 +123,22 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
                 all.push(drawTitle('查询', '活动列表'))
             }
             all.push(drawDatablock({ list: [tempCanv] }))
+            outputFinalBufferPromise.push(outputFinalBuffer({
+                imageList: all,
+                useEasyBG: true
+            }))
+            /*
             const buffer = await outputFinalBuffer({
                 imageList: all,
                 useEasyBG: true
             })
             tempImageList.push(buffer)
+            */
             times += 1
+        }
+        var outputFinalBufferResult = await Promise.all(outputFinalBufferPromise)
+        for(var r of outputFinalBufferResult){
+            tempImageList.push(r)
         }
         return tempImageList
     } else {

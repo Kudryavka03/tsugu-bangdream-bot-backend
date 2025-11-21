@@ -11,7 +11,7 @@ import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
-const readFileWorker = new Worker(workerPath);
+const readFileWorker = new Worker(workerPath); // 如果需要debug new Worker(workerPath,{execArgv: ['--inspect=9233']})
 const pending = new Map();
 readFileWorker.on('message', msg => {
   const { id, result, error } = msg;
