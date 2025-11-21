@@ -36,11 +36,11 @@ async function callWorker<T>(action: string, text: string): Promise<T> {
 
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
-    if (!await callWorker<boolean>('exist',path)) {
+    if (!fs.existsSync(path)) {
         return loadImage(assetErrorImageBuffer);
     }
     //const buffer = await callWorker<Buffer>('readFile',path);
-    return await loadImage(Buffer.from(await callWorker<Uint8Array>('readFile',path)));
+    return await loadImage(await fs.promises.readFile(path));
 }
 
 async function existsAsync(filePath: string): Promise<boolean> {

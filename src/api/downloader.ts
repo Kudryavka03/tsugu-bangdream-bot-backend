@@ -61,12 +61,12 @@ export async function download(url: string, directory?: string, fileName?: strin
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
       if(!isApiRequest){
-        const exists = await callWorker<boolean>('exist',cacheFilePath);
+        const exists = await fs.existsSync(cacheFilePath);
         if (exists){
           if(showDownloadLog) logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
           if(resDebug) console.trace()
-          return Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
+          return await fs.promises.readFile(cacheFilePath);
         }
       }
       else{
@@ -93,7 +93,7 @@ export async function download(url: string, directory?: string, fileName?: strin
     } catch (error) {
       if (error.response && error.response.status === 304) {
         //console.log(`ETag matches for "${url}". Using cached file.`);
-        const cachedData = Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
+        const cachedData = await fs.promises.readFile(cacheFilePath);
         //pendingDownloads.delete(url);
         return cachedData;
       } else {

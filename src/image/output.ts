@@ -115,7 +115,7 @@ export var outputFinalBuffer = async function ({
         BGimage,
     })
     var tempBuffer: Buffer
-    /*
+    
     if (compress != undefined && compress) {
         tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
     }
@@ -123,14 +123,14 @@ export var outputFinalBuffer = async function ({
         tempBuffer = await tempcanv.toBuffer('png')
     }
     return (tempBuffer)
-    */
+    
 
 /*
     const ctx = tempcanv.getContext('2d');
     const { width, height } = tempcanv;
     const imageData = ctx.getImageData(0, 0, width, height);
 
-*/
+
     //var tempBuffer: Buffer
     if (compress != undefined && compress) {
         //console.log("renderToBufferInWorker start");
@@ -144,6 +144,7 @@ export var outputFinalBuffer = async function ({
     }
     //console.log(typeof(tempBuffer))
     return (Buffer.from(tempBuffer))
+    */
 }
 
 function renderToBufferInWorker(canvas, format: 'png'|'jpeg' = 'png', quality = 0.8) {
