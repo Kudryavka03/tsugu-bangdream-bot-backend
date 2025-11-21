@@ -157,7 +157,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if (await callWorker<boolean>('exist',cacheFilePath)) {
+      if (await existsAsync(cacheFilePath)) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
         // var isCheckIfUnExpired = false
         var isUnExpired = false
@@ -165,7 +165,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           isReadCache = true
       }
       else {
-        const stat = await callWorker<fs.Stats>('stat',cacheFilePath);
+        const stat = await fs.promises.stat(cacheFilePath);
         const now = Date.now();
         if (now - stat.mtimeMs < cacheTime * 1000){ // 如果不是强制读取，且缓存没过期，则读取缓存
           isReadCache = true
@@ -178,8 +178,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
             const cached = memoryCache.get(cacheFilePath);
             return cached;
         }
-          //const cachedData = callWorker(cacheFilePath, 'utf-8');
-          const cachedJson = callWorker<any>('readJson',cacheFilePath);
+          //const cachedData = await callWorker<string>('readJsonText', cacheFilePath);
+          const cachedJson = loadJson(cacheFilePath);
           memoryCache.set(cacheFilePath, cachedJson);
           if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
@@ -187,7 +187,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
       }
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
-    eTag = await callWorker<string>('readTags',eTagFilePath);
+    eTag = await fs.promises.readFile(eTagFilePath,'utf-8');
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
@@ -200,7 +200,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           return cached;
       }
         //const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
-        const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
+        //const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
+        const cachedJson = loadJson(cacheFilePath);
         memoryCache.set(cacheFilePath, cachedJson);
         if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
         return cachedJson;
@@ -233,7 +234,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
   }
 }
 
-export async function getJsonAndSave2(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
+export async function getJsonAndSave3(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<object> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
   // if (url.includes('312')) throw new Error("模拟错误返回")
   if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
    if (apiDebug)console.trace()
@@ -319,6 +320,13 @@ export async function getJsonAndSave2(url: string, directory?: string, fileName?
    );
    }
  }
+// 综合考虑还是用回之前的方案，1kb文件创建worker本身就是不小的开销了
+async function loadJson(path) {
+  const str = await fs.promises.readFile(path, 'utf-8');
+  return JSON.parse(str);
+}
+
+
 
 export async function download1(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()

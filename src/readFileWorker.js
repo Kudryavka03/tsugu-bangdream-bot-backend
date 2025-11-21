@@ -27,6 +27,10 @@ parentPort.on('message', ({ id, action, text }) => {
             result = JSON.parse(fs.readFileSync(text,'utf-8'));
             break;
         }
+        case 'readJsonText': {
+          result = fs.readFileSync(text,'utf-8');
+          break;
+      }
         case 'readTags': {
             result = (fs.existsSync(text)) ? fs.readFileSync(text, 'utf-8') : undefined;
             break;
