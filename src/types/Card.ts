@@ -286,6 +286,7 @@ export class Card {
         }
         else {
             cardRessetId = '200'
+            if (this.cardId > 90000) cardRessetId = '180'   // 针对国际服的修复
         }
         return (cardRessetId + '_rip')
     }
