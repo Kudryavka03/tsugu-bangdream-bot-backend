@@ -1,12 +1,13 @@
 import express from 'express';
 import { body } from 'express-validator';
 import { fuzzySearch } from '@/fuzzySearch';
-import { listToBase64 } from '@/routers/utils';
+import { isInteger, listToBase64 } from '@/routers/utils';
 import { isServerList } from '@/types/Server';
 import { drawSongChart } from '@/view/songChart';
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { matchSongList } from '@/view/songList';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.post(
     [
         // Express-validator checks for type validation
         body('displayedServerList').custom(isServerList),
-        body('songId').isInt(),
+        body('songId').optional().isString(),
         body('difficultyId').isInt().optional(),
         body('compress').optional().isBoolean(),
     ],
@@ -36,7 +37,7 @@ router.post(
 );
 
 
-export async function commandSongChart(displayedServerList: Server[], songId: number, compress: boolean, difficultyId = 3): Promise<Array<Buffer | string>> {
+export async function commandSongChart(displayedServerList: Server[], songId: any, compress: boolean, difficultyId = 3): Promise<Array<Buffer | string>> {
     /*
     text = text.toLowerCase()
     var fuzzySearchResult = fuzzySearch(text)
@@ -45,8 +46,24 @@ export async function commandSongChart(displayedServerList: Server[], songId: nu
         return ['错误: 不正确的难度关键词,可以使用以下关键词:easy,normal,hard,expert,special,EZ,NM,HD,EX,SP']
     }
     */
+    if (isInteger(songId)) {
+        return await drawSongChart(songId, difficultyId, displayedServerList, compress)
+    }else{
+        const fuzzySearchResult = fuzzySearch(songId)
+        const tempSongList = matchSongList(fuzzySearchResult, displayedServerList)
 
-    return await drawSongChart(songId, difficultyId, displayedServerList, compress)
+        if (tempSongList.length == 0) {
+            return ['没有搜索到符合条件的歌曲']
+        }
+        else if (tempSongList.length == 1) {
+            var songIdNum = tempSongList[0].songId
+            return await drawSongChart(songIdNum, difficultyId, displayedServerList, compress)
+        }
+        else if (tempSongList.length > 1) {
+            return ['歌曲存在多个结果。建议使用使用歌曲ID进行搜索']
+        }
+
+    }
 }
 
 export { router as songChartRouter }
