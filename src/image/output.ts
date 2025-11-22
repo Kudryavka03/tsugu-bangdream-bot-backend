@@ -117,9 +117,12 @@ export var outputFinalBuffer = async function ({
     var tempBuffer: Buffer
     
   
-    
+    //console.log("绘图开始")
     if (compress != undefined && compress) {
+        //const timestamp = Date.now();
         tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
+        //const timestamp2 = Date.now();
+        //console.log(timestamp2 - timestamp)
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')
@@ -127,30 +130,17 @@ export var outputFinalBuffer = async function ({
     return (tempBuffer)
     
     
-    
-
-/*
-    const ctx = tempcanv.getContext('2d');
-    const { width, height } = tempcanv;
-    const imageData = ctx.getImageData(0, 0, width, height);
-
-
-    //var tempBuffer: Buffer
     if (compress != undefined && compress) {
-        //console.log("renderToBufferInWorker start");
-        //tempBuffer = await tempcanv.toBuffer('raw', { quality: 0.6 })
+        const timestamp = Date.now();
         tempBuffer = await renderToBufferInWorker(tempcanv, 'jpeg',  0.6 )
-        //console.log("renderToBufferInWorker OK");
+        const timestamp2 = Date.now();
+        console.log(timestamp2 - timestamp)
     }
     else {
-        //console.log("renderToBufferInWorkerPNG start");
         tempBuffer = await renderToBufferInWorker(tempcanv, 'png',  1 )
-        //console.log("renderToBufferInWorkerPNG OK");
     }
-    //console.log(typeof(tempBuffer))
-    return (Buffer.from(tempBuffer))
     
-    */
+    return tempBuffer
 }
 
 function renderToBufferInWorker(canvas: Canvas, format: 'png' | 'jpeg' = 'png', quality = 0.6) {
@@ -163,7 +153,12 @@ function renderToBufferInWorker(canvas: Canvas, format: 'png' | 'jpeg' = 'png', 
 
         try {
             // 获取 raw RGBA buffer
+            const timestamp = Date.now();
+
             const rawBuffer = await canvas.toBuffer('raw');
+            const timestamp2 = Date.now();
+            console.log(timestamp2 - timestamp)
+            //console.log(rawBuffer)
             worker.postMessage({
                 id,
                 width,

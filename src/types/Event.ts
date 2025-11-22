@@ -214,6 +214,7 @@ export class Event {
             var server = Server.jp
             var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`)
             return await loadImage(BannerImageBuffer)
+            
         }
     }
     async getEventBGImage(): Promise<Image> {

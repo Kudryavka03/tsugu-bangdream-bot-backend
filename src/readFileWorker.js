@@ -7,9 +7,10 @@ parentPort.on('message', async ({ id, action, text }) => {
         //console.log(`${action} ${text}`)
       switch (action) {
         case 'readFile': {
-          //result = fs.readFileSync(text);
-          result = await fs.promises.readFile(text);
-          parentPort.postMessage({ id, result },[result.buffer]);
+          result = fs.readFileSync(text);
+          //result = await fs.promises.readFile(text);
+          //parentPort.postMessage({ id, result },[result.buffer]);
+          parentPort.postMessage({ id, result });
           return;
           //console.log("read OK!")
           break;
@@ -27,11 +28,15 @@ parentPort.on('message', async ({ id, action, text }) => {
           break;
         }
         case 'readJson': {
-            result = JSON.parse(fs.readFileSync(text,'utf-8'));
+            result = JSON.parse(await fs.promises.readFile(text,'utf-8'));
             break;
         }
         case 'readJsonText': {
-          result = fs.readFileSync(text,'utf-8');
+          //result = fs.readFileSync(text,'utf-8');
+
+          result = await fs.promises.readFile(text,'utf-8')
+          parentPort.postMessage({ id, result });
+          return;
           break;
       }
         case 'readTags': {

@@ -13,7 +13,7 @@ import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 //const jsonWorker = new Worker('./jsonWorker.js');
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
 //console.log(workerPath)
-const readFileWorker = new Worker(workerPath); // 如果需要性能监测请使用new Worker(workerPath,{execArgv: ['--inspect=9231']})
+const readFileWorker = new Worker(workerPath,{execArgv: ['--inspect=9231']}); // 如果需要性能监测请使用new Worker(workerPath,{execArgv: ['--inspect=9231']})
 const pending = new Map();
 readFileWorker.on('message', msg => {
   const { id, result, error } = msg;
@@ -42,7 +42,6 @@ export async function download(url: string, directory?: string, fileName?: strin
   if (resDebug) console.trace()
   if (pendingDownloads.has(url)) {
     if(showDownloadLog) logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
-    //console.log(pendingDownloads)
     return pendingDownloads.get(url)!;
   }
   const task = (async () => {
@@ -53,36 +52,24 @@ export async function download(url: string, directory?: string, fileName?: strin
   if (resDebug)console.trace()
   try {
     if (errUrl.includes(url)) {
-      //pendingDownloads.delete(url);
       throw new Error("downloadFile: errUrl.includes(url)");
       
     }
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if(!isApiRequest){
+        //var ts1 = Date.now()
         const exists = await callWorker<boolean>('exist',cacheFilePath);
+        //const exists = fs.existsSync(cacheFilePath);
+        //var ts2 = Date.now()
+        //console.log("存在读取用时：" + (ts2-ts1))
         if (exists){
           if(showDownloadLog) logger('download',`Match Cache! ${url}`)
-          //pendingDownloads.delete(url);
           if(resDebug) console.trace()
-          return Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
+          var r = await fs.promises.readFile(cacheFilePath)
+          return  r
         }
-      }
-      else{
-        const eTagFilePath = path.join(directory, `${fileName}.etag`);
-        eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
-        if (fs.existsSync(cacheFilePath)) {
-          const stat = fs.statSync(cacheFilePath);
-          const now = Date.now();
-         if (now - stat.mtimeMs < cacheTime * 1000) {
-            //console.log(`Cache time for "${url}" has not expired. Using cached file.`);
-           const cachedData = fs.readFileSync(cacheFilePath);
-           
-           return cachedData;
-         }
-        }
-      }
+      
     }
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
@@ -93,11 +80,9 @@ export async function download(url: string, directory?: string, fileName?: strin
     } catch (error) {
       if (error.response && error.response.status === 304) {
         //console.log(`ETag matches for "${url}". Using cached file.`);
-        const cachedData = Buffer.from(await callWorker<Uint8Array>('readFile',cacheFilePath));
-        //pendingDownloads.delete(url);
+        const cachedData = await fs.promises.readFile(cacheFilePath);
         return cachedData;
       } else {
-        //pendingDownloads.delete(url);
         throw error;
       }
     }
@@ -324,8 +309,16 @@ export async function getJsonAndSave3(url: string, directory?: string, fileName?
  }
 // 综合考虑还是用回之前的方案，1kb文件创建worker本身就是不小的开销了
 async function loadJson(path) {
-  const str = await fs.promises.readFile(path, 'utf-8');
-  return JSON.parse(str);
+  //const ts1 = Date.now()
+  //const str = await callWorker<string>('readJsonText',path);
+  const str = fs.readFileSync(path,'utf-8')
+  //const str = await fs.promises.readFile(path,'utf-8')
+  var body = JSON.parse(str)
+  //var body = await callWorker('readJson',path)
+  //const tsw = Date.now()
+  //console.log('读取JSON时间：'+(tsw-ts1))
+  return body
+  //return JSON.parse(str);
 }
 
 

@@ -36,7 +36,9 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
       try {
         if(showDownloadLog)logger(`downloader`, `Download for "${url}"......`);
         const data = await download(url, cacheDir, fileName, cacheTime);
-        if (data.toString().startsWith("<!DOCTYPE html>")) {
+        const htmlSig = Buffer.from("<!DOCTYPE html>");
+        const slice = Buffer.from(data.subarray(0, htmlSig.length));
+        if (slice.equals(htmlSig)) {
           fs.unlinkSync(path.join(cacheDir, fileName));
           assetNotExists = true;
           //console.trace;

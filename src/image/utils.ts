@@ -6,12 +6,13 @@ import svg2img from 'svg2img';
 const assetsRootPath: string = path.join(__dirname, '../../assets');
 
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
+export const assetErrorImage = loadImage(fs.readFileSync(`${assetsRootPath}/err.png`))
 
 import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
-const readFileWorker = new Worker(workerPath); // 如果需要debug new Worker(workerPath,{execArgv: ['--inspect=9233']})
+const readFileWorker = new Worker(workerPath,{execArgv: ['--inspect=9233']}); // 如果需要debug new Worker(workerPath,{execArgv: ['--inspect=9233']})
 const pending = new Map();
 readFileWorker.on('message', msg => {
   const { id, result, error } = msg;
@@ -37,9 +38,8 @@ async function callWorker<T>(action: string, text: string): Promise<T> {
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
     if (!fs.existsSync(path)) {
-        return loadImage(assetErrorImageBuffer);
+        return assetErrorImage;
     }
-    //const buffer = await callWorker<Buffer>('readFile',path);
     return await loadImage(await fs.promises.readFile(path));
 }
 
