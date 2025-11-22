@@ -204,7 +204,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
     if (key === '_number' || key === '_all') {
       continue;
     }
-    if (match == undefined) match = true
+    if (match == undefined) match = false
     if (key === '_relationStr') continue
     // 匹配关键词
     if (target[key] !== undefined) {
