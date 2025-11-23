@@ -22,11 +22,19 @@ router.post(
     ],
     middleware,
     async (req: Request, res: Response) => {
-        const { displayedServerList, text, fuzzySearchResult, useEasyBG, compress } = req.body;
-        
+        var { displayedServerList, text, fuzzySearchResult, useEasyBG, compress } = req.body;
+        var after_training = true
+        var inputText = "";
+        inputText = text;
+        if (inputText.includes('花前')) {
+            after_training = false
+            
+            text = inputText.replace('花前','')
+        }
+        if (text== "")    return res.send(listToBase64(["Character名都冇有，查咩野啫？"])) 
         // 检查 text 和 fuzzySearchResult 是否同时存在
         if (text && fuzzySearchResult) {
-            return res.status(422).json({ status: 'failed', data: 'text 与 fuzzySearchResult 不能同时存在' });
+            return res.status(500).json({ status: 'failed', data: 'text 与 fuzzySearchResult 不能同时存在' });
         }
         // 检查 text 和 fuzzySearchResult 是否同时不存在
         if (!text && !fuzzySearchResult) {
@@ -34,7 +42,7 @@ router.post(
         }
 
         try {
-            const result = await commandCard(displayedServerList, text || fuzzySearchResult, useEasyBG, compress);
+            const result = await commandCard(displayedServerList, text || fuzzySearchResult, useEasyBG, compress,after_training);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -43,7 +51,8 @@ router.post(
     }
 );
 
-async function commandCard(displayedServerList: Server[], input: string | FuzzySearchResult, useEasyBG: boolean, compress?: boolean) {
+async function commandCard(displayedServerList: Server[], input: string | FuzzySearchResult, useEasyBG: boolean, compress?: boolean,after_training:boolean = true) {
+    
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
@@ -62,7 +71,7 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
         return ['错误: 没有有效的关键词']
     }
 
-    return await drawCardList(fuzzySearchResult, displayedServerList,useEasyBG, compress)
+    return await drawCardList(fuzzySearchResult, displayedServerList,useEasyBG, compress,after_training)
 
 };
 

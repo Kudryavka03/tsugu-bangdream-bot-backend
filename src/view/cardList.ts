@@ -16,7 +16,7 @@ import { drawCardDetail } from '@/view/cardDetail';
 
 const maxWidth = 7000
 
-export async function drawCardList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean,compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawCardList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean,compress: boolean,after_training:boolean = true): Promise<Array<Buffer | string>> {
 
     //计算模糊搜索结果
     const tempCardList: Array<Card> = matchCardList(matches, displayedServerList);
@@ -71,7 +71,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                 const characterId = characterIdList[j];
                 var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
                 //const cardTask = drawCardListLine(tempAttributeCardList).then(result => tempAttributeCardImageList.push(result));
-                drawCardListLinePromise.push(drawCardListLine(tempAttributeCardList))
+                drawCardListLinePromise.push(drawCardListLine(tempAttributeCardList,after_training))
                 //promise.push(tempAttributeCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                 //promise.push(cardTask)
                 //画角色头像
@@ -154,7 +154,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     //promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                     //const drawLine =drawCardListLine(tempAttributeCardList).then(ra=>tempCardImageList.push(ra))
                     //promise.push(drawLine)
-                    promiseList.push(drawCardListLine(tempAttributeCardList))
+                    promiseList.push(drawCardListLine(tempAttributeCardList,after_training))
                     //画角色头像
                     if (icon) {
                       //icon = false
@@ -252,7 +252,7 @@ function getCardListByAttributeAndCharacterId(cardFullList: Card[], attribute: '
 }
 
 //每个颜色和角色的一行
-async function drawCardListLine(cardList: Card[]) {
+async function drawCardListLine(cardList: Card[],after_training) {
     if (cardList.length == 0) {
         return new Canvas(1, 140);
     }
@@ -283,7 +283,7 @@ async function drawCardListLine(cardList: Card[]) {
 
         promiseList.push(drawCardIcon({
             card: tempCard,
-            trainingStatus: true,
+            trainingStatus: after_training,
             cardIdVisible: true,
             skillTypeVisible: true
         }))
