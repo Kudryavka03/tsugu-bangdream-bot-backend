@@ -3,13 +3,29 @@ import { Song } from "@/types/Song"
 import { drawText } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
-export function drawDifficulityList(song: Song, imageHeight: number = 60, spacing: number = 10): Canvas {
+export function drawDifficulityList(song: Song, imageHeight: number = 100, spacing: number = 10): Canvas {
     var difficultyCount = Object.keys(song.difficulty).length
-    var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)
+    var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight + 10)
     var ctx = canvas.getContext("2d")
     for (var d in song.difficulty) {
-        let i = parseInt(d)
-        ctx.drawImage(drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
+        const i = parseInt(d);
+
+        const diffCanvas = drawDifficulity(i, song.difficulty[i].playLevel, imageHeight - 10);
+        const diffW = diffCanvas.width;
+        const blockX = i * (imageHeight + spacing);
+
+        ctx.drawImage(diffCanvas, blockX, 2);
+
+        const notesText = drawText({
+            textSize: imageHeight / 3.5,
+            text: song.notes[i].toString(),
+            maxWidth: imageHeight * 3.5
+        });
+
+        const notesTextX = blockX + diffW / 2 - notesText.width / 2;
+        const notesTextY = imageHeight -  notesText.height + 11;
+
+        ctx.drawImage(notesText, notesTextX + 0.55, notesTextY);
     }
     return canvas
 }

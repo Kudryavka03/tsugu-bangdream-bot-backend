@@ -48,7 +48,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
 
     //难度
     if (difficulty == undefined) {
-        var difficultyImage = drawDifficulityList(song, 45, 10)
+        var difficultyImage = drawDifficulityList(song, 50, 10)
     }
     else {
         var difficultyImage = drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45)

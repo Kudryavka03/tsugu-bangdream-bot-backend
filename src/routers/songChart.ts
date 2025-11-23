@@ -7,7 +7,7 @@ import { drawSongChart } from '@/view/songChart';
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
-import { matchSongList } from '@/view/songList';
+import { drawSongList, matchSongList } from '@/view/songList';
 
 const router = express.Router();
 
@@ -60,7 +60,9 @@ export async function commandSongChart(displayedServerList: Server[], songId: an
             return await drawSongChart(songIdNum, difficultyId, displayedServerList, compress)
         }
         else if (tempSongList.length > 1) {
-            return ['歌曲存在多个结果。建议使用使用歌曲ID进行搜索']
+
+            
+            return ['歌曲存在多个结果。建议改用歌曲ID进行搜索']
         }
 
     }
