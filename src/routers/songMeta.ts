@@ -15,14 +15,15 @@ router.post('/',
         body('displayedServerList').custom(isServerList),
         body('mainServer').custom(isServer),
         body('compress').optional().isBoolean(),
+        body('bandId').isInt().optional(),
     ],
     middleware,
     async (req: Request, res: Response) => {
 
-        const { displayedServerList, mainServer, compress } = req.body;
+        const { displayedServerList, mainServer, compress,bandId } = req.body;
 
         try {
-            const result = await commandSongMeta(displayedServerList, getServerByServerId(mainServer), compress);
+            const result = await commandSongMeta(displayedServerList, getServerByServerId(mainServer), compress,bandId);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -31,12 +32,12 @@ router.post('/',
     }
 );
 
-export async function commandSongMeta(displayedServerList: Server[], mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function commandSongMeta(displayedServerList: Server[], mainServer: Server, compress: boolean,bandId?:number): Promise<Array<Buffer | string>> {
 
     if (mainServer == undefined) {
         mainServer = displayedServerList[0]
     }
-    return await drawSongMetaList(mainServer, compress)
+    return await drawSongMetaList(mainServer, compress,bandId)
 }
 
 export { router as songMetaRouter }

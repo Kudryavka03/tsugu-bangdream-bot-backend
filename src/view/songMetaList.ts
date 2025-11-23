@@ -22,13 +22,13 @@ const line = drawDottedLine({
     color: "#a8a8a8"
 })
 
-export async function drawSongMetaList(mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawSongMetaList(mainServer: Server, compress: boolean,bandId?:number): Promise<Array<Buffer | string>> {
     const feverMode = [true, false]
     const imageList = []
     var drawMetaRankListDatablockPromise = []
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
-        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer))
+        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer,bandId))
         // imageList.push(await drawMetaRankListDatablock(element, mainServer))
     }
     const drawMetaRankListDatablockResult = await Promise.all(drawMetaRankListDatablockPromise)
@@ -48,19 +48,24 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean): P
     return [buffer]
 }
 
-async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server): Promise<Canvas> {
+async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,bandId?:number): Promise<Canvas> {
     const metaRanking = getMetaRanking(Fever, mainServer);
     const maxMeta = metaRanking[0].meta
     let list: Array<Canvas> = []
     var drawSongInListPromise = []
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < metaRanking.length; i++) {
         let song = new Song(metaRanking[i].songId)
         let difficultyId = metaRanking[i].difficulty
         let precent = metaRanking[i].meta / maxMeta * 100
         precent = Math.round(precent * 100) / 100
-        //list.push(await drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
-        drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
-        //list.push(line)
+        //console.log(bandId)
+        if (bandId && song.bandId == bandId){
+            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+        }
+        else{
+            if(!bandId) drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+        }
+        if(drawSongInListPromise.length >= 50) break
     }
     for(var resultSong of await Promise.all(drawSongInListPromise)){
         list.push(resultSong)

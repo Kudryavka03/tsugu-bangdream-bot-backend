@@ -302,6 +302,7 @@ export function getMetaRanking(Fever: boolean, mainServer: Server): songInRank[]
         if (song.publishedAt[mainServer] == null) {
             continue
         }
+
         //如果没有meta数据，则跳过
         if (song.hasMeta == false) {
             continue
