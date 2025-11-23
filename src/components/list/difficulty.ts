@@ -3,7 +3,7 @@ import { Song } from "@/types/Song"
 import { drawText } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
-export function drawDifficulityList(song: Song, imageHeight: number = 100, spacing: number = 10): Canvas {
+export function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10): Canvas {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight + 10)
     var ctx = canvas.getContext("2d")
@@ -29,7 +29,16 @@ export function drawDifficulityList(song: Song, imageHeight: number = 100, spaci
     }
     return canvas
 }
-
+export function drawDifficulityList(song: Song, imageHeight: number = 60, spacing: number = 10): Canvas {
+    var difficultyCount = Object.keys(song.difficulty).length
+    var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)
+    var ctx = canvas.getContext("2d")
+    for (var d in song.difficulty) {
+        let i = parseInt(d)
+        ctx.drawImage(drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
+    }
+    return canvas
+}
 export function drawDifficulityList2(song: Song, imageHeight: number = 60, spacing: number = 10): Canvas {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)

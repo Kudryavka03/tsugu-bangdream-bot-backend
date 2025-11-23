@@ -4,7 +4,7 @@ import { Server, getServerByPriority } from "@/types/Server"
 import { Song } from "@/types/Song"
 import { drawText, setFontStyle } from "@/image/text"
 import { resizeImage } from "@/components/utils"
-import { drawDifficulityList, drawDifficulity } from "@/components/list/difficulty"
+import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNotes } from "@/components/list/difficulty"
 import { globalDefaultServer } from "@/config"
 import { drawList } from '../list'
 import { drawDottedLine } from '@/image/dottedLine'
@@ -48,7 +48,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
 
     //难度
     if (difficulty == undefined) {
-        var difficultyImage = drawDifficulityList(song, 50, 10)
+        var difficultyImage = drawDifficulityListInListWithNotes(song, 50, 10)
     }
     else {
         var difficultyImage = drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45)
