@@ -1,57 +1,14 @@
-import { parentPort } from 'node:worker_threads';
 import fs from 'fs';
 
-parentPort.on('message', async ({ id, action, text }) => {
-    try {
-      let result;
-        //console.log(`${action} ${text}`)
-      switch (action) {
-        case 'readFile': {
-          result = fs.readFileSync(text);
-          //result = await fs.promises.readFile(text);
-          //parentPort.postMessage({ id, result },[result.buffer]);
-          parentPort.postMessage({ id, result });
-          return;
-          //console.log("read OK!")
-          break;
-        }
-        case 'stat': {
-          result = fs.statSync(text);
-          break;
-        }
-        case 'exist': {
-            result = fs.existsSync(text);
-            break;
-        }
-        case 'parseJSON': {
-          result = JSON.parse(text);
-          break;
-        }
-        case 'readJson': {
-            result = JSON.parse(await fs.promises.readFile(text,'utf-8'));
-            break;
-        }
-        case 'readJsonText': {
-          //result = fs.readFileSync(text,'utf-8');
 
-          result = await fs.promises.readFile(text,'utf-8')
-          parentPort.postMessage({ id, result });
-          return;
-          break;
-      }
-        case 'readTags': {
-            result = (fs.existsSync(text)) ? await fs.promises.readFile(text, 'utf-8') : undefined;
-            parentPort.postMessage({ id, result },[result.buffer]);
-            return;
-            break;
-        }
-        default:
-          throw new Error("Unknown action: " + action);
-      }
-  
-      parentPort.postMessage({ id, result });
-    } catch (e) {
-      parentPort.postMessage({ id, error: e.message });
-    }
-  });
-  
+export async function readJson(path) {
+  //console.log(path)
+  const data = fs.readFileSync(path, 'utf-8'); //await fs.promises.readFile
+  return JSON.parse(data);
+}
+export async function readFiles(path) {
+  //console.log(path)
+  const buf = fs.readFileSync(path);
+
+  return buf;
+}

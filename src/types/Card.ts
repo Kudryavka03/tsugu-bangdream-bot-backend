@@ -282,11 +282,11 @@ export class Card {
         if (this.cardId < 9999) {//确定目录位置，50为一组
             var cardRessetIdNumber: number = Math.floor(this.cardId / 50)
             var cardRessetId: string = cardRessetIdNumber.toString()
-            cardRessetId = formatNumber(cardRessetIdNumber, 3)
+            cardRessetId = formatNumber(cardRessetIdNumber, 4)
         }
         else {
-            cardRessetId = '200'
-            if (this.cardId > 90000) cardRessetId = '180'   // 针对国际服的修复
+            cardRessetId = '0200'
+            if (this.cardId > 90000) cardRessetId = '1800'   // 针对国际服的修复
         }
         return (cardRessetId + '_rip')
     }
@@ -294,7 +294,7 @@ export class Card {
         trainingStatus = this.ableToTraining(trainingStatus)
         const trainingString = trainingStatus ? '_after_training' : '_normal'
         var tempServer = this.getFirstReleasedServer()
-        var cardIconImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[tempServer]}/thumb/chara/card00${this.getRip()}/${this.resourceSetName}${trainingString}.png`)
+        var cardIconImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[tempServer]}/thumb/chara/card0${this.getRip()}/${this.resourceSetName}${trainingString}.png`)
         return await loadImage(cardIconImageBuffer)
     }
     async getCardIllustrationImage(trainingStatus: boolean): Promise<Image> {

@@ -2,19 +2,29 @@ import axios from 'axios';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from '@/logger';
-import {JSONWorkerPool} from '@/worker/jsonWorkerPool'
 const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
 export const showDownloadLog = false
-import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+//import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+//import workerpool from 'workerpool';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
+
+import Piscina from 'piscina';
+
+//const jsonWorker = new Worker('./jsonWorker.js');
+
+
+const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
+
+
 //console.log(workerPath)
-const readFileWorker = new Worker(workerPath,{execArgv: ['--inspect=9231']}); // 如果需要性能监测请使用new Worker(workerPath,{execArgv: ['--inspect=9231']})
+//const readFileWorker = new Worker(workerPath,{execArgv: ['--inspect=9231']}); // 如果需要性能监测请使用new Worker(workerPath,{execArgv: ['--inspect=9231']})
 const pending = new Map();
+/*
 readFileWorker.on('message', msg => {
   const { id, result, error } = msg;
   const handler = pending.get(id);
@@ -34,7 +44,7 @@ async function callWorker<T>(action: string, text: string): Promise<T> {
     readFileWorker.postMessage({ id, action, text });
   });
 }
-
+*/
 
 
 
@@ -59,8 +69,8 @@ export async function download(url: string, directory?: string, fileName?: strin
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
         //var ts1 = Date.now()
-        const exists = await callWorker<boolean>('exist',cacheFilePath);
-        //const exists = fs.existsSync(cacheFilePath);
+        //const exists = await callWorker<boolean>('exist',cacheFilePath);
+        const exists = await fileExists(cacheFilePath);
         //var ts2 = Date.now()
         //console.log("存在读取用时：" + (ts2-ts1))
         if (exists){
@@ -120,16 +130,7 @@ pendingDownloads.set(url, task);
 return task;
 }
 
-function createDirIfNonExistOrigin(filepath: string) {
-  if (!fs.existsSync(filepath)) {
-    //console.log('creating ' + filepath);
-    try {
-      fs.mkdirSync(filepath, { recursive: true });
-    } catch (err) {
-      //console.log(`creating ${filepath} failed`, err);
-    }
-  }
-}
+
 const memoryCache = new Map<string, any>();
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
@@ -142,7 +143,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if (fs.existsSync(cacheFilePath)) {
+      if (await fileExists(cacheFilePath)) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
         // var isCheckIfUnExpired = false
         var isUnExpired = false
@@ -173,7 +174,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
 
-    fs.existsSync(eTagFilePath)? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
+    await fileExists(eTagFilePath)? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
 
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
@@ -232,7 +233,7 @@ export async function getJsonAndSave3(url: string, directory?: string, fileName?
      let eTag: string | undefined;
      const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
      if (fileName && directory) {
-       if (fs.existsSync(cacheFilePath)) {
+       if (await fileExists(cacheFilePath)) {
          var isReadCache = false;  // 不读取缓存，做一系列的判断先
          // var isCheckIfUnExpired = false
          var isUnExpired = false
@@ -262,7 +263,7 @@ export async function getJsonAndSave3(url: string, directory?: string, fileName?
        }
      }
      const eTagFilePath = path.join(directory, `${fileName}.etag`);
-     eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
+     eTag = await fileExists(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
      const headers = eTag ? { 'If-None-Match': eTag } : {};
      let response;
      try {
@@ -311,17 +312,26 @@ export async function getJsonAndSave3(url: string, directory?: string, fileName?
 async function loadJson(path) {
   //const ts1 = Date.now()
   //const str = await callWorker<string>('readJsonText',path);
-  const str = fs.readFileSync(path,'utf-8')
+  //const str = fs.readFileSync(path,'utf-8')
   //const str = await fs.promises.readFile(path,'utf-8')
-  var body = JSON.parse(str)
-  //var body = await callWorker('readJson',path)
+  //var body = JSON.parse(str)
+  //var body = await callWorker<any>('readJson',path)
+  var body = await pool.run(path,{name:'readJson'});
+  
   //const tsw = Date.now()
   //console.log('读取JSON时间：'+(tsw-ts1))
   return body
   //return JSON.parse(str);
 }
 
-
+async function fileExists(path: string): Promise<boolean> {
+  try {
+      await fs.promises.access(path); // 尝试访问文件
+      return true;
+  } catch {
+      return false;
+  }
+}
 
 export async function download1(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
@@ -346,7 +356,7 @@ export async function download1(url: string, directory?: string, fileName?: stri
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
       if(!isApiRequest){
-        if (fs.existsSync(cacheFilePath)){
+        if (await fileExists(cacheFilePath)){
           if(showDownloadLog) logger('download',`Match Cache! ${url}`)
           //pendingDownloads.delete(url);
           if(resDebug) console.trace()
@@ -355,8 +365,8 @@ export async function download1(url: string, directory?: string, fileName?: stri
       }
       else{
         const eTagFilePath = path.join(directory, `${fileName}.etag`);
-        eTag = fs.existsSync(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
-        if (fs.existsSync(cacheFilePath)) {
+        eTag = await fileExists(eTagFilePath) ? fs.readFileSync(eTagFilePath, 'utf-8') : undefined;
+        if (await fileExists(cacheFilePath)) {
           const stat = fs.statSync(cacheFilePath);
           const now = Date.now();
          if (now - stat.mtimeMs < cacheTime * 1000) {
@@ -417,12 +427,9 @@ pendingDownloads.set(url, task);
 return task;
 }
 
-async function existsAsync(filePath: string): Promise<boolean> {
-  return await callWorker('exist',filePath)
-}
 
 async function createDirIfNonExist(filepath: string) {
-  if (!(await existsAsync(filepath))) {
+  if (!await fileExists(filepath)) {
     try {
       await fs.promises.mkdir(filepath, { recursive: true });
     } catch (err) {}

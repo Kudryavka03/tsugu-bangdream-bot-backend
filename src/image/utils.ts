@@ -8,9 +8,17 @@ const assetsRootPath: string = path.join(__dirname, '../../assets');
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
 export const assetErrorImage = loadImage(fs.readFileSync(`${assetsRootPath}/err.png`))
 
-import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+//import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
+//import Piscina from 'piscina';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
+const workerPath = path.resolve(__dirname, "../readFileWorker.js");
+
+//const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4 });
+
+
+//const jsonWorker = new Worker('./jsonWorker.js');
+/*
 const workerPath = path.resolve(__dirname, "../readFileWorker.js");
 const readFileWorker = new Worker(workerPath,{execArgv: ['--inspect=9233']}); // 如果需要debug new Worker(workerPath,{execArgv: ['--inspect=9233']})
 const pending = new Map();
@@ -33,24 +41,19 @@ async function callWorker<T>(action: string, text: string): Promise<T> {
     readFileWorker.postMessage({ id, action, text });
   });
 }
-
+*/
 
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
     if (!fs.existsSync(path)) {
         return assetErrorImage;
     }
+    //const stats =  fs.statSync(path);
+    //const buf: Buffer = await pool.run(path, { name: 'readFiles'});
+    //const buffer = new Buffer()
     return await loadImage(await fs.promises.readFile(path));
 }
 
-async function existsAsync(filePath: string): Promise<boolean> {
-  try {
-    await fs.promises.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function loadImageFromPath0(path: string): Promise<Image> {
   //判断文件是否存在
