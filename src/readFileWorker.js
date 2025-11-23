@@ -7,9 +7,16 @@ export async function readJson(path) {
   const data = await fs.promises.readFile(path, 'utf-8'); //await fs.promises.readFile
   return JSON.parse(data);
 }
+export async function readJsonText(path) {
+  //console.log(path)
+  
+  const data = await fs.promises.readFile(path, 'utf-8'); //await fs.promises.readFile
+  return data;
+}
+export async function readJsonFromText(str){
+  return JSON.parse(str);
+}
 export async function readFiles(path) {
   //console.log(path)
-  const buf = fs.readFileSync(path);
-
-  return buf;
+  return fs.readFileSync(path);
 }
