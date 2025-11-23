@@ -1,3 +1,4 @@
+import { fileExists } from '@/api/downloader';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Canvas, loadImage, Image } from 'skia-canvas';
@@ -45,7 +46,7 @@ async function callWorker<T>(action: string, text: string): Promise<T> {
 
 export async function loadImageFromPath(path: string): Promise<Image> {
     //判断文件是否存在
-    if (!fs.existsSync(path)) {
+    if (!await fileExists(path)) {
         return assetErrorImage;
     }
     //const stats =  fs.statSync(path);

@@ -17,7 +17,7 @@ import Piscina from 'piscina';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
 
-
+// 在低性能服务器上不应该使用Worker。Worker会使得receiveMessageOnPort阻塞主线程。别问我怎么知道的
 const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
 
 
@@ -313,10 +313,10 @@ async function loadJson(path) {
   //const ts1 = Date.now()
   //const str = await callWorker<string>('readJsonText',path);
   //const str = fs.readFileSync(path,'utf-8')
-  //const str = await fs.promises.readFile(path,'utf-8')
-  //var body = JSON.parse(str)
+  const str = await fs.promises.readFile(path,'utf-8')
+  var body = JSON.parse(str)
   //var body = await callWorker<any>('readJson',path)
-  var body = await pool.run(path,{name:'readJson'});
+  //var body = await pool.run(path,{name:'readJson'});
   
   //const tsw = Date.now()
   //console.log('读取JSON时间：'+(tsw-ts1))
@@ -324,7 +324,7 @@ async function loadJson(path) {
   //return JSON.parse(str);
 }
 
-async function fileExists(path: string): Promise<boolean> {
+export async function fileExists(path: string): Promise<boolean> {
   try {
       await fs.promises.access(path); // 尝试访问文件
       return true;
