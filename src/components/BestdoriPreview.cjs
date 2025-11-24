@@ -2,7 +2,7 @@
 const Canvas = require('skia-canvas')
 require('ts-node/register');
 const fs = require('fs')
-assetsRootPath = process.env.ASROOT
+var assetsRootPath = process.env.ASROOT
 
 
 /**

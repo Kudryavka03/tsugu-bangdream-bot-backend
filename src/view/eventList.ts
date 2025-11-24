@@ -146,7 +146,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         const eventListImage = await drawDatablockHorizontal({
             list: eventImageListHorizontal
         })
-        all.push(drawTitle('查询', '活动列表'))
+        all.push(await drawTitle('查询', '活动列表'))
         all.push(eventListImage)
         const buffer = await outputFinalBuffer({
             imageList: all,
