@@ -40,15 +40,17 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     }, songChart as any)
     */
    var chartData = songChart as any;
-    return [Buffer.from(await BestdoriPreviewPool.run({
-        meta:{id: song.songId,
-        title: song.musicTitle[server],
-        artist: bandName,
-        author: song.detail.lyricist[server],
-        level: song.difficulty[difficultyId].playLevel,
-        diff: difficultyName[difficultyId],
-        cover: song.getSongJacketImageURL(displayedServerList)
-        },chartData},{name:'DrawPreview'}))]
+   const {buffer } = await BestdoriPreviewPool.run({
+    meta:{id: song.songId,
+    title: song.musicTitle[server],
+    artist: bandName,
+    author: song.detail.lyricist[server],
+    level: song.difficulty[difficultyId].playLevel,
+    diff: difficultyName[difficultyId],
+    cover: song.getSongJacketImageURL(displayedServerList)
+    },chartData},{name:'DrawPreview'})
+    //console.log(buffer.buffer, buffer.byteOffset, buffer.length)
+    return [Buffer.from(buffer.buffer)]
 /*
     let buffer:Buffer
     if( compress!=undefined && compress){
