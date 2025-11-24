@@ -33,7 +33,7 @@ var assetsRootPath = process.env.ASROOT
  */
 async function DrawPreview ({ meta, chartData }) {
     const { id, title, artist, author, diff, level, cover } = meta;
-    chart = chartData
+    var chart = chartData
     // 根据BPM和beat计算出真实时间
     /*
     const timepoints = chart.filter(n => n.type === "BPM")
