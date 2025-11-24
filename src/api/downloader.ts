@@ -18,9 +18,92 @@ const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execAr
 const readPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
 //const existPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:4,execArgv:[] });
 
+export async function download(   // GPT写的
+  url: string,
+  directory?: string,
+  fileName?: string,
+  cacheTime = 0,
+  isApiRequest = false
+): Promise<Buffer> {
+
+  if (pendingDownloads.has(url)) {
+    if (showDownloadLog)
+      logger("download", `Duplicate request detected, waiting: ${url}`);
+    return pendingDownloads.get(url)!;
+  }
+
+  const task = (async () => {
+    await Promise.resolve(); // 保持 async tick 展开
+
+    // 目录处理（不需要 try/catch，目录不存在不会 throw）
+    if (directory && fileName) {
+      createDirIfNonExist(directory);
+    }
+
+    // ========== 1. 本地缓存检查 ==========
+    const cachePath = directory && fileName ? path.join(directory, fileName) : null;
+
+    if (cachePath) {
+      const exists = await fileExists(cachePath).catch(() => false);
+
+      if (exists) {
+        if (showDownloadLog) logger("download", `Match Cache! ${url}`);
+        return loadFile(cachePath); // loadFile 若失败由最外层 catch
+      }
+    }
+
+    // ========== 2. 发请求（最小 catch 单元） ==========
+    const response = await axios
+      .get(url, { responseType: "arraybuffer" })
+      .catch(async (err) => {
+        // 只处理 304，其他错误让外层 catch
+        if (err?.response?.status === 304 && cachePath) {
+          return { data: await loadFile(cachePath) };
+        }
+        throw err; // 交给最外层 catch
+      });
+
+    const fileBuffer = Buffer.from(response.data);
+
+    // ========== 3. 写入缓存（最小 catch 单元） ==========
+    if (cachePath) {
+
+      const htmlSig = Buffer.from("<!DOCTYPE html>"); // 判断是不是HTML，这里不tostring，直接Byte对比节省时间
+      const slice = Buffer.from(fileBuffer.subarray(0, htmlSig.length));
+      if (!slice.equals(htmlSig)) {
+        await fs.promises
+        .writeFile(cachePath, fileBuffer)
+        .catch(() => {}); // 写失败不影响主流程
+        logger("download", `Download finish and cache for ${url}.`);
+        return fileBuffer;
+      }
+    }
+    throw new Error('IS HTML!!!')
+  })()
+    .catch((e) => {
+      // ========= 最外层 catch，收拢全部错误 ==========
+      errUrl.push(url);
+
+      if (url.endsWith(".png")) {
+        throw e;
+      } else {
+        throw new Error(
+          `Failed to download file from "${url}". Error: ${e.message}`
+        );
+      }
+    })
+    .finally(() => {
+      const ok = pendingDownloads.delete(url);
+      if (!ok)
+        logger("download", `Delete Task Failed for ${url}? ${ok}!!!`);
+    });
+
+  pendingDownloads.set(url, task);
+  return task;
+}
 
 
-export async function download(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
+export async function download2(url: string, directory?: string, fileName?: string, cacheTime = 0, isApiRequest = false): Promise<Buffer> {
   if (resDebug) console.trace()
   if (pendingDownloads.has(url)) {
     if(showDownloadLog) logger('download', `Duplicate request detected, waiting for ongoing download: ${url}`);// 重复的文件下载缓存
@@ -109,10 +192,10 @@ const memoryCache = new Map<string, any>();
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
- if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
+ if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' isForceUseCache '+isForceUseCache + ' cacheTime:' + cacheTime)
   if (apiDebug)console.trace()
   var existFiles = false
-  try {
+
     if (directory != undefined && fileName != undefined) {
       createDirIfNonExist(directory);
     }
@@ -138,10 +221,12 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           if (memoryCache.has(cacheFilePath)) {
             const cached = memoryCache.get(cacheFilePath);
+            //console.log('准备返回json：' + cached)
             return cached;
         }
           //const cachedData = await callWorker<string>('readJsonText', cacheFilePath);
-          const cachedJson = loadJson(cacheFilePath);
+
+          const cachedJson = await loadJson(cacheFilePath);
           memoryCache.set(cacheFilePath, cachedJson);
           if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
@@ -154,27 +239,30 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
 
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
-    try {
-      response = await axios.get(url, { headers, responseType: 'arraybuffer' });
-    } catch (error) {
-      if (error.response && error.response.status === 304) {
-        //console.log(`ETag matches for "${url}". Using cached JSON data.`);
-        if (memoryCache.has(cacheFilePath)) {
-          const cached = memoryCache.get(cacheFilePath);
-          return cached;
-      }
-        //const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
-        //const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
-        const cachedJson = loadJson(cacheFilePath);
-        memoryCache.set(cacheFilePath, cachedJson);
-        //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
-        logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
-        return cachedJson;
-      } else {
-        throw error;
-      }
-    }
+    var tempJsonObj = undefined;
+      response = await axios.get(url, { headers, responseType: 'arraybuffer' }).catch(async (error)=>{
+        if (error.response && error.response.status === 304) {
+          logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+          //console.log(`ETag matches for "${url}". Using cached JSON data.`);
+          if (memoryCache.has(cacheFilePath)) {
+            const cached = memoryCache.get(cacheFilePath);
+            if (cached == undefined) console.log('undefined detected!')
+            tempJsonObj = cached
+        }
+          //const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
+          //const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
 
+          const cachedJson = await loadJson(cacheFilePath);
+          memoryCache.set(cacheFilePath, cachedJson);
+          //console.log('ready to return ')
+          //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+          //logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+          tempJsonObj = cachedJson
+        } else {
+          throw error;
+        }
+      })
+      if (tempJsonObj) return tempJsonObj
     const fileBuffer = Buffer.from(response.data, 'binary');
     const fileContent = fileBuffer.toString('utf-8');
     const jsonObject = JSON.parse(fileContent);
@@ -193,11 +281,6 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     logger('getJsonAndSave','API: '+url + ' is Downloaded and cached.')
     memoryCache.set(cacheFilePath, jsonObject);
     return jsonObject;
-  } catch (e) {
-    return Promise.reject(
-      new Error(`Failed to download JSON data from "${url}". Error: ${e.message}`)
-  );
-  }
 }
 
 
@@ -221,8 +304,6 @@ export async function fileExists(path: string): Promise<boolean> {
 
 async function createDirIfNonExist(filepath: string) {
   if (!await fileExists(filepath)) {
-    try {
       await fs.promises.mkdir(filepath, { recursive: true });
-    } catch (err) {}
   }
 }

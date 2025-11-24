@@ -11,8 +11,7 @@ import * as fs from 'fs';
 const errUrl: { [key: string]: number } = {};
 const ERROR_CACHE_EXPIRY = 12 * 60 * 60 * 1000; // 半天
 
-async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 3): Promise<Buffer> {
-  try {
+async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = false, retryCount = 1): Promise<Buffer> {
     const currentTime = Date.now();
     if(url.includes('undefined')) {
       console.trace
@@ -27,48 +26,42 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
     const cacheTime = overwrite ? 0 : 1 / 0;
     const cacheDir = getCacheDirectory(url);
     const fileName = getFileNameFromUrl(url);
-
+    var errInfo = null;
     for (let attempt = 0; attempt < retryCount; attempt++) {
-      let assetNotExists = false;
+      //let assetNotExists = false;
+      var data = null;
+      
       if (attempt > 0) {
         logger(`downloader`, `Retrying download for "${url}" (attempt ${attempt + 1}/${retryCount})`);
       }
-      try {
         if(showDownloadLog)logger(`downloader`, `Download for "${url}"......`);
-        const data = await download(url, cacheDir, fileName, cacheTime);
-        const htmlSig = Buffer.from("<!DOCTYPE html>");
+        try{
+          data = await download(url, cacheDir, fileName, cacheTime);
+        }
+        catch(e){
+          if (attempt === retryCount - 1) { // 没有重试机会了，可以在这里抛出所有异常
+            data = null;
+            errInfo = e
+          }
+          continue; // 直接进入下一轮循环
+        }//如果无事发生
+        const htmlSig = Buffer.from("<!DOCTYPE html>"); // 判断是不是HTML，这里不tostring，直接Byte对比节省时间
         const slice = Buffer.from(data.subarray(0, htmlSig.length));
         if (slice.equals(htmlSig)) {
           fs.unlinkSync(path.join(cacheDir, fileName));
-          assetNotExists = true;
+          //assetNotExists = true;
           //console.trace;
-          throw new Error("downloadFile: data.toString().startsWith(\"<!DOCTYPE html>\")");
+          logger("downloadFile","downloadFile: data.toString().startsWith(\"<!DOCTYPE html>\")");
+          if ((url.includes('.png') || url.includes('.svg')) && IgnoreErr) {
+            errUrl[url] = Date.now();
+            return assetErrorImageBuffer;
+          }
         }
-        return data;
-      } catch (e) {
-        if (attempt === retryCount - 1) {
-          throw e;
-        }
-        if(assetNotExists){
-          throw e;
-        }
-        //等待3秒后重试
-        await new Promise(resolve => setTimeout(resolve, 1));
-      }
+        return data;  //如果不是网页，响应码200，返回内容
     }
-  } catch (e) {
-    logger(`downloader`, `Failed to download file from "${url}". Error: ${e.message}`);
-
-    if (e.message.includes('404')) {
-      errUrl[url] = Date.now();
-    }
-
-    if ((url.includes('.png') || url.includes('.svg')) && IgnoreErr) {
-      return assetErrorImageBuffer;
-    }
-
-    throw e; // 抛出错误
-  }
+    logger(`downloader`, `Failed to download file from "${url}".`);
+    throw errInfo; // 抛出错误
+  
 }
 
 export { downloadFile };

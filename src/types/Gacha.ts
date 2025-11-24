@@ -134,8 +134,8 @@ export class Gacha {
         return gachaData
     }
     async getBannerImage(): Promise<Image> {
+        if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
         try {
-            if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
             var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
             return await loadImage(BannerImageBuffer)
         }

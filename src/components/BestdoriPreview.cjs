@@ -466,7 +466,7 @@ async function DrawPreview ({ meta, chartData }) {
             //
         }
     })
-    buffer = await canvas.toBuffer('jpeg',{quality:0.5})
+    var buffer = await canvas.toBuffer('jpeg',{quality:0.5})
     return buffer
 }
 module.exports.DrawPreview = DrawPreview

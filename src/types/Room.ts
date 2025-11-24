@@ -60,17 +60,18 @@ export async function queryAllRoom(): Promise<Room[]> {
         const localNumberList = roomList.map((room) => {
             return room.number
         })
+        var roomListBandoriStation = null;
         try {
             const roomListBandoriStation = await queryRoomNumberFromBandoriStation()
-            for (let i = 0; i < roomListBandoriStation.length; i++) {
-                const room = roomListBandoriStation[i];
-                if (!localNumberList.includes(room.number)) {
-                    roomList.push(room)
-                }
-            }
         }
         catch (e) {
             logger('station', `error: ${e}`)
+        }
+        for (let i = 0; i < roomListBandoriStation.length; i++) {
+            const room = roomListBandoriStation[i];
+            if (!localNumberList.includes(room.number)) {
+                roomList.push(room)
+            }
         }
     }
     //如果本地已经有房间号列表，就不再从BandoriStation获取

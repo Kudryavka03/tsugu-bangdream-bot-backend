@@ -7,8 +7,10 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
   const fileName = getFileNameFromUrl(url);
 
   for (let attempt = 0; attempt < retryCount; attempt++) {
+    
     try {
       const data = await getJsonAndSave(url, cacheDir, fileName, cacheTime,isForceUseCache);
+      //console.log(typeof data)
       return data;
     } catch (e) {
       logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);
