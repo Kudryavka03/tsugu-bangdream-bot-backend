@@ -28,14 +28,14 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
         let lableName: string
         if (setStartToZero) {
             lableName = `[${tempEvent.eventId}] ${tempEvent.eventName[server]} T${cutoff.tier}`
-            list.push(drawList({
+            list.push(await drawList({
                 content: [tempColor.generateColorBlock(0.8), `[${tempEvent.eventId}] ${tempEvent.eventName[server]} T${cutoff.tier}`],
                 textSize: 20,
             }))
         }
         else {
             lableName = `T${cutoff.tier}`
-            list.push(drawList({
+            list.push(await drawList({
                 content: [tempColor.generateColorBlock(0.8), `T${cutoff.tier}`],
                 textSize: 20,
             }))

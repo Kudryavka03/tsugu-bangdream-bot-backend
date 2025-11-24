@@ -8,6 +8,9 @@ const assetsRootPath: string = path.join(__dirname, '../../assets');
 
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
 export const assetErrorImage = loadImage(fs.readFileSync(`${assetsRootPath}/err.png`))
+export const reCanvas = new Canvas(1, 1)
+export const reCanvasCtx = reCanvas.getContext('2d')
+reCanvasCtx.textBaseline = 'alphabetic'
 
 //import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 //import Piscina from 'piscina';
@@ -56,20 +59,12 @@ export async function loadImageFromPath(path: string): Promise<Image> {
 }
 
 
-export async function loadImageFromPath0(path: string): Promise<Image> {
-  //判断文件是否存在
-  if (!fs.existsSync(path)) {
-      return loadImage(assetErrorImageBuffer);
-  }
-  const buffer = fs.readFileSync(path);
-  return await loadImage(buffer);
-}
 
 
 //指定字体，字号，文本，获取文本宽度
-export function getTextWidth(text: string, textSize: number, font: string) {
-    const canvas = new Canvas(1, 1);
-    const context = canvas.getContext("2d");
+export function getTextWidth(text: string, textSize: number, font: string) {    // 可以转移到worker
+    //const canvas = reCanvas;
+    const context = reCanvasCtx;
     if (!context) {
         throw new Error("Cannot create canvas context");
     }

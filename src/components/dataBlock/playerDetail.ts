@@ -39,14 +39,14 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
 
 
     //玩家名
-    var playerText = drawText({
+    var playerText = await drawText({
         text: player.profile.userName,
         maxWidth: 800,
         textSize: 75
     })
     list.push(drawImageListCenter([playerText]))
     //等级
-    var levelText = drawText({
+    var levelText = await drawText({
         text: `等级 ${player.profile.rank}`,
         maxWidth: 800,
         textSize: 35
@@ -64,7 +64,7 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     list.push(drawImageListCenter(degreeImageList))
     list.push(new Canvas(1, 25))
     //玩家描述
-    var introductionText = drawText({
+    var introductionText = await drawText({
         text: player.profile.introduction,
         maxWidth: 800,
         textSize: 35
@@ -92,10 +92,10 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
 
     //最终绘图
     var titleImage = drawTitle('查询', '玩家信息')
-    var canvas = new Canvas(1000, 900 + dataBlock.height)
+    var canvas = new Canvas(1000, 900 + (await dataBlock).height)
     var ctx = canvas.getContext('2d')
     ctx.drawImage(illust, 0, 0, 1000, 1000)
-    ctx.drawImage(titleImage, 0, 0)
-    ctx.drawImage(dataBlock, 0, 900)
+    ctx.drawImage(await titleImage, 0, 0)
+    ctx.drawImage(await dataBlock, 0, 900)
     return canvas
 }

@@ -13,17 +13,17 @@ interface drawTipsConfig {
     maxWidth?: number,
 }
 
-export function drawTips({
+export async function drawTips({
     text,
     image,
     maxWidth = 900,
-}: drawTipsConfig): Canvas {//下方指令提示
+}: drawTipsConfig): Promise<Canvas> {//下方指令提示
     let textMaxWidth = maxWidth
     if (image) {
         textMaxWidth -= 250
     }
     //文字
-    const textImage = drawText({
+    const textImage = await drawText({
         text,
         maxWidth: textMaxWidth,
         textSize: 30,

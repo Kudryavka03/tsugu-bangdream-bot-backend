@@ -28,7 +28,7 @@ export async function drawArticleTitle1(text: string, subText?: string, event?: 
     drawImageWithShadow(ctx, rectCanvas, 50 + baseX, 0)
 
     // 画文字
-    const textImage = drawText({
+    const textImage = await drawText({
         text,
         maxWidth: 800,
         textSize: 66,
@@ -43,7 +43,7 @@ export async function drawArticleTitle1(text: string, subText?: string, event?: 
     )
 
     if (subText) {
-        const subTextImage = drawText({
+        const subTextImage = await drawText({
             text: subText,
             maxWidth: 800,
             textSize: 33,

@@ -20,7 +20,7 @@ export async function drawGachaDatablock(gacha: Gacha, topLeftText?: string) {
     */
 
     //卡池类型与ID
-    textImageList.push(drawList({
+    textImageList.push(await drawList({
         text: `${gacha.getTypeName()}   ID: ${gacha.gachaId}`
     }))
 

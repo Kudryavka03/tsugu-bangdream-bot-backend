@@ -38,7 +38,7 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,ban
 
 
     var all = []
-    all.push(drawTitle('查询', `${serverNameFullList[mainServer]} 分数排行榜`))
+    all.push(await drawTitle('查询', `${serverNameFullList[mainServer]} 分数排行榜`))
     all.push(stackImageHorizontal(imageList))
     var buffer = await outputFinalBuffer({
         imageList: all,

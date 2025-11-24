@@ -59,7 +59,7 @@ export async function drawCharacterHalfBlock(character: Character, displayedServ
     const list: Canvas[] = []
     const server = getServerByPriority(character.characterName, displayedServerList)
     const nameText = character.characterName[server]
-    const nameTextImage = drawText({
+    const nameTextImage = await drawText({
         text: nameText,
         textSize: 40,
         color: '#ffffff',
@@ -69,7 +69,7 @@ export async function drawCharacterHalfBlock(character: Character, displayedServ
     //id
     const characterId = character.characterId
     const idText = `ID: ${characterId}`
-    const idTextImage = drawText({
+    const idTextImage = await drawText({
         text: idText,
         textSize: 30,
         color: '#ffffff',

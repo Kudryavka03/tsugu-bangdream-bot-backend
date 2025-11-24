@@ -27,9 +27,16 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
 
     //乐队
     var band = new Band(song.bandId)
-
+    //歌曲tag(类型)
+    var typeImage = await drawList({
+        key: '类型', text: song.getTagName()
+    })
+    //歌曲ID
+    var IdImage = await drawList({
+        key: 'ID', text: song.songId.toString()
+    })
     //时长
-    var timeLength = drawList({
+    var timeLength = await drawList({
         key: '时长',
         text: formatSeconds(song.length)
     })
@@ -49,23 +56,12 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
         bpm = bpmMax.toString()
     }
     else {
-        bpm = `${bpmMin} ~ ${bpmMax}`
+        bpm = `${bpmMin} ～ ${bpmMax}`
     }
-    var bpmData = drawList({
+    var bpmData = await drawList({
         key: 'BPM',
         text: bpm
     })
-
-
-    //歌曲tag(类型)
-    var typeImage = drawList({
-        key: '类型', text: song.getTagName()
-    })
-    //歌曲ID
-    var IdImage = drawList({
-        key: 'ID', text: song.songId.toString()
-    })
-
 
     //歌曲meta数据
     var ferverStatusList = [true, false]
@@ -112,13 +108,14 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     list.push(line)
     list.push(await drawListByServerList(band.bandName, '乐队', displayedServerList))
     list.push(line)
-    list.push(drawListMerge([timeLength, bpmData]))
-    list.push(line)
     list.push(drawListMerge([typeImage, IdImage]))
     list.push(line)
+    list.push(drawListMerge([timeLength, bpmData]))
+    list.push(line)
+
     list.push(drawListTextWithImages({
         key: 'Notes',
-        content: [drawDifficulityListWithNotes(song)],
+        content: [await drawDifficulityListWithNotes(song)],
     }))
     list.push(line)
     //作词
@@ -147,7 +144,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     }
     if (song.nickname != null) {
         list.push(line)
-        list.push(drawList({
+        list.push(await drawList({
             key: '模糊搜索关键词',
             text: song.nickname
         }))
@@ -155,9 +152,9 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
 
 
     var all = []
-    all.push(drawTitle('查询', '歌曲'))
+    all.push(await drawTitle('查询', '歌曲'))
     all.push(drawSongDataBlockResult[0])
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     //console.log(listImage)
     all.push(listImage)
     

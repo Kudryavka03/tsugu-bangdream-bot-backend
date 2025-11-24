@@ -53,7 +53,7 @@ export async function drawCharacterList(matches: FuzzySearchResult, displayedSer
     for(var i of characterImageListResult){
         characterImageList.push(i)
     }
-    const characterListImage = drawList({
+    const characterListImage = await drawList({
         content: characterImageList,
         maxWidth: maxWidth,
         spacing: 20,

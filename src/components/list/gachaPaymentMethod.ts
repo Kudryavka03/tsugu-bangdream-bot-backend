@@ -61,7 +61,7 @@ export async function drawGashaPaymentMethodInList(gacha: Gacha) {
             methodDescription.push(" 仅限" + patmentMethod["maxSpinLimit"] + "次")
         }
         var isFirst = (i == 0)
-        list.push(drawList({
+        list.push(await drawList({
             key: isFirst ? '付费方式' : undefined,
             content: methodDescription
         }))

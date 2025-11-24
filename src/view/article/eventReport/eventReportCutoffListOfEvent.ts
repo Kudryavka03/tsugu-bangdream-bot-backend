@@ -62,7 +62,7 @@ export async function drawEventReportCutoffListOfEvent(eventId: number, mainServ
         }
 
 
-        list.push(drawList({
+        list.push(await drawList({
             key: `T${cutoff.tier}`,
             content: cutoffContent
         }))

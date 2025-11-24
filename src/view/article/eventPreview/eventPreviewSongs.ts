@@ -54,11 +54,11 @@ async function drawEventSongDetail(song: Song, displayedServerList: Server[] = g
     list.push(line)
 
     //歌曲tag(类型)
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: song.getTagName()
     })
     //歌曲ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: song.songId.toString()
     })
     list.push(drawListMerge([typeImage, IdImage]))
@@ -79,7 +79,7 @@ async function drawEventSongDetail(song: Song, displayedServerList: Server[] = g
     list.push(await drawListByServerList(song.detail.arranger, '编曲', displayedServerList))
     list.push(line)
     //时长
-    list.push(drawList({
+    list.push(await drawList({
         key: '时长',
         text: formatSeconds(song.length)
     }))
@@ -101,7 +101,7 @@ async function drawEventSongDetail(song: Song, displayedServerList: Server[] = g
     else {
         bpm = `${bpmMin} ~ ${bpmMax}`
     }
-    list.push(drawList({
+    list.push(await drawList({
         key: 'bpm',
         text: bpm
     }))

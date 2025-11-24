@@ -93,7 +93,7 @@ export async function drawEventDatablock(
 
     // 活动类型与ID
     textImageList.push(
-        drawList({
+        await drawList({
             text: `${event.getTypeName()}   ID: ${event.eventId}`
         })
     );

@@ -3,20 +3,20 @@ import { Song } from "@/types/Song"
 import { drawText } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
-export function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10): Canvas {
+export async function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight + 10)
     var ctx = canvas.getContext("2d")
     for (var d in song.difficulty) {
         const i = parseInt(d);
 
-        const diffCanvas = drawDifficulity(i, song.difficulty[i].playLevel, imageHeight - 10);
+        const diffCanvas = await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight - 10);
         const diffW = diffCanvas.width;
         const blockX = i * (imageHeight + spacing);
 
         ctx.drawImage(diffCanvas, blockX, 2);
 
-        const notesText = drawText({
+        const notesText = await drawText({
             textSize: imageHeight / 3.5,
             text: song.notes[i].toString(),
             maxWidth: imageHeight * 3.5
@@ -29,31 +29,31 @@ export function drawDifficulityListInListWithNotes(song: Song, imageHeight: numb
     }
     return canvas
 }
-export function drawDifficulityList(song: Song, imageHeight: number = 60, spacing: number = 10): Canvas {
+export async function drawDifficulityList(song: Song, imageHeight: number = 60, spacing: number = 10): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)
     var ctx = canvas.getContext("2d")
     for (var d in song.difficulty) {
         let i = parseInt(d)
-        ctx.drawImage(drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
+        ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
     }
     return canvas
 }
-export function drawDifficulityList2(song: Song, imageHeight: number = 60, spacing: number = 10): Canvas {
+export async function drawDifficulityList2(song: Song, imageHeight: number = 60, spacing: number = 10): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)
     var ctx = canvas.getContext("2d")
     ctx.drawImage(new Canvas(imageHeight, imageHeight),10,10)
     for (var d in song.difficulty) {
         let i = parseInt(d)
-        ctx.drawImage(drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
+        ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
     }
     return canvas
 }
 
 
 
-export function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number) {
+export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number) {
     var tempcanv = new Canvas(imageHeight, imageHeight)
     var ctx = tempcanv.getContext("2d")
     if (difficultyColorList[difficultyType] != undefined) {
@@ -64,7 +64,7 @@ export function drawDifficulity(difficultyType: number, playLevel: number, image
     }
     ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2, 0, 2 * Math.PI)
     ctx.fill()
-    var levelText = drawText({
+    var levelText = await drawText({
         textSize: imageHeight / 3 * 2,
         text: playLevel.toString(),
         maxWidth: imageHeight * 3
@@ -72,7 +72,7 @@ export function drawDifficulity(difficultyType: number, playLevel: number, image
     ctx.drawImage(levelText, imageHeight / 2 - levelText.width / 2, imageHeight / 2 - levelText.height / 2)
     return (tempcanv)
 }
-export function drawDifficulity2(difficultyType: number, playLevel: number, imageHeight: number,notes:number) {
+export async function drawDifficulity2(difficultyType: number, playLevel: number, imageHeight: number,notes:number) {
     var tempcanv = new Canvas(imageHeight +60, imageHeight+60)
     var ctx = tempcanv.getContext("2d")
     if (difficultyColorList[difficultyType] != undefined) {
@@ -83,13 +83,13 @@ export function drawDifficulity2(difficultyType: number, playLevel: number, imag
     }
     ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2, 0, 2 * Math.PI)
     ctx.fill()
-    var levelText = drawText({
+    var levelText = await drawText({
         textSize: imageHeight / 3 * 2,
         text: playLevel.toString(),
         maxWidth: imageHeight * 3
     })
     ctx.drawImage(levelText, imageHeight / 2 - levelText.width / 2, imageHeight / 2 - levelText.height / 2)
-    var noteNumber = drawText({
+    var noteNumber = await drawText({
         textSize: imageHeight / 3 * 2,
         text: notes.toString(),
         maxWidth: imageHeight * 3
@@ -98,15 +98,15 @@ export function drawDifficulity2(difficultyType: number, playLevel: number, imag
     return (tempcanv)
 }
 
-export function drawDifficulityListWithNotes(song: Song, imageHeight: number = 60, maxWidth = 800): Canvas {
+export async function drawDifficulityListWithNotes(song: Song, imageHeight: number = 60, maxWidth = 800): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(maxWidth, imageHeight * 2)
     let spacing = (maxWidth - difficultyCount * imageHeight) / difficultyCount
     var ctx = canvas.getContext("2d")
     for (var d in song.difficulty) {
         let i = parseInt(d)
-        ctx.drawImage(drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing) + imageHeight / 2, 0)
-        let notesText = drawText({
+        ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing) + imageHeight / 2, 0)
+        let notesText = await drawText({
             textSize: imageHeight / 3 * 2,
             text: song.notes[i].toString(),
             maxWidth: imageHeight * 3

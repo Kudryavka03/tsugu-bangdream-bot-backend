@@ -59,12 +59,12 @@ async function drawEventGachaDetail(gacha: Gacha, displayedServerList: Server[])
     list.push(line)
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: gacha.getTypeName()
     })
 
     //卡池ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: gacha.gachaId.toString()
     })
 

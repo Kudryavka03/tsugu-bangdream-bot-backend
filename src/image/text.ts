@@ -2,7 +2,11 @@ import { FontLibrary, Image, Canvas, CanvasRenderingContext2D } from 'skia-canva
 import { assetsRootPath } from '@/config';
 FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
-
+import * as path from 'path';
+import Piscina from 'piscina';
+import { reCanvas, reCanvasCtx } from './utils';
+const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
+const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
 
 interface warpTextOptions {
     text: string,
@@ -14,21 +18,21 @@ interface warpTextOptions {
 }
 
 //画文字,自动换行
-export function drawText({
+export async function drawText({
     text,
     textSize = 40,
     maxWidth,
     lineHeight = textSize * 4 / 3,
     color = "#505050",
     font = "old"
-}: warpTextOptions): Canvas {
-    var wrappedTextData = wrapText({ text, maxWidth, lineHeight, textSize });
+}: warpTextOptions): Promise<Canvas> {
+    var wrappedTextData = await wrapText({ text, maxWidth, lineHeight, textSize });
     if (wrappedTextData.numberOfLines == 0) {
         var canvas: Canvas = new Canvas(1, lineHeight);
     }
     else if (wrappedTextData.numberOfLines == 1) {
-        var canvas: Canvas = new Canvas(1, 1);
-        var ctx = canvas.getContext('2d');
+        //var canvas: Canvas = reCanvas;
+        var ctx = reCanvasCtx;
         setFontStyle(ctx, textSize, font);
         var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
         canvas = new Canvas(width, lineHeight);
@@ -49,13 +53,14 @@ export function drawText({
     return canvas;
 }
 
-export function wrapText({
+export async function wrapText({
     text,
     textSize,
     maxWidth,
     lineHeight,
     font = "old"
 }: warpTextOptions) {
+    return await wrapTextPool.run({text,textSize,maxWidth,lineHeight,font},{name:'wrapText'})
     const canvas = new Canvas(1, 1);
     const ctx = canvas.getContext('2d');
     const temp = text.split('\n');
@@ -126,8 +131,8 @@ export function drawTextWithImages({
     }
     //单行文字，宽度为第一行的宽度
     else if (wrappedTextData.numberOfLines == 1) {
-        canvas = new Canvas(1, 1);
-        const ctx = canvas.getContext('2d');
+        //canvas = reCanvas;
+        const ctx = reCanvasCtx;
         setFontStyle(ctx, textSize, font);
         var Width = 0
         for (var n = 0; n < wrappedText[0].length; n++) {
@@ -188,9 +193,9 @@ function warpTextWithImages({
     spacing = textSize / 3,
     font = 'old'
 }: TextWithImagesOptions) {
-    const canvas = new Canvas(1, 1);
-    const ctx = canvas.getContext('2d');
-    ctx.textBaseline = 'alphabetic';
+    //const canvas = reCanvas;
+    const ctx = reCanvasCtx;
+    //ctx.textBaseline = 'alphabetic';
     setFontStyle(ctx, textSize, font);
     const temp: Array<Array<string | Image | Canvas>> = [[]];
     let lineNumber = 0;

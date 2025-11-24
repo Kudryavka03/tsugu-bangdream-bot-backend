@@ -20,3 +20,6 @@ export async function readFiles(path) {
   //console.log(path)
   return fs.readFileSync(path);
 }
+export async function fileExists(path) {
+  return fs.existsSync(path)
+}

@@ -29,7 +29,7 @@ export async function drawEventReportCutoffDetail(eventId: number, tier: number,
     await event.initFull(false)
 
     //最新分数线
-    list.push(drawList({
+    list.push(await drawList({
         key: '实时档线',
         content: [`最终档线: ${cutoff.latestCutoff.ep.toString()}`],
         textSize: 30,
@@ -48,7 +48,7 @@ export async function drawEventReportCutoffDetail(eventId: number, tier: number,
         cutoffList.push(cutoff)
     }
 
-    list.push(drawList({
+    list.push(await drawList({
         key: '近期同类型活动档线对比',
         content: [`活动类型: ${event.getTypeName()}`],
         textSize: 30,
@@ -60,7 +60,7 @@ export async function drawEventReportCutoffDetail(eventId: number, tier: number,
     list.push(line)
 
     //近期活动档线对比
-    list.push(drawList({
+    list.push(await drawList({
         key: '近期活动档线变化',
     }))
 

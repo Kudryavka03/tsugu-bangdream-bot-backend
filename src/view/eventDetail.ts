@@ -44,12 +44,12 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: event.getTypeName()
     })
 
     //活动ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: event.eventId.toString()
     })
 
@@ -264,7 +264,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     }))
     list.push(line)
         //活动属性加成
-    list.push(drawList({
+    list.push(await drawList({
         key: '活动加成'
     }))
     var attributeList = event.getAttributeList()    // 活动加成也上缓存了，不需要并行绘制
@@ -280,7 +280,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     list.push(line)
 
     //活动角色加成
-    list.push(drawList({
+    list.push(await drawList({
         key: '活动角色加成'
     }))
     var characterList = event.getCharacterList()
@@ -304,7 +304,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
                 statText += `${statConfig[i].name} + ${element}%  `
             }
         }
-        list.push(drawList({
+        list.push(await drawList({
             key: '活动偏科加成',
             text: statText
         }))
@@ -338,11 +338,11 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     }
     list.push(line)
 
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     //创建最终输出数组
 
     var all = []
-    all.push(drawTitle('查询', '活动'))
+    all.push(await drawTitle('查询', '活动'))
 
     all.push(listImage)
 

@@ -98,12 +98,12 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     list.push(line)
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: gacha.getTypeName()
     })
 
     //卡池ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: gacha.gachaId.toString()
     })
 
@@ -150,10 +150,10 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     list.push(line)
 
 
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     var all = []
 
-    all.push(drawTitle('查询', '卡池'))
+    all.push(await drawTitle('查询', '卡池'))
     list.push(new Canvas(800, 30))
 
 

@@ -42,7 +42,7 @@ async function getAttributeIcon(attributeName: string): Promise<Image> {
     const image = await loadImage(iconPngBuffer)
     if (!iconSvgBuffer.equals(assetErrorImageBuffer)){
         attributeIconCache[attributeName] = image
-        logger('getAttributeIcon','Not match cache and res Ready,cached.');
+        logger('getAttributeIcon','Cache HotSpot Image Successful.');
     }
 
     return image

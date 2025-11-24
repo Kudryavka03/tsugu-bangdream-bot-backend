@@ -18,3 +18,6 @@ tsconfig.tsbuildinfo
 *.sln
 cache/*
 logs/*
+undefined/
+undefined/
+PerfLog/

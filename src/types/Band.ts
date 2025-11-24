@@ -65,7 +65,7 @@ export async function getBandIcon(bandId: number): Promise<Image> {
     const image = await loadImage(iconPngBuffer)
     if (!iconSvgBuffer.equals(assetErrorImageBuffer)){
         bandIconCache[bandId] = image
-        logger('getBandIcon','Not match cache and res Ready,cached.');
+        logger('getBandIcon','Cache HotSpot Image Successful.');
     }
     
     return image

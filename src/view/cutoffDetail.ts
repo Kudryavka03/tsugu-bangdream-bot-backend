@@ -23,7 +23,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     }
     const initPromise = cutoff.initFull();
     var event = new Event(eventId)
-    const drawPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+    const drawPromise = await drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
     });
@@ -37,7 +37,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     }
     */
     var all = []
-    all.push(drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
+    all.push(await drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
     var list: Array<Image | Canvas> = []
 
 
@@ -66,11 +66,11 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
         const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         list.push(drawListMerge([
-            drawList({
+            await drawList({
                 key: '预测线1',
                 text: predictText
             }),
-            drawList({
+            await drawList({
                 key: '预测线2',
                 text: predictText2
             }),
@@ -80,13 +80,13 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
         const tempImageList = []
         //最新分数线
-        const finalCutoffImage = drawList({
+        const finalCutoffImage = await drawList({
             key: '最新分数线',
             text: cutoff.latestCutoff.ep.toString()
         })
         tempImageList.push(finalCutoffImage)
         
-        tempImageList.push(drawList({
+        tempImageList.push(await drawList({
             key: '当前时速',
             text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
         }))
@@ -96,11 +96,11 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempTimeList = []
         //活动剩余时间
-        tempTimeList.push(drawList({
+        tempTimeList.push(await drawList({
             key: '活动剩余时间',
             text: `${changeTimePeriodFormat(cutoff.endAt - time,false)}`
         }))
-        tempTimeList.push(drawList({
+        tempTimeList.push(await drawList({
             key: '更新时间',
             text: `${changeTimePeriodFormat((new Date().getTime()) - cutoff.latestCutoff.time)}前`
         }))
@@ -111,14 +111,14 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
     }
     else if (cutoff.status == 'ended') {
-        list.push(drawList({
+        list.push(await drawList({
             key: '状态',
             text: statusName[cutoff.status]
         }))
         list.push(line)
 
         //最新分数线
-        list.push(drawList({
+        list.push(await drawList({
             key: '最终分数线',
             text: cutoff.latestCutoff.ep.toString()
         }))
@@ -131,11 +131,11 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     list.push(await drawCutoffChart([cutoff]))
 
     //创建最终输出数组
-    var listImage = drawDatablock({ list })
-    all.push(await drawPromise)
+    var listImage = await drawDatablock({ list })
+    all.push(drawPromise)
     all.push(listImage)
     
-    all.push(drawTips({
+    all.push(await drawTips({
         text: '预测线1为Tsugu原版预测线\n预测线2为个人想法，对于 <=100 的档线，不具备预测性，请以前排最新结果为准或参考Tsugu原版预测线',
         //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))

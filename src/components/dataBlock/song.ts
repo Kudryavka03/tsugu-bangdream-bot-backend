@@ -36,7 +36,7 @@ export async function drawSongDataBlock(song: Song, text?: string, displayedServ
     var songTipsName = song.getTagName()
 
     // 绘制歌曲名
-    var songNameImage = drawText({
+    var songNameImage = await drawText({
         text: songName,
         textSize: 40,
         maxWidth: 365
@@ -46,12 +46,12 @@ export async function drawSongDataBlock(song: Song, text?: string, displayedServ
     if (text != undefined) {
         songDetail = `${songDetail}\n${text}`
     }
-    var songDetailImage = drawText({
+    var songDetailImage = await drawText({
         text: songDetail,
         textSize: 30,
         maxWidth: 365
     })
-    var difficultyImage = drawDifficulityList(song, 60, 10)
+    var difficultyImage = await drawDifficulityList(song, 60, 10)
     var list = [songNameImage, line, songDetailImage, new Canvas(1, 60)]
     var rightCanvas = stackImage(list)
     var canvas = stackImageHorizontal([songJacketCanvas, new Canvas(35, 1), rightCanvas])

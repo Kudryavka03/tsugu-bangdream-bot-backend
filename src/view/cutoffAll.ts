@@ -58,7 +58,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     }
 
         //状态
-    list.push(drawList({
+    list.push(await drawList({
         key: '状态',
         text: statusName[cutoffList[0].status]
     }))
@@ -86,7 +86,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
         }
 
 
-        list.push(drawList({
+        list.push(await drawList({
             key: `T${cutoff.tier}`,
             content: cutoffContent
         }))
@@ -99,8 +99,8 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     list.push(await drawCutoffChart(cutoffList))
 
     //创建最终输出数组
-    var listImage = drawDatablock({ list })
-    all.push(drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
+    var listImage = await drawDatablock({ list })
+    all.push(await drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
     all.push(await bannerImageBox)
     all.push(listImage)
     /*

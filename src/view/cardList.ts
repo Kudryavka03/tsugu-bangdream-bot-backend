@@ -103,7 +103,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
         //console.log(tempAttributeCardImageList)
         const characterIconImage = stackImage(characterIconImageList);
         tempAttributeImageList.unshift(characterIconImage);
-        cardListImage = drawDatablockHorizontal({
+        cardListImage = await drawDatablockHorizontal({
             list: tempAttributeImageList,
         })
         console.log(tempAttributeImageList.length)
@@ -119,7 +119,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     continue
                 }
                 const all = []
-                all.push(drawDatablockHorizontal({ list: [characterIconImage, tempCanv] }))
+                all.push(await drawDatablockHorizontal({ list: [characterIconImage, tempCanv] }))
                 const buffer = await outputFinalBuffer({
                     imageList: all,
                     useEasyBG: true
@@ -130,7 +130,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
             return tempImageList
         }
         var all = []
-        all.push(drawTitle('查询', '卡牌列表'))
+        all.push(await drawTitle('查询', '卡牌列表'))
         all.push(cardListImage)
         var buffer = await outputFinalBuffer({
             imageList: all,
@@ -187,9 +187,9 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
             tempCardImageList,
         )
         var characterIconImage = stackImage(characterIconImageList);
-        cardListImage = drawDatablockHorizontal({ list: [characterIconImage, cardListImageWithoutCharacterIcon] });
+        cardListImage = await drawDatablockHorizontal({ list: [characterIconImage, cardListImageWithoutCharacterIcon] });
         var all = []
-        all.push(drawTitle('查询', '卡牌列表'))
+        all.push(await drawTitle('查询', '卡牌列表'))
         all.push(cardListImage)
         var buffer = await outputFinalBuffer({
             imageList: all,

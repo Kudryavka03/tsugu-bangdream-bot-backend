@@ -18,14 +18,14 @@ export async function drawRoomListTitle() {
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#ff3b72'
     ctx.fillRect(0, 0, 1000, 150)
-    ctx.drawImage(drawText({
+    ctx.drawImage(await drawText({
         color: '#ffffff',
         text: '房间列表',
         lineHeight: 70,
         textSize: 70,
         maxWidth: 1000
     }), 40, 40)
-    const timeText = drawText({
+    const timeText = await drawText({
         color: '#ffffff',
         text: changeTimefomant(new Date().getTime()),
         lineHeight: 30,
@@ -45,12 +45,12 @@ export async function drawRoonInList(room: Room) {
     // const Icon = await getUserIcon(room.avatarUrl)
     //文本
     const textList: Canvas[] = []
-    textList.push(drawText({
+    textList.push(await drawText({
         text: `${room.userName} 来自${room.source} ${Math.floor((timeNow - room.time) / 1000)}秒前`,
         textSize: 30,
         maxWidth: maxWidthText
     }))
-    textList.push(drawText({
+    textList.push(await drawText({
         text: room.rawMessage,
         textSize: 40,
         maxWidth: maxWidthText
@@ -98,7 +98,7 @@ async function drawPlayerDetailInRoomList(player: Player) {
     else {
         statText = `综合力: 未公开`
     }
-    const statTextImage = drawText({
+    const statTextImage = await drawText({
         text: statText,
         textSize: 30,
         lineHeight: 50,

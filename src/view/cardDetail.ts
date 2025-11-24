@@ -48,12 +48,12 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     }
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: card.getTypeName()
     })
 
     //卡牌ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: card.cardId.toString()
     })
 
@@ -263,9 +263,9 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     for(var r of drawSdcharaInListResult){
         list.push(r)
     }
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     var all = []
-    all.push(drawTitle('查询', '卡牌'))
+    all.push(await drawTitle('查询', '卡牌'))
     all.push(listImage)
     for(var r of drawEventDatablockResult){
         all.push(r)

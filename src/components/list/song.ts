@@ -21,7 +21,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
     var ctx = canvas.getContext("2d")
     ctx.drawImage(songImage, 50, 5, 65, 65)
     //id
-    var IDImage = drawText({
+    var IDImage = await drawText({
         text: song.songId.toString(),
         textSize: 23,
         lineHeight: 37.5,
@@ -38,7 +38,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         //如果传入了text参数，使用text参数代替乐队名
         fullText += `\n${text}`
     }
-    var textImage = drawText({
+    var textImage = await drawText({
         text: fullText,
         textSize: 23,
         lineHeight: 37.5,
@@ -48,10 +48,10 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
 
     //难度
     if (difficulty == undefined) {
-        var difficultyImage = drawDifficulityListInListWithNotes(song, 50, 10)
+        var difficultyImage = await drawDifficulityListInListWithNotes(song, 50, 10)
     }
     else {
-        var difficultyImage = drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45)
+        var difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45)
     }
     ctx.drawImage(difficultyImage, 800 - difficultyImage.width, 75 / 2 - difficultyImage.height / 2)
     return canvas

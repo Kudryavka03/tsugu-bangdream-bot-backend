@@ -94,8 +94,8 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
     }
 
     const all = []
-    all.push(drawTitle('卡池', '抽卡模拟'))
-    all.push(drawDatablock({
+    all.push(await drawTitle('卡池', '抽卡模拟'))
+    all.push(await drawDatablock({
         list: [gachaImage]
     }))
     //下方banner与ok按钮
@@ -132,7 +132,7 @@ async function drawGachaCard(card: Card, numberOfCard: number = 1) {
             ctx.drawImage(cardIconWithoutId, 35 - ((maxTimes - i + 1) * 4), 20 - ((maxTimes - i + 1) * 4), 180, 180);
         }
         ctx.drawImage(cardIconWithId, 35, 20, 180, 210);
-        const numberText = drawText({
+        const numberText = await drawText({
             text: `x${numberOfCard}`,
             textSize: 30,
             maxWidth: 80,

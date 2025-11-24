@@ -122,7 +122,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
             if (times = 0) {
                 all.push(drawTitle('查询', '活动列表'))
             }
-            all.push(drawDatablock({ list: [tempCanv] }))
+            all.push(await drawDatablock({ list: [tempCanv] }))
             outputFinalBufferPromise.push(outputFinalBuffer({
                 imageList: all,
                 useEasyBG: true
@@ -143,7 +143,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         return tempImageList
     } else {
         const all = []
-        const eventListImage = drawDatablockHorizontal({
+        const eventListImage = await drawDatablockHorizontal({
             list: eventImageListHorizontal
         })
         all.push(drawTitle('查询', '活动列表'))

@@ -6,6 +6,8 @@ import { Server, getServerByPriority, getIcon } from '@/types/Server'
 import { stackImageHorizontal } from '@/components/utils';
 import { globalDefaultServer } from '@/config';
 import { setFontStyle } from '@/image/text';
+import { reCanvas, reCanvasCtx } from '@/image/utils';
+
 
 //表格用默认虚线
 export const line: Canvas = drawDottedLine({
@@ -50,10 +52,10 @@ export function drawListTextWithImages({
         textSize: 30,
     });
 
-    var textImage: Canvas = new Canvas(1, 1)
+    //var textImage: Canvas = reCanvas
     var Width = 20, Height = 0
     {
-        const ctx = textImage.getContext('2d')
+        const ctx = reCanvasCtx;
         setFontStyle(ctx, textSize, 'old')
         for (const element of content) {
             if (typeof element === "string") {
@@ -68,7 +70,7 @@ export function drawListTextWithImages({
         }
         // Width -= spacing
     }
-    textImage = new Canvas(maxWidth, Height + lineSpacing)
+    var textImage = new Canvas(maxWidth, Height + lineSpacing)
     {
         const ctx = textImage.getContext('2d')
         ctx.textBaseline = 'alphabetic'
@@ -109,7 +111,7 @@ export function drawListTextWithImages({
 
 
 //画表格中的一行
-export function drawList({
+export async function drawList({
     key,
     text,
     content,
@@ -119,7 +121,7 @@ export function drawList({
     color = '#505050',
     maxWidth = 800
 
-}: ListOptions): Canvas {
+}: ListOptions): Promise<Canvas> {
     const xmax = maxWidth - 40
     const keyImage = drawRoundedRectWithText({
         text: key,
@@ -128,7 +130,7 @@ export function drawList({
 
     var textImage: Canvas
     if (typeof text == "string") {
-        textImage = drawText({ text, maxWidth: xmax, lineHeight });
+        textImage = await drawText({ text, maxWidth: xmax, lineHeight });
     }
     else if (content != undefined) {
         textImage = drawTextWithImages({
@@ -163,7 +165,7 @@ interface tipsOptions {
     lineHeight?: number;
     spacing?: number;
 }
-export function drawTipsInList({
+export async function drawTipsInList({
     text,
     content,
     textSize = 30,
@@ -173,7 +175,7 @@ export function drawTipsInList({
     const xmax = 760
     var textImage: Canvas
     if (typeof text == "string") {
-        textImage = drawText({ text, textSize, maxWidth: xmax, lineHeight });
+        textImage = await drawText({ text, textSize, maxWidth: xmax, lineHeight });
     }
     else if (content != undefined) {
         textImage = drawTextWithImages({
@@ -185,7 +187,7 @@ export function drawTipsInList({
         });
     }
     else {
-        textImage = new Canvas(1, 1)
+        textImage = reCanvas
     }
     const canvas = new Canvas(800, textImage.height + 10);
     const ctx = canvas.getContext('2d');

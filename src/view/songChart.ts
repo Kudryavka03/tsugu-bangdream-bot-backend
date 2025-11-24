@@ -3,7 +3,11 @@ import { Band } from '@/types/Band'
 import * as BestdoriPreview from '@/components/BestdoriPreview.cjs'
 import { getServerByPriority } from '@/types/Server'
 import { Server } from '@/types/Server'
-import { globalDefaultServer, serverNameFullList } from '@/config';
+import { assetsRootPath, globalDefaultServer, serverNameFullList } from '@/config';
+import * as path from 'path';
+import Piscina from 'piscina'
+const workerPath = path.resolve(__dirname, "../components/BestdoriPreview.cjs");
+const BestdoriPreviewPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[],env:{PROJECT_ROOT: __dirname,ASROOT:assetsRootPath} });
 
 export async function drawSongChart(songId: number, difficultyId: number, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
     const song = new Song(songId)
@@ -24,6 +28,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
         return ['谱面数据没法下载，再试一次看看']
     }
     // 没有并行的可能。
+    /*
     const tempcanv = await BestdoriPreview.DrawPreview({
         id: song.songId,
         title: song.musicTitle[server],
@@ -33,7 +38,18 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
         diff: difficultyName[difficultyId],
         cover: song.getSongJacketImageURL(displayedServerList)
     }, songChart as any)
-    
+    */
+   var chartData = songChart as any;
+    return [Buffer.from(await BestdoriPreviewPool.run({
+        meta:{id: song.songId,
+        title: song.musicTitle[server],
+        artist: bandName,
+        author: song.detail.lyricist[server],
+        level: song.difficulty[difficultyId].playLevel,
+        diff: difficultyName[difficultyId],
+        cover: song.getSongJacketImageURL(displayedServerList)
+        },chartData},{name:'DrawPreview'}))]
+/*
     let buffer:Buffer
     if( compress!=undefined && compress){
         buffer = await tempcanv.toBuffer('jpeg',{quality:0.5})
@@ -41,6 +57,6 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     else{
         buffer = await tempcanv.toBuffer('png')
     }
-
-    return [buffer]
+*/
+    //return [buffer]
 }

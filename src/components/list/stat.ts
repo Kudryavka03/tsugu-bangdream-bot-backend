@@ -18,7 +18,7 @@ export async function drawCardStatInList(card: Card) {
     const statTotal = stat.performance + stat.technique + stat.visual
     const statImage = await drawCardStatDivided(stat, statTotal, limitBreakstat)
     const list = []
-    list.push(drawList({
+    list.push(await drawList({
         key: '综合力', content: [`综合力: ${statTotal} + (${limitBreakstatTotal * 4})`]
     }))
     list.push(new Canvas(1, 5))
@@ -30,7 +30,7 @@ export async function drawStatInList(stat: Stat) {
     const statTotal = Math.floor(stat.performance + stat.technique + stat.visual);
     const statImage = await drawCardStatDivided(stat, statTotal);
     const list = [];
-    list.push(drawList({
+    list.push(await drawList({
         key: '综合力', content: [`综合力: ${statTotal}`]
     }))
     list.push(new Canvas(1, 5));
@@ -41,14 +41,14 @@ export async function drawStatInList(stat: Stat) {
 async function drawCardStatDivided(stat: Stat, statTotal: number, limitBreakstat?: Stat): Promise<Canvas> {
     const widthMax = 800
 
-    function drawStatLine(key: string, value: number, total: number): Canvas {
+    async function drawStatLine(key: string, value: number, total: number): Promise<Canvas> {
         const canvas = new Canvas(800, 70);
         const ctx = canvas.getContext('2d');
         let text = `${statConfig[key].name}: ${Math.floor(value)}`;
         if (limitBreakstat) {
             text += ` + (${limitBreakstat[key] * 4})`
         }
-        const textImage = drawText({
+        const textImage = await drawText({
             text,
             maxWidth: widthMax,
             textSize: 30,
@@ -69,7 +69,7 @@ async function drawCardStatDivided(stat: Stat, statTotal: number, limitBreakstat
     for (const key in stat) {
         if (Object.prototype.hasOwnProperty.call(stat, key)) {
             const element = stat[key];
-            list.push(drawStatLine(key, element, statTotal))
+            list.push(await drawStatLine(key, element, statTotal))
         }
     }
     return stackImage(list)

@@ -28,7 +28,7 @@ export async function drawEventStage(eventId: number, mainServer: Server, meta: 
     }
 
     var all = []
-    all.push(drawTitle('查试炼', `国服 ID:${eventId} 活动试炼`))
+    all.push(await drawTitle('查试炼', `国服 ID:${eventId} 活动试炼`))
 
     //获得活动stage列表
     const stageList = eventStage.getStageList();
@@ -63,7 +63,7 @@ export async function drawEventStage(eventId: number, mainServer: Server, meta: 
         tempH += tempImage.height;
         if (tempH > maxHeight) {
             if (tempEventStageImageList.length > 0) {
-                eventStageImageListHorizontal.push(drawDatablock({ list: tempEventStageImageList }));
+                eventStageImageListHorizontal.push(await drawDatablock({ list: tempEventStageImageList }));
             }
             tempEventStageImageList = [];
             tempH = tempImage.height;
@@ -71,7 +71,7 @@ export async function drawEventStage(eventId: number, mainServer: Server, meta: 
         tempEventStageImageList.push(tempImage);
 
         if (i == eventStageResults.length - 1) {
-            eventStageImageListHorizontal.push(drawDatablock({ list: tempEventStageImageList }));
+            eventStageImageListHorizontal.push(await drawDatablock({ list: tempEventStageImageList }));
         }
     }
 

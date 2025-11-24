@@ -16,6 +16,7 @@ import Piscina from 'piscina';
 // 在低性能服务器上不应该使用Worker。Worker会使得receiveMessageOnPort阻塞主线程。别问我怎么知道的
 const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
 const readPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
+//const existPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:4,execArgv:[] });
 
 
 
@@ -80,7 +81,8 @@ export async function download(url: string, directory?: string, fileName?: strin
       await fs.promises.writeFile(path.join(directory, fileName), fileBuffer);
       // fs.writeFileSync(path.join(directory, fileName), fileBuffer); // 写入文件
     }
-    if(showDownloadLog) logger('download',`Download finish and cache for ${url}.`)
+    //if(showDownloadLog) logger('download',`Download finish and cache for ${url}.`)
+    logger('download',`Download finish and cache for ${url}.`)
     //console.log(`Downloaded file from "${url}"`);
     return fileBuffer;
   } catch (e) {
@@ -109,6 +111,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
  // if (url.includes('312')) throw new Error("模拟错误返回")
  if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' From:')
   if (apiDebug)console.trace()
+  var existFiles = false
   try {
     if (directory != undefined && fileName != undefined) {
       createDirIfNonExist(directory);
@@ -116,7 +119,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     let eTag: string | undefined;
     const cacheFilePath = path.join(directory || '', `${fileName || ''}`);
     if (fileName && directory) {
-      if (await fileExists(cacheFilePath)) {
+      existFiles = await fileExists(cacheFilePath)
+      if (existFiles) {
         var isReadCache = false;  // 不读取缓存，做一系列的判断先
         // var isCheckIfUnExpired = false
         var isUnExpired = false
@@ -130,7 +134,6 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           isReadCache = true
         }
       }
-        // 经过上述判断后，对于基础API，档线数据，玩家数据，则通过缓存判断是否需要使用缓存
         if (isReadCache) {
           //console.log(`Cache time for "${url}" has not expired. Using cached JSON data.`);
           if (memoryCache.has(cacheFilePath)) {
@@ -147,7 +150,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
 
-    await fileExists(eTagFilePath)? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
+    await fileExists(eTagFilePath) && existFiles? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
 
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
@@ -164,7 +167,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         //const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
         const cachedJson = loadJson(cacheFilePath);
         memoryCache.set(cacheFilePath, cachedJson);
-        if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is using Cached data.')
+        //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+        logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
         return cachedJson;
       } else {
         throw error;
@@ -185,7 +189,8 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     }
 
     //console.log(`Downloaded JSON data from "${url}"`);
-    if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+    //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' is Downloaded.')
+    logger('getJsonAndSave','API: '+url + ' is Downloaded and cached.')
     memoryCache.set(cacheFilePath, jsonObject);
     return jsonObject;
   } catch (e) {
@@ -197,6 +202,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
 
 
 // 综合考虑还是用回之前的方案，1kb文件创建worker本身就是不小的开销了
+// IO使用池
 async function loadJson(path) {
   const str = await pool.run(path,{name:'readJsonText'})
   var body = JSON.parse(str)
@@ -208,12 +214,7 @@ async function loadFile(p: string): Promise<Buffer> {
 }
 
 export async function fileExists(path: string): Promise<boolean> {
-  try {
-      await fs.promises.access(path); // 尝试访问文件
-      return true;
-  } catch {
-      return false;
-  }
+   return await readPool.run(path,{name:'fileExists'})
 }
 
 

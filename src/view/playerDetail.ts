@@ -159,7 +159,7 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     //玩家信息 顶部 
     //all.push(await drawPlayerDetailBlockWithIllust(player))
     all.push(results[0])
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     all.push(listImage)
     //console.log(all)
     var buffer = await outputFinalBuffer({

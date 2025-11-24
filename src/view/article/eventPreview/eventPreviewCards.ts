@@ -104,12 +104,12 @@ async function drawEventCardDetail(cardId: number, displayedServerList: Server[]
     }
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: card.getTypeName()
     })
 
     //卡牌ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: card.cardId.toString()
     })
 

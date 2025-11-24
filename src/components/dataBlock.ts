@@ -10,13 +10,13 @@ interface datablockOptions {
     maxWidth?: number
 }
 //组合表格子程序，使用block当做底，通过最大高度换行，默认高度无上限
-export function drawDatablock({
+export async function drawDatablock({
     list,
     BG = true,
     topLeftText,
     opacity = 0.9,
     maxWidth
-}: datablockOptions): Canvas {
+}: datablockOptions): Promise<Canvas> {
     const topLeftTextHeight = 70
     //计算高度
     var allH = 0
@@ -54,7 +54,7 @@ export function drawDatablock({
                 strokeWidth: 5
             }), 50, 0)
 
-            var textImage = drawText({//画字
+            var textImage = await drawText({//画字
                 color: '#ffffff',
                 text: topLeftText,
                 maxWidth: 370,
@@ -99,11 +99,11 @@ export function drawDatablock({
     return (tempcanv)
 }
 
-export function drawDatablockHorizontal({
+export async function drawDatablockHorizontal({
     list,
     BG = true,
     topLeftText
-}: datablockOptions): Canvas {
+}: datablockOptions): Promise<Canvas> {
     const topLeftTextHeight = 70;
 
     // 计算宽度和高度
@@ -141,7 +141,7 @@ export function drawDatablockHorizontal({
                 strokeWidth: 5
             }), 0, 50);
 
-            var textImage = drawText({
+            var textImage = await drawText({
                 color: '#ffffff',
                 text: topLeftText,
                 maxWidth: topLeftTextHeight - 5,

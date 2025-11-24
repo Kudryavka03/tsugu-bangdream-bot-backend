@@ -35,7 +35,7 @@ export async function drawEventPreviewRules(eventId: number): Promise<Array<Buff
         list.push(tempCanvas)
     }
 
-    var listImage = drawDatablock({ list, opacity: 0.75 })
+    var listImage = await drawDatablock({ list, opacity: 0.75 })
 
     //创建最终输出数组
     let all: Array<Image | Canvas> = []

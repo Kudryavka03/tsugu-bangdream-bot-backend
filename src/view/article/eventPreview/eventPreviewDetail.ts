@@ -32,12 +32,12 @@ export async function drawEventPreviewDetail(eventId: number): Promise<Array<Buf
     list.push(line)
 
     //类型
-    var typeImage = drawList({
+    var typeImage = await drawList({
         key: '类型', text: event.getTypeName()
     })
 
     //活动ID
-    var IdImage = drawList({
+    var IdImage = await drawList({
         key: 'ID', text: event.eventId.toString()
     })
 
@@ -62,7 +62,7 @@ export async function drawEventPreviewDetail(eventId: number): Promise<Array<Buf
 
 
     //活动属性加成
-    list.push(drawList({
+    list.push(await drawList({
         key: '活动加成'
     }))
     var attributeList = event.getAttributeList()
@@ -78,7 +78,7 @@ export async function drawEventPreviewDetail(eventId: number): Promise<Array<Buf
     list.push(line)
 
     //活动角色加成
-    list.push(drawList({
+    list.push(await drawList({
         key: '活动角色加成'
     }))
     var characterList = event.getCharacterList()
@@ -108,7 +108,7 @@ export async function drawEventPreviewDetail(eventId: number): Promise<Array<Buf
                 statText += `${statConfig[i].name} + ${element}%  `
             }
         }
-        list.push(drawList({
+        list.push(await drawList({
             key: '活动偏科加成',
             text: statText
         }))
@@ -147,7 +147,7 @@ export async function drawEventPreviewDetail(eventId: number): Promise<Array<Buf
     }))
 
     //活动信息表----------
-    var listImage = drawDatablock({ list, opacity: 0.75 })
+    var listImage = await drawDatablock({ list, opacity: 0.75 })
 
     //创建最终输出数组
     all.push(listImage)

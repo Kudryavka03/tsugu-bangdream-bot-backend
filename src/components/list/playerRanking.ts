@@ -45,7 +45,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
         ///ctx.drawImage(rankingImage, 12, 45, 45, 21);
     }
     else {
-        rankingImage = drawText({
+        rankingImage = await drawText({
             text: '#' + user.ranking.toString(),
             textSize: 21,
             maxWidth: 100
@@ -64,7 +64,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
 
 
     //玩家昵称
-    var playerNameImage = drawText({
+    var playerNameImage = await drawText({
         text: removeBraces(user.name),
         textSize: 23,
         maxWidth: 450
@@ -92,7 +92,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
 
     // ctx.drawImage(degreeImage, 210 + (degreeImage.width / 2 + 10) * i, 46, degreeImage.width / 2, degreeImage.height / 2);
     //简介
-    var playerIntroductionImage = drawText({
+    var playerIntroductionImage = await drawText({
         text: removeBraces(user.introduction),
         textSize: 20,
         maxWidth: 450
@@ -100,7 +100,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     ctx.drawImage(playerIntroductionImage, 210, 75);
 
     //等级
-    var playerRankImage = drawText({
+    var playerRankImage = await drawText({
         text: '等级 ' + user.rank.toString(),
         textSize: 23,
         maxWidth: 150
@@ -108,7 +108,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     ctx.drawImage(playerRankImage, 790 - playerRankImage.width, 10);
 
     //id
-    var idImage = drawText({
+    var idImage = await drawText({
         text: '#' + user.uid,
         textSize: 20,
         maxWidth: 150
@@ -116,7 +116,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     ctx.drawImage(idImage, 790 - idImage.width, 45);
 
     //pt
-    var ptImage = drawText({
+    var ptImage = await drawText({
         text: user.currentPt.toString() + '分',
         textSize: 23,
         maxWidth: 150

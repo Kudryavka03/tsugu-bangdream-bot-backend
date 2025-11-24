@@ -91,7 +91,7 @@ export async function drawCharacterDetail(characterId: number, displayedServerLi
     listRight.push(rightListLine)
     //应援色
     const tempColor = getColorFromHex(character.colorCode)
-    listRight.push(drawList(
+    listRight.push(await drawList(
         {
             key: '应援色',
             content: [character.colorCode, tempColor.generateColorBlock(1)],
@@ -110,7 +110,7 @@ export async function drawCharacterDetail(characterId: number, displayedServerLi
     //描述
     list.push(line)
     const tempServer = getServerByPriority(character.characterName)
-    list.push(drawTipsInList({
+    list.push(await drawTipsInList({
         text: character.profile.selfIntroduction[tempServer]
     }))
     list.push(line)
@@ -123,24 +123,24 @@ export async function drawCharacterDetail(characterId: number, displayedServerLi
     }))
     list.push(line)
     //生日
-    const birthdayTextImage = drawList({
+    const birthdayTextImage = await drawList({
         text: changeTimefomantMonthDay(Number(character.profile.birthday)),
         key: '生日',
     })
     //星座
-    const constellationTextImafe = drawList({
+    const constellationTextImafe = await drawList({
         text: constellationList[character.profile.constellation],
         key: '星座',
     })
     list.push(drawListMerge([birthdayTextImage, constellationTextImafe]))
     list.push(line)
     //身高
-    const heightTextImage = drawList({
+    const heightTextImage = await drawList({
         text: `${character.profile.height}cm`,
         key: '身高',
     })
     //part
-    const partTextImage = drawList({
+    const partTextImage = await drawList({
         text: character.profile.part,
         key: '位置',
     })
@@ -193,21 +193,21 @@ export async function drawCharacterDetail(characterId: number, displayedServerLi
     list.push(line)
 
     //角色模糊搜索文字
-    list.push(drawList({
+    list.push(await drawList({
         text: config.characterId[character.characterId].toString(),
         key: '角色模糊搜索关键字',
     }))
     list.push(line)
 
     //乐队模糊搜索文字
-    list.push(drawList({
+    list.push(await drawList({
         text: config.bandId[character.bandId].toString(),
         key: '乐队模糊搜索关键字',
     }))
 
     //总体
-    all.push(drawTitle('查询', '角色'))
-    all.push(drawDatablock({
+    all.push(await drawTitle('查询', '角色'))
+    all.push(await drawDatablock({
         list: [
             drawImageListCenter([await character.getNameBanner()]),
             new Canvas(50, 50),

@@ -23,7 +23,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
         return [`错误: ${serverNameFullList[mainServer]} 活动不存在或数据不足`];
     }
     var all = [];
-    all.push(drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
+    all.push(await drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
     var list: Array<Image | Canvas> = [];
     var event = new Event(eventId);
     const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
@@ -57,7 +57,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     //折线图
     list.push(await drawCutoffEventTopChartPromise)
 
-    var listImage = drawDatablock({ list });
+    var listImage = await drawDatablock({ list });
     all.push(await drawEventDatablockPromise)
     all.push(listImage);
 
@@ -89,7 +89,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         gap: 10,
         color: "#a8a8a8"
     })
-    all.push(drawTitle('查岗', `${serverNameFullList[mainServer]}`));
+    all.push(await drawTitle('查岗', `${serverNameFullList[mainServer]}`));
     {
         const list: Array<Image | Canvas> = [];
         // var event = new Event(eventId);
@@ -120,7 +120,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
 
         if (list.length > 0) {
-            all.push(drawDatablock({ list, maxWidth: widthMax }))
+            all.push(await drawDatablock({ list, maxWidth: widthMax }))
         }
         else 
             return [`玩家当前不在${serverNameFullList[mainServer]}: 活动${eventId}前十名里`]
@@ -133,7 +133,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         if (!maxCount) {
             maxCount = 20
         }
-        list.push(drawListMerge([drawList({ key: '时间' }), drawList({ key: '分数' }), drawList({ key: '时间' }), drawList({ key: '分数' })], widthMax))
+        list.push(drawListMerge([await drawList({ key: '时间' }), await drawList({ key: '分数' }), await drawList({ key: '时间' }), await drawList({ key: '分数' })], widthMax))
         const halfLine: Canvas = drawDottedLine({
             width: widthMax / 2,
             height: 30,
@@ -155,12 +155,12 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             if (playerRating[i].value != playerRating[i + 1].value) {
                 count += 1
                 const mid = new Date((playerRating[i + 1].time + playerRating[i].time) / 2), score = playerRating[i].value - playerRating[i + 1].value
-                imageList.push(drawListMerge([drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), drawList({ text: `${score}`})], widthMax / 2))
+                imageList.push(drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${score}`})], widthMax / 2))
                 // list.push(line)
             }
         }
         if (count == 0) {
-            list.push(drawList( {text: '数据不足'} ))
+            list.push(await drawList( {text: '数据不足'} ))
         }
         else {
             imageList.reverse()
@@ -178,17 +178,17 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 rightImage.pop()
             list.push(drawListMerge([stackImage(leftImage), stackImage(rightImage)], widthMax))
         }
-        all.push(drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
+        all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
     //近期统计数据
     const timeList = [1, 3, 12, 24]
     {
         const list = [], now = Date.now()
-        list.push(drawListMerge([drawList({ key: '时间' }), drawList({ key: '分数变动次数' }), drawList({ key: '平均时间间隔' }), drawList({ key: '平均分数' })], widthMax))
+        list.push(drawListMerge([await drawList({ key: '时间' }), await drawList({ key: '分数变动次数' }), await drawList({ key: '平均时间间隔' }), await drawList({ key: '平均分数' })], widthMax))
         for (const a of timeList) {
             const begin = now - a * 60 * 60 * 1000
             const st = new Date(begin), ed = new Date(now)
-            const timeImage = drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}`})
+            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}`})
             const offset = Math.floor((now / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((begin / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             // console.log(st.getTimezoneOffset())
             if (offset > 0) {
@@ -213,16 +213,16 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                     break
             }
             if (flag) {
-                list.push(drawListMerge([timeImage, drawList({ text: '数据不足' })], widthMax))
+                list.push(drawListMerge([timeImage, await drawList({ text: '数据不足' })], widthMax))
             }
             else {
                 const averageTime = getAverageTime(timestamps)
-                list.push(drawListMerge([timeImage, drawList({ text: `${count}` }), drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax))
+                list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax))
             }
             list.push(line)
         }
         list.pop()
-        all.push(drawDatablock({ list, topLeftText: `近期统计数据`}))
+        all.push(await drawDatablock({ list, topLeftText: `近期统计数据`}))
     }
 
 

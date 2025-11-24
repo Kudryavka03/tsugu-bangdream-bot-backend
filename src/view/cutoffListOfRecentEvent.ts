@@ -64,7 +64,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
     for (let i in cutoffList) {
         const cutoff = cutoffList[i]
         const tempEvent = new Event(cutoff.eventId)
-        list.push(drawList({
+        list.push(await drawList({
             key: `ID:${cutoff.eventId} ${tempEvent.eventName[mainServer]}`,
         }))
         //添加活动粗略信息，包括Attribute，Charactor
@@ -111,7 +111,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
         }
 
-        list.push(drawList({
+        list.push(await drawList({
             content: cutoffContent
         }))
         list.push(line)

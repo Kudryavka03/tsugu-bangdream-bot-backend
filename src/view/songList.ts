@@ -86,12 +86,12 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     songImageListHorizontal.pop();
 
 
-    var songListImage = drawDatablockHorizontal({
+    var songListImage = await drawDatablockHorizontal({
         list: songImageListHorizontal
     })
 
     var all = []
-    all.push(drawTitle('查询', '歌曲列表'))
+    all.push(await drawTitle('查询', '歌曲列表'))
     all.push(songListImage)
     var buffer = await outputFinalBuffer({
         imageList: all,

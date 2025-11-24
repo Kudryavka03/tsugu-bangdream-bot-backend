@@ -52,7 +52,7 @@ export async function getIcon(server: Server): Promise<Image> {
         const iconSvgBuffer = await downloadFileCache(`${Bestdoriurl}/res/icon/${Server[server]}.svg`)
         if (!iconSvgBuffer.equals(assetErrorImageBuffer)){
             readyToCache = true
-            logger('getServerIcon','Not match cache and res Ready,cached.');
+            logger('getServerIcon','Cache HotSpot Image Successful.');
         }
         const iconPngBuffer = await convertSvgToPngBuffer(iconSvgBuffer)
         image = await loadImage(iconPngBuffer)
