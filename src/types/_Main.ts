@@ -28,17 +28,17 @@ async function loadMainAPI(useCache: boolean = false) {
     });
 
     await Promise.all(promiseAll);
+    try { //能够实时更新而不重启清空缓存
+        songNickname = await readExcelFile(path.join(configPath, 'nickname_song.xlsx'))
+    }
+    catch (e) {
+        logger('mainAPI', '读取nickname_song.xlsx失败')
+    }
     if (useCache) {
         cardsCNfix = await readJSON(path.join(configPath, 'cardsCNfix.json'))
         skillCNfix = await readJSON(path.join(configPath, 'skillsCNfix.json'))
         areaItemFix = await readJSON(path.join(configPath, 'areaItemFix.json'))
         eventCharacterParameterBonusFix = await readJSON(path.join(configPath, 'eventCharacterParameterBonusFix.json'))
-        try {
-            songNickname = await readExcelFile(path.join(configPath, 'nickname_song.xlsx'))
-        }
-        catch (e) {
-            logger('mainAPI', '读取nickname_song.xlsx失败')
-        }
     }
     for (var key in cardsCNfix) {
         mainAPI['cards'][key] = cardsCNfix[key]
@@ -59,22 +59,22 @@ async function loadMainAPI(useCache: boolean = false) {
     }
     logger('mainAPI', 'PreCache Icon...');
     for(let i = 1;i<6;i++){
-       await getBandIcon(i)  // 用于缓存
+       getBandIcon(i)  // 用于缓存
     }
-    await getBandIcon(18)  // 用于缓存RAS
-    await getBandIcon(21)  // 用于缓存Morfonica
-    await getBandIcon(45)  // 用于缓存MyGO
+    getBandIcon(18)  // 用于缓存RAS
+    getBandIcon(21)  // 用于缓存Morfonica
+    getBandIcon(45)  // 用于缓存MyGO
 
     for (const key in Server) {
         const value = Number(key)
         if (!isNaN(value)) {
-            await getIcon(value as Server)
+            getIcon(value as Server)
         }
     }
     let attributeList = ["cool", "happy", "pure", "powerful"];
     for(var attributeName of attributeList){
         if(attributeIconCache[attributeName] == undefined){
-            await new Attribute(attributeName).getIcon()
+            new Attribute(attributeName).getIcon()
         }
     }
 
