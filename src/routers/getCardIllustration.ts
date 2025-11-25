@@ -31,15 +31,20 @@ router.post('/',
 
 async function commandGetCardIllustration(cardId: number): Promise<Array<Buffer | string>> {
   let card = new Card(cardId);
-  if (card.cardId == 947){
-    return getDoujinshiSayoHina()
-  }
+
   if (!card.isExist) {
     return ['错误: 该卡不存在']
   }
   const trainingStatusList = card.getTrainingStatusList();
+  let trainingStatusListLength;
+
+  if (card.cardId === 947) {
+    trainingStatusListLength = 1;
+  } else {
+    trainingStatusListLength = trainingStatusList.length;
+  }
   const imageList = [];
-  for (let i = 0; i < trainingStatusList.length; i++) {
+  for (let i = 0; i < trainingStatusListLength; i++) {
     const element = trainingStatusList[i];
     const illustration = await card.getCardIllustrationImageBuffer(element);
     // 直接添加插图到列表中，不需要绘制到Canvas

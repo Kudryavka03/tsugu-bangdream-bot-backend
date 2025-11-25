@@ -36,9 +36,12 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     var trainingStatusList = card.getTrainingStatusList()
     ///list.push(new Canvas(800, 30))
     var drawCardIllustrationPromise: Promise<Canvas>[] = []
+    var trainingStatusListLength = trainingStatusList.length
+    if(card.cardId === 947) trainingStatusListLength = 1; // 不允许返回947的花后卡面
     //插画
-    for (let i = 0; i < trainingStatusList.length; i++) {
+    for (let i = 0; i < trainingStatusListLength; i++) {
         const element = trainingStatusList[i];
+
         drawCardIllustrationPromise.push(drawCardIllustration({
             card: card,
             trainingStatus: element,

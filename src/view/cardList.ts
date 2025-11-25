@@ -71,6 +71,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                 const characterId = characterIdList[j];
                 var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
                 //const cardTask = drawCardListLine(tempAttributeCardList).then(result => tempAttributeCardImageList.push(result));
+
                 drawCardListLinePromise.push(drawCardListLine(tempAttributeCardList,after_training))
                 //promise.push(tempAttributeCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                 //promise.push(cardTask)
@@ -106,14 +107,13 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
         cardListImage = await drawDatablockHorizontal({
             list: tempAttributeImageList,
         })
-        console.log(tempAttributeImageList.length)
         if (cardListImage.width > maxWidth) {
-            console.log("Output......")
+            //console.log("Output......")
             let times = 0
             let tempImageList: Array<Buffer | string> = []
             tempImageList.push('卡牌列表过长，已经拆分输出')
             for (let i = 0; i < tempAttributeImageList.length; i++) {
-                console.log(i)
+                //console.log(i)
                 const tempCanv = tempAttributeImageList[i];
                 if (tempCanv == characterIconImage) {
                     continue
@@ -154,6 +154,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     //promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                     //const drawLine =drawCardListLine(tempAttributeCardList).then(ra=>tempCardImageList.push(ra))
                     //promise.push(drawLine)
+                    console.log(characterId)
                     promiseList.push(drawCardListLine(tempAttributeCardList,after_training))
                     //画角色头像
                     if (icon) {

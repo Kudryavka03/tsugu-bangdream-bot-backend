@@ -87,7 +87,7 @@ export async function drawCardIcon({
     //console.log("drawCardIcon")
     const canvas: Canvas = cardIdVisible ? new Canvas(180, 210) : new Canvas(180, 180);
     const ctx = canvas.getContext('2d');
-
+    if (card.cardId === 947) illustTrainingStatus = false
     // ★ 所有异步操作先不 await，而是创建 Promise
     const pCardIcon = card.getCardIconImage(illustTrainingStatus);
     const pFrame = getCardIconFrame(card.rarity, card.attribute);
