@@ -4,7 +4,7 @@ FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
 import * as path from 'path';
 import Piscina from 'piscina';
-import { reCanvas, reCanvasCtx } from './utils';
+import { getFontCanvasCtxFromPool } from './utils';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
 
@@ -32,8 +32,7 @@ export async function drawText({
     }
     else if (wrappedTextData.numberOfLines == 1) {
         //var canvas: Canvas = reCanvas;
-        var ctx = reCanvasCtx;
-        setFontStyle(ctx, textSize, font);
+        var  ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, 'old'));
         var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
         canvas = new Canvas(width, lineHeight);
     }
@@ -52,7 +51,7 @@ export async function drawText({
     }
     return canvas;
 }
-
+const wrapTextCache  = new Map<string, warpTextOptions>();
 export async function wrapText({
     text,
     textSize,
@@ -60,7 +59,16 @@ export async function wrapText({
     lineHeight,
     font = "old"
 }: warpTextOptions) {
-    return await wrapTextPool.run({text,textSize,maxWidth,lineHeight,font},{name:'wrapText'})
+    const key = `${textSize}:${font}:${text}`;
+    if(wrapTextCache.has(key)){
+        return wrapTextCache.get(key)
+    }
+    else{
+        var data = await wrapTextPool.run({text,textSize,maxWidth,lineHeight,font},{name:'wrapText'})
+        wrapTextCache.set(key,data)
+        return data
+    }
+    
     const canvas = new Canvas(1, 1);
     const ctx = canvas.getContext('2d');
     const temp = text.split('\n');
@@ -132,8 +140,8 @@ export function drawTextWithImages({
     //单行文字，宽度为第一行的宽度
     else if (wrappedTextData.numberOfLines == 1) {
         //canvas = reCanvas;
-        const ctx = reCanvasCtx;
-        setFontStyle(ctx, textSize, font);
+        const ctx  = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, font));
+        //setFontStyle(ctx, textSize, font);
         var Width = 0
         for (var n = 0; n < wrappedText[0].length; n++) {
             if (typeof wrappedText[0][n] === "string") {
@@ -193,10 +201,11 @@ function warpTextWithImages({
     spacing = textSize / 3,
     font = 'old'
 }: TextWithImagesOptions) {
+    //console.log('warpTextWithImages Excute')
     //const canvas = reCanvas;
-    const ctx = reCanvasCtx;
+    const ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, font));
     //ctx.textBaseline = 'alphabetic';
-    setFontStyle(ctx, textSize, font);
+    //setFontStyle(ctx, textSize, font);
     const temp: Array<Array<string | Image | Canvas>> = [[]];
     let lineNumber = 0;
     let tempX = 0;
@@ -212,6 +221,7 @@ function warpTextWithImages({
             content[i] = "?"
         }
         if (typeof content[i] === "string") {
+            //console.log('String')
             let temptext = content[i] as string;
             while (temptext.length > 0) {
                 const lineBreakIndex = temptext.indexOf("\n");
@@ -251,6 +261,7 @@ function warpTextWithImages({
                 }
             }
         } else if (content[i] instanceof Canvas || content[i] instanceof Image) {
+            //console.log('Image')
             let tempImage = content[i] as Image;
             let tempWidth = tempImage.width * (textSize / tempImage.height);
             if (tempX + tempWidth > maxWidth) {
@@ -276,3 +287,8 @@ function warpTextWithImages({
 export var setFontStyle = function (ctx: CanvasRenderingContext2D, textSize: number, font: string) {//设置字体大小
     ctx.font = textSize + 'px ' + font + ",Microsoft Yahei"
 }
+export function setFontStyleArgs (textSize: number, font: string):string {//设置字体参数
+    return  textSize + 'px ' + font + ",Microsoft Yahei"
+}
+
+

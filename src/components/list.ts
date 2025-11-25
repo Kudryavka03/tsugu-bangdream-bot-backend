@@ -1,12 +1,12 @@
 import { Canvas, Image } from 'skia-canvas';
 import { drawRoundedRectWithText } from '@/image/drawRect';
-import { drawText, drawTextWithImages } from '@/image/text';
+import { drawText, drawTextWithImages, setFontStyleArgs } from '@/image/text';
 import { drawDottedLine } from '@/image/dottedLine'
 import { Server, getServerByPriority, getIcon } from '@/types/Server'
 import { stackImageHorizontal } from '@/components/utils';
 import { globalDefaultServer } from '@/config';
 import { setFontStyle } from '@/image/text';
-import { reCanvas, reCanvasCtx } from '@/image/utils';
+import { getFontCanvasCtxFromPool } from '@/image/utils';
 
 
 //表格用默认虚线
@@ -55,8 +55,8 @@ export function drawListTextWithImages({
     //var textImage: Canvas = reCanvas
     var Width = 20, Height = 0
     {
-        const ctx = reCanvasCtx;
-        setFontStyle(ctx, textSize, 'old')
+        //const ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, 'old'));
+        //setFontStyle(ctx, textSize, 'old')
         for (const element of content) {
             if (typeof element === "string") {
                 // Width += ctx.measureText(element).width
@@ -187,9 +187,10 @@ export async function drawTipsInList({
         });
     }
     else {
-        textImage = reCanvas
+        textImage = null
     }
-    const canvas = new Canvas(800, textImage.height + 10);
+    const canvas = new Canvas(800, (textImage.height===null?1:textImage.height) + 10);
+    //const canvas = new Canvas(800, 1 + 10);
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#f1f1f1'
     ctx.fillRect(0, 10, 800, textImage.height);
@@ -385,4 +386,5 @@ export function drawListWithLine(textImageList: Array<Canvas | Image>): Canvas {
     }
     return canvas
 }
+
 

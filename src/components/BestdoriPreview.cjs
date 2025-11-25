@@ -3,7 +3,7 @@ const Canvas = require('skia-canvas')
 require('ts-node/register');
 const fs = require('fs')
 var assetsRootPath = process.env.ASROOT
-
+var useGpu = false
 
 /**
  * @typedef {object} BestdoriNote
@@ -168,6 +168,7 @@ async function DrawPreview ({ meta, chartData }) {
     const secondsPerCol = chartLength / colCount;
 
     const canvas = new Canvas.Canvas(width, height);
+    canvas.gpu = useGpu
     const ctx = canvas.getContext('2d');
 
     // 读取音符图片

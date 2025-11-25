@@ -31,7 +31,7 @@ import { topRateDetailRouter } from './routers/topRateDetail';
 import { logger } from '@/logger'
 import * as dotenv from 'dotenv';
 
-
+export var LagTimes:number
 dotenv.config();
 
 
@@ -97,3 +97,18 @@ app.use((req, res) => {
 app.listen(port, () => {
     logger(`expressMainThread`, `listening on port ${port}`);
 });
+function measureLag(interval = 50) {
+    let last = Date.now();
+  
+    setInterval(() => {
+      const now = Date.now();
+      const lag = now - last - interval;
+      if (lag > 100) {
+        LagTimes = lag
+        logger('measureLag','High lag time detected! Current Lag time is:' + lag )
+      }
+      last = now;
+    }, interval);
+  }
+  
+  measureLag();

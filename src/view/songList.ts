@@ -11,6 +11,8 @@ import { stackImage } from '@/components/utils';
 import { Server } from '@/types/Server';
 import { globalDefaultServer } from '@/config';
 import { drawSongDetail } from "./songDetail";
+import pLimit from 'p-limit'
+import { logger } from "@/logger";
 
 
 // 紧凑化虚线分割
@@ -40,7 +42,7 @@ const line2: Canvas = drawDottedLine({
 })
 
 export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
-
+    const limit = pLimit(1);    // 限制3首歌同时绘制
     // 计算歌曲模糊搜索结果
     const tempSongList = matchSongList(matches, displayedServerList)
 
@@ -57,12 +59,20 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var songImageListHorizontal: Canvas[] = [];
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
-
-    for (let i = 0; i < tempSongList.length; i++) {
-        songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
+    var t1 = Date.now()
+    if (tempSongList.length <70){
+       for (let i = 0; i < tempSongList.length; i++) {
+            songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
+        }
+    } else{   // 大于15首，并发降级，不允许全部并发
+        logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
+         songPromises = tempSongList.map(song =>
+            limit(() => drawSongInList(song, undefined, undefined, displayedServerList))
+        );
     }
-
     var songImages = await Promise.all(songPromises);
+    var t2 = Date.now()
+    console.log(t2-t1)
 
     for (let i = 0; i < songImages.length; i++) {
         var tempImage = songImages[i];
@@ -100,6 +110,8 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     })
     return [buffer]
 }
+
+
 
 // 计算歌曲模糊搜索结果
 export function matchSongList(matches: FuzzySearchResult, displayedServerList: Server[]) {

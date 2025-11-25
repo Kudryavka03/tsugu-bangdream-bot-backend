@@ -1,16 +1,28 @@
 import { fileExists } from '@/api/downloader';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Canvas, loadImage, Image } from 'skia-canvas';
+import { Canvas, loadImage, Image,CanvasRenderingContext2D as SkiaCtx } from 'skia-canvas';
 import svg2img from 'svg2img';
 
 const assetsRootPath: string = path.join(__dirname, '../../assets');
 
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
 export const assetErrorImage = loadImage(fs.readFileSync(`${assetsRootPath}/err.png`))
-export const reCanvas = new Canvas(1, 1)
-export const reCanvasCtx = reCanvas.getContext('2d')
-reCanvasCtx.textBaseline = 'alphabetic'
+
+const FontCanvasPool = new Map<string, SkiaCtx>();
+
+export function getFontCanvasCtxFromPool(fontArgs: string) {
+  if (!FontCanvasPool.has(fontArgs)) {
+    //console.log('Creat new CanvasCtx: '+fontArgs)
+    const canvas = new Canvas(1, 1);
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = 'alphabetic'
+    ctx.font = fontArgs;
+    FontCanvasPool.set(fontArgs, ctx);
+  }
+  return FontCanvasPool.get(fontArgs);
+}
+
 
 //import {Worker,MessageChannel,MessagePort,SHARE_ENV} from 'node:worker_threads';
 //import Piscina from 'piscina';
@@ -64,12 +76,12 @@ export async function loadImageFromPath(path: string): Promise<Image> {
 //指定字体，字号，文本，获取文本宽度
 export function getTextWidth(text: string, textSize: number, font: string) {    // 可以转移到worker
     //const canvas = reCanvas;
-    const context = reCanvasCtx;
+    const context = getFontCanvasCtxFromPool( `${textSize}px ${font}`);;
     if (!context) {
         throw new Error("Cannot create canvas context");
     }
 
-    context.font = `${textSize}px ${font}`;
+    //context.font = `${textSize}px ${font}`;
     const metrics = context.measureText(text);
 
     return metrics.width;

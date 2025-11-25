@@ -15,10 +15,11 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
     } catch (e) {
       logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);
       if (e.message.includes('404')){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404
-        throw e;
+        throw new Error(`Failed to get JSON from "${url}" Server returned 404 err code`);
       }
       if (attempt === retryCount - 1) {
-        throw e; // Rethrow the error if all retries fail
+        throw new Error(`Failed to get JSON from "${url}" after ${retryCount} attempts`);
+        //throw e; // Rethrow the error if all retries fail
       }
       //等待3秒后重试
       await new Promise(resolve => setTimeout(resolve, 3000));

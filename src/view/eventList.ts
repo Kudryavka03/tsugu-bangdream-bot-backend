@@ -17,7 +17,10 @@ import { drawDottedLine } from '@/image/dottedLine'
 import { statConfig } from '@/components/list/stat'
 import { globalDefaultServer } from '@/config';
 import { Image } from 'skia-canvas';
-
+import pLimit from 'p-limit'
+import { logger } from "@/logger";
+import { LagTimes } from "@/app";
+const limit = pLimit(1);
 const maxHeight = 7000
 const maxColumns = 7
 
@@ -75,8 +78,22 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;
     await Promise.all(tempEventList.map(e => e.initFull(false)));
-    for (var i = 0; i < tempEventList.length; i++) {
-        eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
+    if (tempEventList.length <25){
+        for (var i = 0; i < tempEventList.length; i++) {
+            eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
+        }
+    }
+    else{   // 降级同步输出
+        logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
+
+        eventPromises = tempEventList.map(song =>
+            limit(async () => {
+              // 人为暂停 15ms
+              //await sleep(5);
+              const image = await drawEventInList(song, displayedServerList);
+              return { index: i, image };
+            })
+          );
     }
 
     var eventResults = await Promise.all(eventPromises);
@@ -157,7 +174,9 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     }
 
 }
-
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 async function drawEventInList(event: Event, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     //await event.initFull(false) //优化调度
     var textSize = 25 * 3 / 4;
