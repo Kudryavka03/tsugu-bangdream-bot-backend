@@ -33,7 +33,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
 
 
     var all = []
-    all.push(drawTitle('历史的档线对比', `${serverNameFullList[mainServer]} ${tier}档线`))
+    all.push(await drawTitle('历史的档线对比', `${serverNameFullList[mainServer]} ${tier}档线`))
     const bannerImageBox = drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
@@ -123,11 +123,11 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
     list.push(await drawCutoffChart(cutoffList, true, mainServer))
 
     //创建最终输出数组
-    var listImage = drawDatablock({ list })
+    var listImage = await drawDatablock({ list })
     all.push(await bannerImageBox)
     all.push(listImage)
     
-    all.push(drawTips({
+    all.push(await drawTips({
         text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n也可以扫描右侧二维码进行上传\n手机可以长按图片扫描二维码\n我们会尽快将数据上传至服务器',
         image: await loadImageFromPath(path.join(assetsRootPath, 'shimowendang.png'))
     }))
