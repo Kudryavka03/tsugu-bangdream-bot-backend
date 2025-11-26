@@ -30,8 +30,9 @@ export async function readExcelFile(filePath: string): Promise<any[]> {
     const stat = await fs.promises.stat(filePath)
     
     if(stat.mtimeMs != SongListNicknameStat){
+        logger('readExcelFile','SongNickname Need to Update. CacheTime：'+SongListNicknameStat + ' File Time:'+stat.mtimeMs)
         SongListNicknameStat = stat.mtimeMs
-    logger('readExcelFile','SongNickname Need to Update. CacheTime：'+SongListNicknameStat + ' File Time:'+stat.mtimeMs)
+    
     // 读取Excel文件
     const workbook = XLSX.readFile(filePath);
 
