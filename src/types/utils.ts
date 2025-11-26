@@ -29,9 +29,9 @@ export async function writeJSON(filepath: string, data: object) {//写入json文
 export async function readExcelFile(filePath: string): Promise<any[]> {
     const stat = await fs.promises.stat(filePath)
     
-    if(stat != SongListNicknameStat){
+    if(stat.mtimeMs != SongListNicknameStat){
         SongListNicknameStat = stat.mtimeMs
-    logger('readExcelFile','SongNickname Need to Update.')
+    logger('readExcelFile','SongNickname Need to Update. CacheTime：'+SongListNicknameStat + ' File Time:'+stat.mtimeMs)
     // 读取Excel文件
     const workbook = XLSX.readFile(filePath);
 
