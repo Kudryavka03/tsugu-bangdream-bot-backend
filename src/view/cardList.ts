@@ -154,7 +154,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     //promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                     //const drawLine =drawCardListLine(tempAttributeCardList).then(ra=>tempCardImageList.push(ra))
                     //promise.push(drawLine)
-                    console.log(characterId)
+                    //console.log(characterId)
                     promiseList.push(drawCardListLine(tempAttributeCardList,after_training))
                     //画角色头像
                     if (icon) {

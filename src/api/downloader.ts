@@ -139,7 +139,7 @@ export async function download2(url: string, directory?: string, fileName?: stri
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     try {
-      //logger('download',`Miss Cache! ${url}  is downloading...`)
+      logger('download',`Start download: ${url}`)
   //console.trace()
       response = await axios.get(url, { headers, responseType: 'arraybuffer' });
     } catch (error) {
@@ -240,6 +240,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
     var tempJsonObj = undefined;
+    logger('getJsonAndSave',`Start download: ${url}`)
       response = await axios.get(url, { headers, responseType: 'arraybuffer' }).catch(async (error)=>{
         if (error.response && error.response.status === 304) {
           logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')

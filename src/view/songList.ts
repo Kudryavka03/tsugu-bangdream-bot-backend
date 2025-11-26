@@ -59,7 +59,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var songImageListHorizontal: Canvas[] = [];
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
-    var t1 = Date.now()
+    //var t1 = Date.now()
     if (tempSongList.length <70){
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
@@ -71,8 +71,8 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         );
     }
     var songImages = await Promise.all(songPromises);
-    var t2 = Date.now()
-    console.log(t2-t1)
+    //var t2 = Date.now()
+    //console.log(t2-t1)
 
     for (let i = 0; i < songImages.length; i++) {
         var tempImage = songImages[i];
