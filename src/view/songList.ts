@@ -60,16 +60,23 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
     //var t1 = Date.now()
-    if (tempSongList.length <7000){
+    if (tempSongList.length <50){
         //logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
         }
     } else{   // 大于15首，并发降级，不允许全部并发
         logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
-         songPromises = tempSongList.map(song =>
-            limit(() => drawSongInList(song, undefined, undefined, displayedServerList))
-        );
+        songPromises = tempSongList.map(song =>
+            limit(() =>
+              new Promise(resolve => {
+                setImmediate(async () => {
+                  const img = await drawSongInList(song, undefined, undefined, displayedServerList);
+                  resolve(img);
+                });
+              })
+            )
+          );
     }
     var songImages = await Promise.all(songPromises);
     //var t2 = Date.now()

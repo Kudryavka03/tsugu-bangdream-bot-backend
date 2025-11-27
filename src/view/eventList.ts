@@ -78,7 +78,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;
     await Promise.all(tempEventList.map(e => e.initFull(false)));
-    if (tempEventList.length <2500){
+    if (tempEventList.length <25){
         for (var i = 0; i < tempEventList.length; i++) {
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
@@ -86,13 +86,15 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     else{   // 降级同步输出
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
 
-        eventPromises = tempEventList.map(song =>
-            limit(async () => {
-              // 人为暂停 15ms
-              //await sleep(5);
-              const image = await drawEventInList(song, displayedServerList);
-              return { index: i, image };
-            })
+        eventPromises = tempEventList.map((events,i) =>
+            limit(() =>
+              new Promise(resolve => {
+                setImmediate(async () => {
+                  const img = await drawEventInList(events, displayedServerList);
+                  resolve({ index: i, image: img });
+                });
+              })
+            )
           );
     }
 
