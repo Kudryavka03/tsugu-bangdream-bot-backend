@@ -9,8 +9,11 @@ import { getServerByPriority, Server } from "@/types/Server";
 import { drawDatablock } from "@/components/dataBlock";
 import { resizeImage } from "@/components/utils";
 import { drawGachaDatablock } from "@/components/dataBlock/gacha";
+import { logger } from "@/logger";
+import { drawTips } from "@/components/tips";
 
 const maxWidth = 230 * 5
+const immediate = () => new Promise(res => setImmediate(res));// 降低优先级用
 export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress: boolean): Promise<Array<Buffer | string>> {
     if (times > 10000) {
         return ['错误: 抽卡次数过多, 请不要超过10000次']
@@ -44,12 +47,18 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         })
     }
     else {
+        var heavyLoad = false
         const gachaList: { [cardId: number]: number } = {};
         const promises: Promise<void>[] = [];
-
+        if (times >300) {
+            heavyLoad = true
+            logger('drawRandomGacha','Task Priority Level DOWN Beacuse too much counts.')
+        }
         for (let i = 0; i < times; i++) {
             promises.push(
                 (async () => {
+                    if (times >300) 
+                        await immediate();  // 降低优先级
                     const card = getGachaRandomCard(gacha, i);
                     if (!gachaList[card.cardId]) {
                         gachaList[card.cardId] = 1;
@@ -100,7 +109,7 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
     }))
     //下方banner与ok按钮
     all.push(await drawBannerPromise)
-
+    if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 模拟数量过多，CiRCLE工作人员喘不过气啦！'}))
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,

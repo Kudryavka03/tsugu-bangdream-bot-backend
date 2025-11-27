@@ -20,6 +20,7 @@ import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { LagTimes } from "@/app";
+import { drawTips } from "@/components/tips";
 const limit = pLimit(1);
 const maxHeight = 7000
 const maxColumns = 7
@@ -39,6 +40,7 @@ export const line2: Canvas = drawDottedLine({
 
 export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
     //计算模糊搜索结果
+    var heavyLoad = false
     var tempEventList: Array<Event> = [];//最终输出的活动列表
     var eventIdList: Array<number> = Object.keys(mainAPI['events']).map(Number);//所有活动ID列表
     for (let i = 0; i < eventIdList.length; i++) {
@@ -85,7 +87,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     }
     else{   // 降级同步输出
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
-
+        heavyLoad = true
         eventPromises = tempEventList.map((events,i) =>
             limit(() =>
               new Promise(resolve => {
@@ -139,9 +141,10 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
             }
             const all = []
             if (times = 0) {
-                all.push(drawTitle('查询', '活动列表'))
+                all.push(await drawTitle('查询', `活动列表 共${tempEventList.length}条结果`))
             }
             all.push(await drawDatablock({ list: [tempCanv] }))
+            if (heavyLoad) all.push(await drawTips({text:'[Priority Level Down] 模拟数量过多，CiRCLE工作人员喘不过气啦！'}))
             outputFinalBufferPromise.push(outputFinalBuffer({
                 imageList: all,
                 useEasyBG: true
@@ -165,8 +168,9 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         const eventListImage = await drawDatablockHorizontal({
             list: eventImageListHorizontal
         })
-        all.push(await drawTitle('查询', '活动列表'))
+        all.push((await drawTitle(`查询  共${tempEventList.length}条结果`, `活动列表`)))
         all.push(eventListImage)
+        if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
         const buffer = await outputFinalBuffer({
             imageList: all,
             useEasyBG: true,

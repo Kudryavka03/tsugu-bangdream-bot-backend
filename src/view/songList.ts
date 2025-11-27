@@ -13,6 +13,7 @@ import { globalDefaultServer } from '@/config';
 import { drawSongDetail } from "./songDetail";
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
+import { drawTips } from "@/components/tips";
 
 
 // 紧凑化虚线分割
@@ -43,6 +44,7 @@ const line2: Canvas = drawDottedLine({
 
 export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
     const limit = pLimit(1);    // 限制3首歌同时绘制
+    var heavyLoad = false
     // 计算歌曲模糊搜索结果
     const tempSongList = matchSongList(matches, displayedServerList)
 
@@ -61,12 +63,13 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var songPromises: Promise<Canvas>[] = [];
     //var t1 = Date.now()
     if (tempSongList.length <50){
-        //logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
+        
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
         }
     } else{   // 大于15首，并发降级，不允许全部并发
-        logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
+        heavyLoad = true
+        logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
         songPromises = tempSongList.map(song =>
             limit(() =>
               new Promise(resolve => {
@@ -109,8 +112,9 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     })
 
     var all = []
-    all.push(await drawTitle('查询', '歌曲列表'))
+    all.push(await drawTitle(`查询  共${tempSongList.length}条结果`, `歌曲列表`))
     all.push(songListImage)
+    if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,
