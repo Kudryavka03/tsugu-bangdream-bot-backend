@@ -1,4 +1,4 @@
-import { FontLibrary, Image, Canvas, CanvasRenderingContext2D } from 'skia-canvas';
+import { FontLibrary, Image, Canvas, CanvasRenderingContext2D as SkiaCtx } from 'skia-canvas';
 const canvas = new Canvas(1, 1);
 var isRegisterFonts = false;
 var assetsRootPath = process.env.ASROOT

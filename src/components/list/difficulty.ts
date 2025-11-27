@@ -1,6 +1,6 @@
 import { Canvas } from 'skia-canvas'
 import { Song } from "@/types/Song"
-import { drawText } from "@/image/text"
+import { drawText, releaseCanvas } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
 export async function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10): Promise<Canvas> {
@@ -26,6 +26,7 @@ export async function drawDifficulityListInListWithNotes(song: Song, imageHeight
         const notesTextY = imageHeight -  notesText.height + 11;
 
         ctx.drawImage(notesText, notesTextX + 0.55, notesTextY);
+      
     }
     return canvas
 }
@@ -70,6 +71,7 @@ export async function drawDifficulity(difficultyType: number, playLevel: number,
         maxWidth: imageHeight * 3
     })
     ctx.drawImage(levelText, imageHeight / 2 - levelText.width / 2, imageHeight / 2 - levelText.height / 2)
+
     return (tempcanv)
 }
 export async function drawDifficulity2(difficultyType: number, playLevel: number, imageHeight: number,notes:number) {
@@ -95,6 +97,7 @@ export async function drawDifficulity2(difficultyType: number, playLevel: number
         maxWidth: imageHeight * 3
     })
     ctx.drawImage(noteNumber, imageHeight / 2 - levelText.width / 2, imageHeight - levelText.height / 2)
+
     return (tempcanv)
 }
 
@@ -112,6 +115,7 @@ export async function drawDifficulityListWithNotes(song: Song, imageHeight: numb
             maxWidth: imageHeight * 3
         })
         ctx.drawImage(notesText, i * (imageHeight + spacing) + imageHeight - notesText.width / 2, imageHeight * 7 / 6)
+
     }
     return canvas
 }

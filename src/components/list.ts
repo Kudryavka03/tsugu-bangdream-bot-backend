@@ -1,6 +1,6 @@
 import { Canvas, Image } from 'skia-canvas';
 import { drawRoundedRectWithText } from '@/image/drawRect';
-import { drawText, drawTextWithImages, setFontStyleArgs } from '@/image/text';
+import { drawText, drawTextWithImages, releaseCanvas, setFontStyleArgs } from '@/image/text';
 import { drawDottedLine } from '@/image/dottedLine'
 import { Server, getServerByPriority, getIcon } from '@/types/Server'
 import { stackImageHorizontal } from '@/components/utils';
@@ -127,10 +127,11 @@ export async function drawList({
         text: key,
         textSize: 30,
     });
-
+    var isNeedToRelease = false
     var textImage: Canvas
     if (typeof text == "string") {
         textImage = await drawText({ text, maxWidth: xmax, lineHeight });
+        isNeedToRelease = true
     }
     else if (content != undefined) {
         textImage = drawTextWithImages({
@@ -141,6 +142,7 @@ export async function drawList({
             spacing,
             color
         });
+        isNeedToRelease = true
     }
     else {
         textImage = new Canvas(0, 0)
@@ -155,6 +157,7 @@ export async function drawList({
     if(textImage.height != 0){
         ctx.drawImage(textImage, 20, keyImage.height + 10);
     }
+    if (isNeedToRelease) releaseCanvas(textImage)
     return canvas;
 }
 
@@ -176,6 +179,7 @@ export async function drawTipsInList({
     var textImage: Canvas
     if (typeof text == "string") {
         textImage = await drawText({ text, textSize, maxWidth: xmax, lineHeight });
+        
     }
     else if (content != undefined) {
         textImage = drawTextWithImages({
@@ -195,6 +199,8 @@ export async function drawTipsInList({
     ctx.fillStyle = '#f1f1f1'
     ctx.fillRect(0, 10, 800, textImage.height);
     ctx.drawImage(textImage, 20, 10);
+
+
     return canvas;
 }
 

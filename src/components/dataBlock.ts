@@ -1,6 +1,6 @@
 import { Canvas, Image } from 'skia-canvas';
 import { drawRoundedRect } from '@/image/drawRect';
-import { drawText } from '@/image/text';
+import { drawText, releaseCanvas } from '@/image/text';
 
 interface datablockOptions {
     list: Array<Canvas | Image>
@@ -61,6 +61,7 @@ export async function drawDatablock({
                 lineHeight: topLeftTextHeight - 5
             })
             ctx.drawImage(textImage, 240 - (textImage.width / 2), 5)
+
             ctx.drawImage(drawRoundedRect({//画总底，左上角没有圆角
                 opacity,
                 width: maxW + 100,
@@ -151,6 +152,7 @@ export async function drawDatablockHorizontal({
             ctx.translate(topLeftTextHeight - 5, 240);
             ctx.rotate(-Math.PI / 2);
             ctx.drawImage(textImage, 0, 0);
+
             ctx.restore();
 
             ctx.drawImage(drawRoundedRect({

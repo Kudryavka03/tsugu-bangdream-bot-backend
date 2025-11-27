@@ -4,7 +4,7 @@ import { getUserIcon } from "@/api/userIcon"
 import { Canvas, Image } from 'skia-canvas';
 import { drawDatablock } from "@/components/dataBlock";
 import { drawList, line, drawListWithLine } from "@/components/list";
-import { drawText } from "@/image/text";
+import { drawText, releaseCanvas } from "@/image/text";
 import { stackImage, stackImageHorizontal } from "@/components/utils";
 import { changeTimefomant } from '@/components/list/time'
 import { drawPlayerCardInList } from '@/components/list/playerCardIconList'
@@ -18,13 +18,16 @@ export async function drawRoomListTitle() {
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#ff3b72'
     ctx.fillRect(0, 0, 1000, 150)
-    ctx.drawImage(await drawText({
+    var roomListTips = await drawText({
         color: '#ffffff',
         text: '房间列表',
         lineHeight: 70,
         textSize: 70,
         maxWidth: 1000
-    }), 40, 40)
+    })
+    ctx.drawImage(roomListTips, 40, 40)
+
+    
     const timeText = await drawText({
         color: '#ffffff',
         text: changeTimefomant(new Date().getTime()),
@@ -33,6 +36,7 @@ export async function drawRoomListTitle() {
         maxWidth: 1000
     })
     ctx.drawImage(timeText, 960 - timeText.width, 80)
+
     return canvas
 }
 
@@ -45,16 +49,20 @@ export async function drawRoonInList(room: Room) {
     // const Icon = await getUserIcon(room.avatarUrl)
     //文本
     const textList: Canvas[] = []
-    textList.push(await drawText({
+    var timesFrom = await drawText({
         text: `${room.userName} 来自${room.source} ${Math.floor((timeNow - room.time) / 1000)}秒前`,
         textSize: 30,
         maxWidth: maxWidthText
-    }))
-    textList.push(await drawText({
+    })
+    textList.push(timesFrom )
+
+    var rawMsg = await drawText({
         text: room.rawMessage,
         textSize: 40,
         maxWidth: maxWidthText
-    }))
+    })
+    textList.push(rawMsg)
+
     //画text
     const textImage = stackImage(textList)
     const canvas = new Canvas(600, textImage.height)
@@ -105,6 +113,7 @@ async function drawPlayerDetailInRoomList(player: Player) {
         maxWidth: 400
     })
     ctx.drawImage(statTextImage, 800 - statTextImage.width, 0)
+
 
     //画牌子
     var degreeImageList: Array<Canvas | Image> = []

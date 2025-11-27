@@ -5,9 +5,10 @@ FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.t
 import * as path from 'path';
 import Piscina from 'piscina';
 import { getFontCanvasCtxFromPool } from './utils';
+import pLimit from 'p-limit';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
-
+const limitDrawText = pLimit(5);
 interface warpTextOptions {
     text: string,
     textSize?: number,
@@ -16,9 +17,37 @@ interface warpTextOptions {
     color?: string,
     font?: "FangZhengHeiTi" | "old" | "default"
 }
+interface CanvasPoolItem {
+    canvas: Canvas;
+    width: number;
+    height: number;
+    busy: boolean; // 是否被占用
+}
+export const canvasPool: CanvasPoolItem[] = [];
+
+// 获取一个可用 Canvas
+function acquireCanvas(width: number, height: number): Canvas {
+    for (const item of canvasPool) {
+        if (!item.busy && item.width >= width && item.height >= height) {
+            item.busy = true; // 标记占用
+            return item.canvas;
+        }
+    }
+    // 池里没有可用 Canvas，创建新的
+    const newCanvas = new Canvas(width, height);
+    canvasPool.push({ canvas: newCanvas, width, height, busy: true });
+    return newCanvas;
+}
+
+// 绘制完成后释放 Canvas
+export function releaseCanvas(canvas: Canvas) {
+    return
+    const item = canvasPool.find(i => i.canvas === canvas);
+    if (item) item.busy = false;
+}
 
 //画文字,自动换行
-export async function drawText({
+export async function drawTextInternal({
     text,
     textSize = 40,
     maxWidth,
@@ -28,29 +57,46 @@ export async function drawText({
 }: warpTextOptions): Promise<Canvas> {
     var wrappedTextData = await wrapText({ text, maxWidth, lineHeight, textSize });
     if (wrappedTextData.numberOfLines == 0) {
-        var canvas: Canvas = new Canvas(1, lineHeight);
+        //var canvas: Canvas = new Canvas(1, lineHeight);
+        var canvas = new Canvas(1, lineHeight)
+
     }
     else if (wrappedTextData.numberOfLines == 1) {
         //var canvas: Canvas = reCanvas;
         var  ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, 'old'));
         var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
-        canvas = new Canvas(width, lineHeight);
+        //var canvas = new Canvas(width, lineHeight);
+        var canvas = new Canvas(width, lineHeight)
+
     }
     else {
-        var canvas: Canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines);
+        //var canvas: Canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines);
+        var canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines)
+
     }
+    
     var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     let y = lineHeight / 2 + textSize / 3
     ctx.textBaseline = 'alphabetic'
+
     setFontStyle(ctx, textSize, font);
+
     ctx.fillStyle = color;
     var wrappedText = wrappedTextData.wrappedText
+    
     for (var i = 0; i < wrappedText.length; i++) {
         ctx.fillText(wrappedText[i], 0, y);
         y += lineHeight;
     }
     return canvas;
+} // Draw Text 在极端情况下会被调用7000多次，频繁大量new Canvas会导致大量的GC产生，阻塞主线程，因此池化Canvas很有必要
+// 在Canvas完全利用完后放回池中。
+
+export function drawText(options) {
+    return limitDrawText(() => drawTextInternal(options));
 }
+
 const wrapTextCache  = new Map<string, warpTextOptions>();
 export async function wrapText({
     text,
@@ -131,6 +177,7 @@ export function drawTextWithImages({
     color = '#505050',
     font = 'old'
 }: TextWithImagesOptions) {
+    //var t1 = Date.now()
     var wrappedTextData = warpTextWithImages({ textSize, maxWidth, lineHeight, content, spacing });
     var wrappedText = wrappedTextData.wrappedText
     var canvas: Canvas
@@ -189,6 +236,7 @@ export function drawTextWithImages({
         }
         y += lineHeight;
     }
+    //console.log('绘制用时：'+ (Date.now() - t1))
     return canvas;
 }
 
@@ -260,7 +308,10 @@ function warpTextWithImages({
                     temptext = temptext.slice(splitIndex);
                 }
             }
-        } else if (content[i] instanceof Canvas || content[i] instanceof Image) {
+        } else  {
+            const type = content[i]?.constructor?.name;
+            if (type === 'Canvas' || type === 'Image') {
+                //content[i] instanceof Canvas || content[i] instanceof Image
             //console.log('Image')
             let tempImage = content[i] as Image;
             let tempWidth = tempImage.width * (textSize / tempImage.height);
@@ -272,7 +323,7 @@ function warpTextWithImages({
         }
         tempX += spacing;
     }
-
+    }
     if (temp[temp.length - 1].length === 0) {
         temp.pop();
     }

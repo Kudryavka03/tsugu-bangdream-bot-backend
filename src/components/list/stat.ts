@@ -1,5 +1,5 @@
 import { Canvas, Image } from 'skia-canvas';
-import { drawText } from "@/image/text";
+import { drawText, releaseCanvas } from "@/image/text";
 import { drawList } from "@/components/list";
 import { stackImage } from '@/components/utils'
 import { drawRoundedRect } from "@/image/drawRect";
@@ -62,6 +62,7 @@ async function drawCardStatDivided(stat: Stat, statTotal: number, limitBreakstat
             strokeWidth: 0
         })
         ctx.drawImage(textImage, 20, 0)
+
         ctx.drawImage(roundedRect, 20, 35)
         return canvas
     }

@@ -5,7 +5,7 @@ import { drawCardIcon } from '@/components/card';
 import { drawDegree } from '@/components/degree';
 import { Server } from '@/types/Server';
 import { Degree } from '@/types/Degree';
-import { drawText } from '@/image/text';
+import { drawText, releaseCanvas } from '@/image/text';
 import { downloadFileCache } from '@/api/downloadFileCache';
 import { Bestdoriurl } from "@/config"
 
@@ -51,6 +51,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
             maxWidth: 100
         });
         ctx.drawImage(rankingImage, 12, 45);
+  
     }
 
     //头像
@@ -82,6 +83,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     if (rankImageBuffer != null) ctx.drawImage(await loadImage(await rankImageBuffer), 12, 45, 45, 21);
     ctx.drawImage(await headShotImage, 85, 10, 90, 90);
     ctx.drawImage(playerNameImage, 210, 10);
+
     var degreeImageResult = await degreeImageResultAsync
     for (let i = 0; i < user.degrees.length; i++) {
         //var degreeImage = await drawDegree(new Degree(user.degrees[i]), server);
@@ -115,13 +117,16 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
     });
     ctx.drawImage(idImage, 790 - idImage.width, 45);
 
+
     //pt
     var ptImage = await drawText({
         text: user.currentPt.toString() + '分',
         textSize: 23,
         maxWidth: 150
     });
+    
     ctx.drawImage(ptImage, 790 - ptImage.width, 70);
+
 
     return canvas;
 }

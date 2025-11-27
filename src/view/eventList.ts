@@ -78,7 +78,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;
     await Promise.all(tempEventList.map(e => e.initFull(false)));
-    if (tempEventList.length <25){
+    if (tempEventList.length <2500){
         for (var i = 0; i < tempEventList.length; i++) {
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }

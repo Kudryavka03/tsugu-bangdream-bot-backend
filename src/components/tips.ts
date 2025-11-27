@@ -1,5 +1,5 @@
 import { Canvas, Image } from 'skia-canvas'
-import { drawText } from "@/image/text"
+import { drawText, releaseCanvas } from "@/image/text"
 import { resizeImage } from "@/components/utils"
 
 const line2 = new Canvas(1000, 3)
@@ -43,6 +43,7 @@ export async function drawTips({
     const ctx = canvas.getContext('2d')
     ctx.drawImage(line2, 0, 0)
     ctx.drawImage(textImage, 50, 20)
+
     if (image) {
         ctx.drawImage(imageCanvas, maxWidth - 200, 20)
     }

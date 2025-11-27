@@ -1,5 +1,5 @@
 import { Canvas } from 'skia-canvas';
-import { drawText } from "@/image/text";
+import { drawText, releaseCanvas } from "@/image/text";
 import { drawImageWithShadow } from "@/image/drawImageWithShadow"
 import { Event } from "@/types/Event";
 import { Server } from "@/types/Server";
@@ -42,6 +42,7 @@ export async function drawArticleTitle1(text: string, subText?: string, event?: 
         0,
     )
 
+
     if (subText) {
         const subTextImage = await drawText({
             text: subText,
@@ -56,6 +57,7 @@ export async function drawArticleTitle1(text: string, subText?: string, event?: 
             70 + baseX,
             77,
         )
+
     }
     if (BG) {
         const BGimage = await event.getEventBGImage()

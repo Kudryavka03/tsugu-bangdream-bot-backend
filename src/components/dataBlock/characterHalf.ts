@@ -5,7 +5,7 @@ import { drawImageListCenter } from '@/components/list'
 import { Canvas } from 'skia-canvas'
 import { drawRoundedRect } from '@/image/drawRect';
 import { resizeImage, stackImage } from '@/components/utils';
-import { drawText } from '@/image/text';
+import { drawText, releaseCanvas } from '@/image/text';
 
 const width = 250
 const height = 800
@@ -66,6 +66,7 @@ export async function drawCharacterHalfBlock(character: Character, displayedServ
         maxWidth: width,
     })
     list.push(drawImageListCenter([nameTextImage], width))
+ 
     //id
     const characterId = character.characterId
     const idText = `ID: ${characterId}`
@@ -76,8 +77,10 @@ export async function drawCharacterHalfBlock(character: Character, displayedServ
         maxWidth: width,
     })
     list.push(drawImageListCenter([idTextImage], width))
+ 
     //画底部文字
     const textImage = stackImage(list)
     ctx.drawImage(textImage, 0, height - 100)
+
     return canvas
 }

@@ -30,6 +30,8 @@ import { fuzzySearchRouter } from '@/routers/fuzzySearch'
 import { topRateDetailRouter } from './routers/topRateDetail';
 import { logger } from '@/logger'
 import * as dotenv from 'dotenv';
+import { canvasPool } from './image/text';
+
 
 export var LagTimes:number
 dotenv.config();
@@ -97,10 +99,12 @@ app.use((req, res) => {
 app.listen(port, () => {
     logger(`expressMainThread`, `listening on port ${port}`);
 });
-function measureLag(interval = 50) {
+function measureLag(interval = 350) {
+    
     let last = Date.now();
   
     setInterval(() => {
+        //console.log('canvasPool池长度：' + canvasPool.length)
       const now = Date.now();
       const lag = now - last - interval;
       if (lag > 100) {

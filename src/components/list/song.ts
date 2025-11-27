@@ -2,7 +2,7 @@ import { Canvas } from 'skia-canvas'
 import { Band } from "@/types/Band"
 import { Server, getServerByPriority } from "@/types/Server"
 import { Song } from "@/types/Song"
-import { drawText, setFontStyle } from "@/image/text"
+import { drawText, releaseCanvas, setFontStyle } from "@/image/text"
 import { resizeImage } from "@/components/utils"
 import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNotes } from "@/components/list/difficulty"
 import { globalDefaultServer } from "@/config"
@@ -28,6 +28,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         maxWidth: 800
     })
     ctx.drawImage(IDImage, 0, 0)
+
     //曲名与乐队名
     var fullText = `${song.musicTitle[server]}`
     if (!text) {
@@ -45,6 +46,7 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         maxWidth: 800
     })
     ctx.drawImage(textImage, 120, 0)
+
 
     //难度
     if (difficulty == undefined) {

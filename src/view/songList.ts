@@ -60,7 +60,8 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
     //var t1 = Date.now()
-    if (tempSongList.length <70){
+    if (tempSongList.length <7000){
+        //logger('drawSongList','Concurrent Level down to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
         }

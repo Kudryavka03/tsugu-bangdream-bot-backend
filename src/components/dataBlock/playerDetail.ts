@@ -1,7 +1,7 @@
 import { Player } from '@/types/Player';
 import { drawImageListCenter } from "@/components/list";
 import { drawDatablock } from '@/components/dataBlock'
-import { drawText, drawTextWithImages } from "@/image/text";
+import { drawText, drawTextWithImages, releaseCanvas } from "@/image/text";
 import { Image, Canvas } from 'skia-canvas';
 import { drawDegree } from '@/components/degree';
 import { Degree } from '@/types/Degree';
@@ -45,6 +45,7 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
         textSize: 75
     })
     list.push(drawImageListCenter([playerText]))
+    
     //等级
     var levelText = await drawText({
         text: `等级 ${player.profile.rank}`,
@@ -71,6 +72,7 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     })
     list.push(drawImageListCenter([introductionText]))
     list.push(new Canvas(1, 25))
+
     //玩家ID与服务器
     let userId: string
     if (player.profile.publishUserIdFlg) {
@@ -97,5 +99,6 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     ctx.drawImage(illust, 0, 0, 1000, 1000)
     ctx.drawImage(await titleImage, 0, 0)
     ctx.drawImage(await dataBlock, 0, 900)
+
     return canvas
 }

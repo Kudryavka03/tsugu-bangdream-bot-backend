@@ -6,7 +6,7 @@ import { drawDottedLine } from '@/image/dottedLine'
 import { resizeImage, stackImage, stackImageHorizontal } from "@/components/utils"
 import { Server, getServerByPriority } from "@/types/Server"
 import { Band } from "@/types/Band"
-import { drawText } from "@/image/text"
+import { drawText, releaseCanvas } from "@/image/text"
 import { drawDifficulityList } from "@/components/list/difficulty"
 import { globalDefaultServer } from "@/config"
 
@@ -54,8 +54,10 @@ export async function drawSongDataBlock(song: Song, text?: string, displayedServ
     var difficultyImage = await drawDifficulityList(song, 60, 10)
     var list = [songNameImage, line, songDetailImage, new Canvas(1, 60)]
     var rightCanvas = stackImage(list)
+
     var canvas = stackImageHorizontal([songJacketCanvas, new Canvas(35, 1), rightCanvas])
     var ctx = canvas.getContext("2d")
     ctx.drawImage(difficultyImage, 435, canvas.height - difficultyImage.height)
+
     return (drawDatablock({ list: [canvas] }))
 }

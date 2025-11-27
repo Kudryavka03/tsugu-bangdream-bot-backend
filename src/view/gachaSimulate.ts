@@ -3,7 +3,7 @@ import { Card } from "@/types/Card";
 import { drawCardIcon } from "@/components/card";
 import { drawTitle } from "@/components/title";
 import { Canvas } from 'skia-canvas';
-import { drawTextWithImages, drawText } from "@/image/text";
+import { drawTextWithImages, drawText, releaseCanvas } from "@/image/text";
 import { outputFinalBuffer } from '@/image/output'
 import { getServerByPriority, Server } from "@/types/Server";
 import { drawDatablock } from "@/components/dataBlock";
@@ -139,6 +139,7 @@ async function drawGachaCard(card: Card, numberOfCard: number = 1) {
             color: '#A7A7A7',
         })
         ctx.drawImage(numberText, 215 - numberText.width, 195);
+
         return canvas;
     }
     else {
