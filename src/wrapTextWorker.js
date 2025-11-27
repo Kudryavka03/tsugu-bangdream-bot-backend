@@ -80,3 +80,21 @@ export async function drawTextInternalWorker({
     const resultBuffer =  canvas.toBuffer('raw');
     return {resultBuffer,transferList: [resultBuffer.buffer]}
 }
+const FontCanvasPool = new Map();
+
+export function getFontCanvasCtxFromPool(fontArgs) {
+  if (!FontCanvasPool.has(fontArgs)) {
+    //console.log('Creat new CanvasCtx: '+fontArgs)
+    const canvas = new Canvas(1, 1);
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = 'alphabetic'
+    ctx.font = fontArgs;
+    FontCanvasPool.set(fontArgs, ctx);
+  }
+  return FontCanvasPool.get(fontArgs);
+}
+export function measureTextWorker({fontArgs,measureTextData}){
+    var  ctx = getFontCanvasCtxFromPool(fontArgs);
+    //console.log(measureTextData)
+    return ctx.measureText(measureTextData).width
+}

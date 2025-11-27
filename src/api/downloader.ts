@@ -25,7 +25,7 @@ export async function download(   // GPT写的
   cacheTime = 0,
   isApiRequest = false
 ): Promise<Buffer> {
-
+  //
   if (pendingDownloads.has(url)) {
     if (showDownloadLog)
       logger("download", `Duplicate request detected, waiting: ${url}`);
@@ -53,6 +53,7 @@ export async function download(   // GPT写的
     }
 
     // ========== 2. 发请求（最小 catch 单元） ==========
+    logger("download", `Start download for ${url}.`);
     const response = await axios
       .get(url, { responseType: "arraybuffer" })
       .catch(async (err) => {
@@ -67,7 +68,8 @@ export async function download(   // GPT写的
 
     // ========== 3. 写入缓存（最小 catch 单元） ==========
     if (cachePath) {
-
+      
+      if(resDebug)console.trace()
       const htmlSig = Buffer.from("<!DOCTYPE html>"); // 判断是不是HTML，这里不tostring，直接Byte对比节省时间
       const slice = Buffer.from(fileBuffer.subarray(0, htmlSig.length));
       if (!slice.equals(htmlSig)) {

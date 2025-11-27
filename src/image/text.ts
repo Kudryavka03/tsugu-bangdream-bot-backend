@@ -8,7 +8,7 @@ import { getFontCanvasCtxFromPool } from './utils';
 import pLimit from 'p-limit';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
-//const drawTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
+const measureTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
 const limitDrawText = pLimit(5);
 interface warpTextOptions {
     text: string,
@@ -86,7 +86,7 @@ export async function drawTextInWorker({
     return canvas;
 } 
 */
-export async function drawTextInternal({
+export async function drawText({
     text,
     textSize = 40,
     maxWidth,
@@ -102,8 +102,12 @@ export async function drawTextInternal({
     }
     else if (wrappedTextData.numberOfLines == 1) {
         //var canvas: Canvas = reCanvas;
-        var  ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, 'old'));
-        var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
+        //var  ctx = getFontCanvasCtxFromPool();
+        //var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
+        var fontArgs = setFontStyleArgs(textSize,font)
+        var measureTextData = wrappedTextData.wrappedText[0]
+        var width = await measureTextPool.run({fontArgs,measureTextData},{name:'measureTextWorker'})
+        maxWidth = width
         //var canvas = new Canvas(width, lineHeight);
         var canvas = new Canvas(width, lineHeight)
 
@@ -132,8 +136,8 @@ export async function drawTextInternal({
 }
 
 
-export function drawText(options) {
-    return limitDrawText(() => drawTextInternal(options));
+export function drawTextLimit(options) {
+    return limitDrawText(() => drawText(options));
 }
 
 const wrapTextCache  = new Map<string, warpTextOptions>();

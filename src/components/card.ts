@@ -176,6 +176,7 @@ export async function drawCardIllustration({
     trainingStatus,
     isList = false,
 }: drawCardIllustrationOptions): Promise<Canvas> {
+    //console.log('drawCardIllustration')
     trainingStatus = card.ableToTraining(trainingStatus)
     var PromiseList = []
     //var CardIllustrationImage = await card.getCardIllustrationImage(trainingStatus)

@@ -8,7 +8,7 @@ import { Canvas } from 'skia-canvas'
 
 export async function drawGachaPickupInList(gacha: Gacha, server: Server, key?: string): Promise<Canvas> {
     const list = []
-    list.push(drawList({
+    list.push(await drawList({
         key: key ?? '卡池PickUp',
     }))
     var pickUpCardIdList = []
@@ -59,7 +59,7 @@ export async function drawGachaPickupInList(gacha: Gacha, server: Server, key?: 
         return stackImage(list)
     }
     else {
-        const result = drawList({
+        const result = await drawList({
             key: key ?? '卡池PickUp',
             text: '无'
         })

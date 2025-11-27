@@ -34,17 +34,23 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
       if (attempt > 0) {
         logger(`downloader`, `Retrying download for "${url}" (attempt ${attempt + 1}/${retryCount})`);
       }
-        if(showDownloadLog)logger(`downloader`, `Download for "${url}"......`);
+        //if(showDownloadLog)logger(`downloader`, `Download for "${url}"......`);
         try{
           data = await download(url, cacheDir, fileName, cacheTime);
         }
         catch(e){
           if (attempt === retryCount - 1) { // 没有重试机会了，可以在这里抛出所有异常
             data = null;
-            errInfo = e
+            errInfo = e;
+           // return assetErrorImageBuffer
+           if ((url.includes('.png') || url.includes('.svg')) && IgnoreErr) {
+            errUrl[url] = Date.now();
+            return assetErrorImageBuffer;
           }
-          continue; // 直接进入下一轮循环
+          }
+         continue; // 直接进入下一轮循环
         }//如果无事发生
+
         const htmlSig = Buffer.from("<!DOCTYPE html>"); // 判断是不是HTML，这里不tostring，直接Byte对比节省时间
         const slice = Buffer.from(data.subarray(0, htmlSig.length));
         if (slice.equals(htmlSig)) {
