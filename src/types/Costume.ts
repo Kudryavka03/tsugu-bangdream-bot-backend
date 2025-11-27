@@ -52,7 +52,7 @@ export class Costume {
         return await loadImage(sdCharaBuffer)
     }
     async getSdcharaQuick(flags,displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
-        console.log(flags)
+        //console.log(flags)
         if (!displayedServerList) displayedServerList = globalDefaultServer
         var server = getServerByPriority(this.publishedAt, displayedServerList)
         var sdCharaBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/characters/livesd/${flags}_rip/sdchara.png`)

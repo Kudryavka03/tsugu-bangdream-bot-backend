@@ -39,7 +39,9 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
           data = await download(url, cacheDir, fileName, cacheTime);
         }
         catch(e){
-          if (attempt === retryCount - 1) { // 没有重试机会了，可以在这里抛出所有异常
+          const isHtml = e.message.includes('HTML')
+          if (attempt === retryCount - 1 || isHtml) { // 没有重试机会了，可以在这里抛出所有异常
+            if(isHtml) logger('downloadFile','HTML Detected. No need to download more for ' + url)
             data = null;
             errInfo = e;
            // return assetErrorImageBuffer
