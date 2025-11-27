@@ -1,4 +1,4 @@
-import { FontLibrary, Image, Canvas, CanvasRenderingContext2D } from 'skia-canvas';
+import { FontLibrary, Image, Canvas, CanvasRenderingContext2D, loadImageData } from 'skia-canvas';
 import { assetsRootPath } from '@/config';
 FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
@@ -8,6 +8,7 @@ import { getFontCanvasCtxFromPool } from './utils';
 import pLimit from 'p-limit';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
+//const drawTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
 const limitDrawText = pLimit(5);
 interface warpTextOptions {
     text: string,
@@ -45,8 +46,46 @@ export function releaseCanvas(canvas: Canvas) {
     const item = canvasPool.find(i => i.canvas === canvas);
     if (item) item.busy = false;
 }
-
+/*
 //画文字,自动换行
+export async function drawTextInWorker({
+    text,
+    textSize = 40,
+    maxWidth,
+    lineHeight = textSize * 4 / 3,
+    color = "#505050",
+    font = "old"
+}: warpTextOptions): Promise<Canvas> {
+    var wrappedTextData =  await wrapText({ text, maxWidth, lineHeight, textSize });
+    if (wrappedTextData.numberOfLines == 0) {
+        //var canvas: Canvas = new Canvas(1, lineHeight);
+        var canvas = new Canvas(1, lineHeight)
+
+    }
+    else if (wrappedTextData.numberOfLines == 1) {
+        var  ctx = getFontCanvasCtxFromPool(setFontStyleArgs(textSize, 'old'));
+        var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
+        var canvas = new Canvas(width, lineHeight)
+
+    }
+    else {
+        //var canvas: Canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines);
+        var canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines)
+
+    }
+    var ctx = canvas.getContext('2d')
+    var cHeight = canvas.height
+    var cWidth = canvas.width
+    console.log(cHeight,cWidth)
+    const { resultBuffer } = await drawTextPool.run({text,textSize,maxWidth,undefined,color,font,cWidth,cHeight,wrappedTextData},{name:'drawTextInternalWorker'})
+    console.log(resultBuffer.buffer)
+    const imgData = ctx.createImageData(cWidth, cHeight);
+    imgData.data.set(Buffer.from(resultBuffer.buffer));
+    //console.log(resultBuffer.buffer)
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+} 
+*/
 export async function drawTextInternal({
     text,
     textSize = 40,
@@ -90,8 +129,8 @@ export async function drawTextInternal({
         y += lineHeight;
     }
     return canvas;
-} // Draw Text 在极端情况下会被调用7000多次，频繁大量new Canvas会导致大量的GC产生，阻塞主线程，因此池化Canvas很有必要
-// 在Canvas完全利用完后放回池中。
+}
+
 
 export function drawText(options) {
     return limitDrawText(() => drawTextInternal(options));

@@ -47,3 +47,36 @@ export function wrapText({
 export var setFontStyle = function (ctx, textSize, font) {//设置字体大小
     ctx.font = textSize + 'px ' + font + ",Microsoft Yahei"
 }
+
+export async function drawTextInternalWorker({
+    text,
+    textSize = 40,
+    maxWidth,
+    lineHeight = textSize * 4 / 3,
+    color = "#505050",
+    font = "old",
+    cHeight,
+    cWidth,
+    wrappedTextData
+}) {
+
+    var canvas = new Canvas(cWidth, cHeight)
+    
+    var ctx = canvas.getContext('2d');
+    //ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let y = lineHeight / 2 + textSize / 3
+    ctx.textBaseline = 'alphabetic'
+
+    setFontStyle(ctx, textSize, font);
+
+    ctx.fillStyle = color;
+    var wrappedText = wrappedTextData.wrappedText
+    console.log(wrappedText)
+    
+    for (var i = 0; i < wrappedText.length; i++) {
+        ctx.fillText(wrappedText[i], 0, y);
+        y += lineHeight;
+    }
+    const resultBuffer =  canvas.toBuffer('raw');
+    return {resultBuffer,transferList: [resultBuffer.buffer]}
+}
