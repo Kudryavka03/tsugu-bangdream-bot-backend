@@ -1,0 +1,33 @@
+import Piscina from 'piscina';
+import path from 'path';
+
+export const piscina = {
+    drawList: new Piscina({ // draw song list
+        filename: path.resolve(__dirname, './worker/drawSongList.worker.js'),
+        minThreads: 1,
+        maxThreads: 1,
+    }),/*
+    drawDetail: new Piscina({
+        filename: path.resolve(__dirname, './worker/drawSongDetail.worker.js'),
+        minThreads: 1,
+        maxThreads: 4,
+    })
+    */
+   drawEventList: new Piscina({
+    filename: path.resolve(__dirname, './worker/drawEventList.worker.js'),
+    minThreads: 1,
+    maxThreads: 1,
+}),
+};
+piscina.drawList.on('message', (msg) => {
+    if (msg.type === 'log') {
+        console.log(`[drawList Worker ${msg.threadId}]`, ...msg.args);
+    }
+});
+piscina.drawEventList.on('message', (msg) => {
+    if (msg.type === 'log') {
+        console.log(`[drawList Worker ${msg.threadId}]`, ...msg.args);
+    }
+});
+piscina.drawEventList.run({},{name:'initWorker'})
+piscina.drawList.run({},{name:'initWorker'})

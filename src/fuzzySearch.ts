@@ -2,6 +2,18 @@ import * as fs from 'fs';
 import { fuzzySearchPath } from '@/config';
 import { isInteger } from '@/routers/utils';
 import { logger } from './logger';
+import { parentPort, threadId, isMainThread } from 'worker_threads';
+if (!isMainThread && parentPort) {
+  loadConfig()
+  console.log = (...args) => {
+    parentPort.postMessage({
+      type: 'log',
+      threadId,
+      args,
+    });
+  };
+}
+const isWorker = !isMainThread
 
 interface FuzzySearchConfig {
   [type: string]: { [key: string]: (string | number)[] };
@@ -199,7 +211,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
     return false;
   }
   let match;
-
+  //if(isWorker) loadConfig()
   for (var key in matches) {
     if (key === '_number' || key === '_all') {
       continue;

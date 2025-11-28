@@ -9,6 +9,8 @@ import { Song } from '@/types/Song';
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { piscina } from '@/WorkerPool';
+import mainAPI from '@/types/_Main';
 
 const router = express.Router();
 
@@ -36,7 +38,7 @@ router.post(
         }
 
         try {
-            const result = await commandSong(displayedServerList, text || fuzzySearchResult, compress);
+            const result = await commandSongWorker(displayedServerList, text || fuzzySearchResult, compress);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -66,5 +68,37 @@ export async function commandSong(displayedServerList: Server[], input: string |
     }
     return await drawSongList(fuzzySearchResult, displayedServerList, compress)
 }
+export async function commandSongWorker(displayedServerList, input, compress) {
 
+    let fuzzySearchResult: FuzzySearchResult;
+
+    if (typeof input === 'string') {
+        if (isInteger(input)) {
+            /*
+            return await piscina.drawDetail.run({
+                songId: parseInt(input),
+                displayedServerList,
+                compress
+            });
+            */
+            return await drawSongDetail(new Song(parseInt(input)), displayedServerList, compress)
+        }   // 这个主线程跑就行
+        fuzzySearchResult = fuzzySearch(input);
+    } else {
+        fuzzySearchResult = input;
+    }
+
+    if (Object.keys(fuzzySearchResult).length == 0) {
+        return ['错误: 没有有效的关键词'];
+    }
+const result = await piscina.drawList.run({
+    matches: fuzzySearchResult,
+    displayedServerList,
+    compress,
+    mainAPI
+})
+console.log(Date.now())
+    // ➜ 直接调用 worker
+    return [Buffer.from(result[0])];
+}
 export { router as searchSongRouter }

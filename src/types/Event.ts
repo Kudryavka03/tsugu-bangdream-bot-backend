@@ -200,7 +200,8 @@ export class Event {
     async getData(update: boolean = true) {
         var time = update ? 0 : 1 / 0
         var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time);
-        eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]
+        //console.log(eventData)
+        //eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]
         return eventData
     }
     async getBannerImage(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {

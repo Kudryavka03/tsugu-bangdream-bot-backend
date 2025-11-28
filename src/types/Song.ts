@@ -109,9 +109,11 @@ export class Song {
 
     isInitfull = false
 
-    constructor(songId: number) {
+    constructor(songId: number,apiData?:object) {
         this.songId = songId
-        const songData = mainAPI['songs'][songId.toString()]
+        let songData
+            songData = mainAPI['songs'][songId.toString()]
+        
         if (songData == undefined) {
             this.isExist = false;
             return
@@ -136,7 +138,7 @@ export class Song {
         }
 
         //meta数据
-        const metaData = mainAPI['meta'][songId.toString()]
+        const metaData = (mainAPI['songs'] == undefined)?apiData['meta'][songId.toString()]:mainAPI['meta'][songId.toString()]
         if (metaData == undefined) {
             return
         }

@@ -10,12 +10,24 @@ import * as path from 'path'
 import { Skill } from '@/types/Skill'
 import { Bestdoriurl } from "@/config"
 import { loadImageFromPath } from '@/image/utils';
-
+import { parentPort, threadId,isMainThread  } from'worker_threads';
 var cardTypeIconList: { [type: string]: Image } = {}
 var starList: { [type: string]: Image } = {}
 var limitBreakIcon: Image
 
-async function loadImageOnce() {
+
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
+var loadImageOnceFinished = false
+export async function loadImageOnce() {
+    if(!loadImageOnceFinished){
     cardTypeIconList.limited = await loadImageFromPath(path.join(assetsRootPath, '/Card/L.png'));
     cardTypeIconList.dreamfes = await loadImageFromPath(path.join(assetsRootPath, '/Card/D.png'));
     cardTypeIconList.kirafes = await loadImageFromPath(path.join(assetsRootPath, '/Card/K.png'));
@@ -23,9 +35,11 @@ async function loadImageOnce() {
     starList.normal = await loadImageFromPath(path.join(assetsRootPath, '/Card/star.png'));
     starList.trained = await loadImageFromPath(path.join(assetsRootPath, '/Card/star_trained.png'));
     limitBreakIcon = await loadImageFromPath(path.join(assetsRootPath, '/Card/limitBreakRank.png'));
+    
+    loadImageOnceFinished = true
+    }
 }
-
-loadImageOnce()
+if (isMainThread)loadImageOnce()
 
 //根据稀有度与属性，获得图标框
 async function getCardIconFrame(rarity: number, attribute: 'cool' | 'happy' | 'pure' | 'powerful'): Promise<Image> {
@@ -157,7 +171,7 @@ export async function drawCardIcon({
         ctx.fillText(limitBreakRank.toString(), 155, 70)
     }
 
-    const star = starList[trainingStatus ? 'trained' : 'normal']
+    const star = trainingStatus?starList.trained : starList.normal
     for (var i = 0; i < card.rarity; i++) {
         ctx.drawImage(star, 4, 150 - 26 * i, 29, 29)
     }
@@ -204,6 +218,10 @@ export async function drawCardIllustration({
     ctx.drawImage(bandIcon, 11, 11, 150, 150)
 
     var star = starList[trainingStatus ? 'trained' : 'normal']
+    if (!starList.normal || !starList.trained) {
+        await loadImageOnce();
+    }
+    console.log(typeof(starList.normal))
     for (var i = 0; i < card.rarity; i++) {//星星数量
         ctx.drawImage(star, 5, 780 - 100 * i, 110, 110)
     }

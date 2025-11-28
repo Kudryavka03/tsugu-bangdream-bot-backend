@@ -1,7 +1,7 @@
 import { Card } from "@/types/Card";
-import mainAPI from "@/types/_Main"
+import mainAPI, { preCacheIcon, setMainAPI } from "@/types/_Main"
 import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
-import { Canvas } from 'skia-canvas'
+import { App, Canvas } from 'skia-canvas'
 import { drawDatablock, drawDatablockHorizontal } from '@/components/dataBlock';
 import { line } from '@/components/list';
 import { stackImage, stackImageHorizontal, resizeImage } from '@/components/utils'
@@ -24,6 +24,20 @@ import { drawTips } from "@/components/tips";
 const limit = pLimit(1);
 const maxHeight = 7000
 const maxColumns = 7
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { loadImageOnce } from "@/components/card";
+
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
+
+
 
 //表格用默认虚线
 export const line2: Canvas = drawDottedLine({
@@ -37,8 +51,16 @@ export const line2: Canvas = drawDottedLine({
     gap: 10,
     color: "#a8a8a8"
 })
-
-export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
+export async function initForWorker() {
+    await loadImageOnce()
+    await preCacheIcon()
+}
+export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    if (apiData) {
+        setMainAPI(apiData)
+        await loadImageOnce()
+        await preCacheIcon()
+    }
     //计算模糊搜索结果
     var heavyLoad = false
     var tempEventList: Array<Event> = [];//最终输出的活动列表
@@ -79,8 +101,9 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
 
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;
+    //console.log(tempEventList)
     await Promise.all(tempEventList.map(e => e.initFull(false)));
-    if (tempEventList.length <25){
+    if (tempEventList.length <2500){
         for (var i = 0; i < tempEventList.length; i++) {
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }

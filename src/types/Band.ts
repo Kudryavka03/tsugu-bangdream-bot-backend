@@ -1,4 +1,5 @@
 import mainAPI from '@/types/_Main';
+import { parentPort, threadId, isMainThread } from 'worker_threads';
 import { Character } from '@/types/Character';
 import { Image, loadImage } from 'skia-canvas'
 import { downloadFileCache } from '@/api/downloadFileCache';

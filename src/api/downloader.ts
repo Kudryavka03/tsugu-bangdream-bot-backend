@@ -14,8 +14,8 @@ import Piscina from 'piscina';
 
 
 // 在低性能服务器上不应该使用Worker。Worker会使得receiveMessageOnPort阻塞主线程。别问我怎么知道的
-const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
-const readPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
+const pool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[] });
+const readPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[] });
 //const existPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:4,execArgv:[] });
 
 export async function download(   // GPT写的

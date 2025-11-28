@@ -7,12 +7,58 @@ import * as path from 'path'
 import { getBandIcon } from './Band'
 import { Server, getIcon } from './Server'
 import { Attribute, attributeIconCache } from './Attribute'
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
 
-const mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
+let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname
+export function setMainAPI(data) {
+    Object.keys(mainAPI).forEach(k => delete mainAPI[k]); // 清空原有数据
+    Object.assign(mainAPI, data); // 复制新数据
+    console.log('mainAPI set in worker');
+}
+var preCacheIconFlags = false
 //加载mainAPI
+export async function preCacheIcon() {
+    if(!preCacheIconFlags){
+        logger('mainAPI', 'PreCache Icon...');
+        for(let i = 1;i<6;i++){
+           getBandIcon(i)  // 用于缓存
+        }
+        getBandIcon(18)  // 用于缓存RAS
+        getBandIcon(21)  // 用于缓存Morfonica
+        getBandIcon(45)  // 用于缓存MyGO
+    
+        for (const key in Server) {
+            const value = Number(key)
+            if (!isNaN(value)) {
+                getIcon(value as Server)
+            }
+        }
+        let attributeList = ["cool", "happy", "pure", "powerful"];
+        for(var attributeName of attributeList){
+            if(attributeIconCache[attributeName] == undefined){
+                new Attribute(attributeName).getIcon()
+            }
+        }
+    }
+    preCacheIconFlags = true
+}
 async function loadMainAPI(useCache: boolean = false) {
+    if (!isMainThread){
+        if(eventCharacterParameterBonusFix) eventCharacterParameterBonusFix = await readJSON(path.join(configPath, 'eventCharacterParameterBonusFix.json'))
+        
+        return
+    } 
     logger('mainAPI', 'loading mainAPI...')
     const promiseAll = Object.keys(BestdoriapiPath).map(async (key) => {
         const maxRetry = 3
@@ -58,26 +104,7 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
-    logger('mainAPI', 'PreCache Icon...');
-    for(let i = 1;i<6;i++){
-       getBandIcon(i)  // 用于缓存
-    }
-    getBandIcon(18)  // 用于缓存RAS
-    getBandIcon(21)  // 用于缓存Morfonica
-    getBandIcon(45)  // 用于缓存MyGO
-
-    for (const key in Server) {
-        const value = Number(key)
-        if (!isNaN(value)) {
-            getIcon(value as Server)
-        }
-    }
-    let attributeList = ["cool", "happy", "pure", "powerful"];
-    for(var attributeName of attributeList){
-        if(attributeIconCache[attributeName] == undefined){
-            new Attribute(attributeName).getIcon()
-        }
-    }
+    await preCacheIcon()
 
     logger('mainAPI', 'mainAPI loaded')
 
@@ -85,12 +112,13 @@ async function loadMainAPI(useCache: boolean = false) {
 
 logger('mainAPI', "initializing...")
 loadMainAPI(true).then(() => {
+    preCacheIcon()
     logger('mainAPI', "initializing done")
     loadMainAPI()
 })
 
 
 
-setInterval(loadMainAPI, 1000 * 60 * 5)//5分钟更新一次
+if (isMainThread) setInterval(loadMainAPI, 1000 * 60 * 5)//5分钟更新一次
 
 export default mainAPI

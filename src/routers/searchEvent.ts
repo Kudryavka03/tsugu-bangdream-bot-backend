@@ -9,6 +9,20 @@ import express from 'express';
 import { body } from 'express-validator';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { piscina } from '@/WorkerPool';
+import mainAPI from '@/types/_Main';
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
+
 
 const router = express.Router();
 
@@ -62,9 +76,19 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     if (Object.keys(fuzzySearchResult).length == 0) {
         return ['错误: 没有有效的关键词']
     }
-
-    return await drawEventList(fuzzySearchResult, displayedServerList, compress)
+    const result = (await piscina.drawEventList.run({
+        matches: fuzzySearchResult,
+        displayedServerList,
+        compress,
+        mainAPI
+    })).map(toBuffer)
+    return result
 
 }
-
+function toBuffer(x: any): Buffer | string {
+    if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+        return Buffer.from(x);
+    }
+    return x; // string 或已是 Buffer
+}
 export { router as searchEventRouter }

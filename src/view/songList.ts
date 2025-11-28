@@ -1,5 +1,5 @@
 import { Song } from "@/types/Song";
-import mainAPI from "@/types/_Main"
+import mainAPI, { preCacheIcon, setMainAPI } from "@/types/_Main"
 import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
 import { Canvas } from 'skia-canvas'
 import { drawTitle } from '@/components/title';
@@ -14,7 +14,22 @@ import { drawSongDetail } from "./songDetail";
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { loadImageOnce } from "@/components/card";
 
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
+
+
+
+var workerApiData
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -41,8 +56,13 @@ const line2: Canvas = drawDottedLine({
     gap: 10,
     color: "#a8a8a8"
 })
-
-export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
+export async function initForWorker() {
+    await loadImageOnce()
+    await preCacheIcon()
+}
+export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    if (apiData) setMainAPI(apiData)
+    workerApiData = apiData
     const limit = pLimit(1);    // 限制3首歌同时绘制
     var heavyLoad = false
     // 计算歌曲模糊搜索结果
@@ -62,7 +82,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
     //var t1 = Date.now()
-    if (tempSongList.length <50){
+    if (tempSongList.length <5000){
         
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
@@ -113,6 +133,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
 
     var all = []
     all.push(await drawTitle(`查询  共${tempSongList.length}条结果`, `歌曲列表`))
+    
     all.push(songListImage)
     if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
     var buffer = await outputFinalBuffer({
@@ -120,7 +141,9 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         useEasyBG: true,
         compress: compress
     })
-    return [buffer]
+    //return {{buffer},transferList: [buffer.buffer]}
+    console.log(Date.now())
+    return [buffer] // 目前暂时没法0拷贝，还在想办法ing
 }
 
 
@@ -129,9 +152,14 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
 export function matchSongList(matches: FuzzySearchResult, displayedServerList: Server[]) {
     var tempSongList: Array<Song> = [];
     var songIdList: Array<number> = Object.keys(mainAPI['songs']).map(Number)
-    // console.log(songIdList)
+    
+    console.log(songIdList.length);
+     //new Error(songIdList)
     for (let i = 0; i < songIdList.length; i++) {
+        
         const tempSong = new Song(songIdList[i]);
+        //console.log(tempSong)
+        
         for (let s of tempSong.musicTitle) {
             if (s && (s.toLowerCase().replace(/[!?]/g, '') == (matches['_all'][0] as string) || s.toLowerCase() == (matches['_all'][0] as string))) {
                 tempSongList.push(tempSong)
@@ -143,7 +171,7 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
         return tempSongList
 
     for (let i = 0; i < songIdList.length; i++) {
-        const tempSong = new Song(songIdList[i]);
+        const tempSong = new Song(songIdList[i],workerApiData);
         var isMatch = match(matches, tempSong, ['songId']);
         //如果在所有所选服务器列表中都不存在，则不输出
         var numberOfNotReleasedServer = 0;
