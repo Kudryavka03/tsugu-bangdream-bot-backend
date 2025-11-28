@@ -76,12 +76,16 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     if (Object.keys(fuzzySearchResult).length == 0) {
         return ['错误: 没有有效的关键词']
     }
-    const result = (await piscina.drawEventList.run({
-        matches: fuzzySearchResult,
-        displayedServerList,
-        compress,
-        mainAPI
-    })).map(toBuffer)
+    var result = await drawEventList(fuzzySearchResult,displayedServerList,compress)
+    if (result == null){    // 意味着查询数量过大要使用worker来进行处理，否则阻塞主线程
+        result = (await piscina.drawList.run({
+            matches: fuzzySearchResult,
+            displayedServerList,
+            compress,
+            mainAPI
+        },{name:'drawEventList'})).map(toBuffer)
+    }
+
     return result
 
 }

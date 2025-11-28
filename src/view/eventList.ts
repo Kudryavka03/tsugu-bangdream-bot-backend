@@ -21,7 +21,7 @@ import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { LagTimes } from "@/app";
 import { drawTips } from "@/components/tips";
-const limit = pLimit(1);
+const limit = pLimit(10000);
 const maxHeight = 7000
 const maxColumns = 7
 import { parentPort, threadId,isMainThread  } from'worker_threads';
@@ -103,12 +103,13 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var tempH = 0;
     //console.log(tempEventList)
     await Promise.all(tempEventList.map(e => e.initFull(false)));
-    if (tempEventList.length <2500){
+    if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
         for (var i = 0; i < tempEventList.length; i++) {
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
     }
     else{   // 降级同步输出
+        if (isMainThread) return null // 如果不是worker，那么就返回null。Null被中间件捕获到后会直接发去Worker请求
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
         heavyLoad = true
         eventPromises = tempEventList.map((events,i) =>

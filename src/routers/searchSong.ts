@@ -91,14 +91,23 @@ export async function commandSongWorker(displayedServerList, input, compress) {
     if (Object.keys(fuzzySearchResult).length == 0) {
         return ['错误: 没有有效的关键词'];
     }
-const result = await piscina.drawList.run({
-    matches: fuzzySearchResult,
-    displayedServerList,
-    compress,
-    mainAPI
-})
-console.log(Date.now())
+    var result = await drawSongList(fuzzySearchResult,displayedServerList,compress);
+    if (result == null){
+        result = (await piscina.drawList.run({
+            matches: fuzzySearchResult,
+            displayedServerList,
+            compress,
+            mainAPI
+        })).map(toBuffer)
+    }
     // ➜ 直接调用 worker
-    return [Buffer.from(result[0])];
+    return result;
+}
+
+function toBuffer(x: any): Buffer | string {
+    if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+        return Buffer.from(x);
+    }
+    return x; // string 或已是 Buffer
 }
 export { router as searchSongRouter }

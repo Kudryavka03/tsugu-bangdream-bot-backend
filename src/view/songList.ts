@@ -63,7 +63,8 @@ export async function initForWorker() {
 export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     if (apiData) setMainAPI(apiData)
     workerApiData = apiData
-    const limit = pLimit(1);    // 限制3首歌同时绘制
+    const limit = pLimit(10000);    // 限制3首歌同时绘制 // 进worker了，不关主线程事了，随便造了
+    
     var heavyLoad = false
     // 计算歌曲模糊搜索结果
     const tempSongList = matchSongList(matches, displayedServerList)
@@ -82,12 +83,13 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
     //var t1 = Date.now()
-    if (tempSongList.length <5000){
+    if (tempSongList.length <50){
         
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
         }
     } else{   // 大于15首，并发降级，不允许全部并发
+        if(isMainThread) return null
         heavyLoad = true
         logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
         songPromises = tempSongList.map(song =>
@@ -142,7 +144,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         compress: compress
     })
     //return {{buffer},transferList: [buffer.buffer]}
-    console.log(Date.now())
+    //console.log(Date.now())
     return [buffer] // 目前暂时没法0拷贝，还在想办法ing
 }
 
@@ -153,7 +155,7 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
     var tempSongList: Array<Song> = [];
     var songIdList: Array<number> = Object.keys(mainAPI['songs']).map(Number)
     
-    console.log(songIdList.length);
+    //console.log(songIdList.length);
      //new Error(songIdList)
     for (let i = 0; i < songIdList.length; i++) {
         
