@@ -7,6 +7,7 @@ export const piscina = {
         minThreads: 1,
         maxThreads: 1,
         concurrentTasksPerWorker: 8,
+        idleTimeout:0
     }),/*
     drawDetail: new Piscina({
         filename: path.resolve(__dirname, './worker/drawSongDetail.worker.js'),

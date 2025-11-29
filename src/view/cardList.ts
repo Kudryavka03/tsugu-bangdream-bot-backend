@@ -1,9 +1,9 @@
 import { Card } from "@/types/Card";
 import { Character } from "@/types/Character";
-import mainAPI from "@/types/_Main"
+import mainAPI, { setMainAPI } from "@/types/_Main"
 import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
 import { Canvas } from 'skia-canvas'
-import { drawCardIcon } from "@/components/card"
+import { drawCardIcon, loadImageOnce } from "@/components/card"
 import { drawDatablockHorizontal } from '@/components/dataBlock';
 import { stackImage } from '@/components/utils'
 import { drawTitle } from '@/components/title';
@@ -12,12 +12,23 @@ import { Server } from '@/types/Server'
 import { globalDefaultServer } from '@/config';
 
 import { drawCardDetail } from '@/view/cardDetail';
-
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
 
 const maxWidth = 7000
 
-export async function drawCardList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean,compress: boolean,after_training:boolean = true): Promise<Array<Buffer | string>> {
-
+export async function drawCardList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean,compress: boolean,after_training:boolean = true,apiData?:object): Promise<Array<Buffer | string>> {
+    if (apiData) {
+        setMainAPI(apiData)
+    }
     //计算模糊搜索结果
     const tempCardList: Array<Card> = matchCardList(matches, displayedServerList);
 
@@ -29,6 +40,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
         return await drawCardDetail(tempCardList[0].cardId, displayedServerList, useEasyBG, compress)
     }
 
+    if (tempCardList.length > 60 && isMainThread) return null
     //计算表格，X轴为颜色，Y轴为角色
     var characterIdList: number[] = [];
     var attributeList: Array<'cool' | 'happy' | 'pure' | 'powerful'> = [];

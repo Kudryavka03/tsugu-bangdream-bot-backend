@@ -8,6 +8,8 @@ import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySear
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { piscina } from '@/WorkerPool';
+import mainAPI from '@/types/_Main';
 
 const router = express.Router();
 
@@ -71,9 +73,28 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
         return ['错误: 没有有效的关键词']
     }
 
-    return await drawCardList(fuzzySearchResult, displayedServerList,useEasyBG, compress,after_training)
+    var result =  await drawCardList(fuzzySearchResult, displayedServerList,useEasyBG, compress,after_training)
+    if (result!=null){
+        return result
+    }
+    return (await piscina.drawList.run({
+            matches: fuzzySearchResult,
+            displayedServerList,
+            useEasyBG,
+            compress,
+            after_training,
+            mainAPI
+        },{name:'drawCardList'})).map(toBuffer)
+}
 
-};
+
+
+function toBuffer(x: any): Buffer | string {
+    if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+        return Buffer.from(x);
+    }
+    return x; // string 或已是 Buffer
+}
 
 export async function getDoujinshiSayoHina(){
     var DoujinshiSayoHinaList = [

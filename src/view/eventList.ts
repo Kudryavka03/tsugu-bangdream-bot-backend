@@ -58,8 +58,8 @@ export async function initForWorker() {
 export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     if (apiData) {
         setMainAPI(apiData)
-        await loadImageOnce()
-        await preCacheIcon()
+        //await loadImageOnce()
+        //await preCacheIcon()
     }
     //计算模糊搜索结果
     var heavyLoad = false

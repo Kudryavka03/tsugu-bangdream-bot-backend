@@ -20,7 +20,9 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
     }
 
     if (errUrl[url] && currentTime - errUrl[url] < ERROR_CACHE_EXPIRY) {
-      throw new Error("downloadFile: errUrl includes url and not expired");
+      if ((url.includes('.png') || url.includes('.svg')) && IgnoreErr) {
+        return assetErrorImageBuffer;
+      }
     }
 
     const cacheTime = overwrite ? 0 : 1 / 0;
