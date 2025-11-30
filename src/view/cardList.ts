@@ -40,7 +40,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
         return await drawCardDetail(tempCardList[0].cardId, displayedServerList, useEasyBG, compress)
     }
 
-    if (tempCardList.length > 60 && isMainThread) return null
+    if (tempCardList.length > 100 && isMainThread) return null
     //计算表格，X轴为颜色，Y轴为角色
     var characterIdList: number[] = [];
     var attributeList: Array<'cool' | 'happy' | 'pure' | 'powerful'> = [];

@@ -59,7 +59,7 @@ async function getRoomList(roomList: any) {
       userName: room.userName,
     });
 
-    if (room.player?.playerId != undefined) {
+    if (room.player?.playerId != undefined && false) {
       let server = room.player.server;
       if (isServer(server)) {
         const tempPlayer = new Player(room.player.playerId, server);
