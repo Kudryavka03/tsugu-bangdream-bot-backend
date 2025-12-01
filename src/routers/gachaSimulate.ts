@@ -81,12 +81,12 @@ async function commandGachaSimulate(
     times:times,
     compress:compress,
     apiData:mainAPI
-    },{name:'drawRandomGacha'}))
+    },{name:'drawRandomGacha'})).map(toBuffer)
     //console.log(r)
     
-    return  r.map(toBuffer);
+    return  r;
 }
-
+  return r
 }
 function toBuffer(x: any): Buffer | string {
   if (x instanceof Uint8Array && !(x instanceof Buffer)) {

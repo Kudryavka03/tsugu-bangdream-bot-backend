@@ -27,7 +27,7 @@ const maxWidth = 230 * 5
 const immediate = () => new Promise(res => setImmediate(res));// 降低优先级用
 export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     
-    console.log(gacha)
+    //console.log(gacha)
     if (apiData && times < 10001) { // 如果是worker且抽卡次数小于10001
         setMainAPI(apiData)
         // 重构嘎查对象
@@ -69,7 +69,7 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         var heavyLoad = false
         const gachaList: { [cardId: number]: number } = {};
         const promises: Promise<void>[] = [];
-        if (times >300) {
+        if (times >200) {
             heavyLoad = true
             logger('drawRandomGacha','Task Priority Level DOWN Beacuse too much counts.')
         }
