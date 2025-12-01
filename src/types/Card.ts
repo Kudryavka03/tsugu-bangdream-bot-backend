@@ -241,7 +241,10 @@ export class Card {
             await this.initFull()
         }
         const level = cardData ? cardData.level : this.getMaxLevel()
-        const stat = this.stat[level.toString()]
+        console.log('level：' + level)
+        //const stat = this.stat[level.toString()]
+        const stat = { ...this.stat[level.toString()] }; // 返回一个拷贝对象，这样就不会因为addStat异步调用引用而出现继承分数的情况
+        console.log(this.stat)
         if (cardData) {
             // console.log(cardData)
             if (cardData.userAppendParameter) {
@@ -251,9 +254,11 @@ export class Card {
                     technique: userAppend.technique + (userAppend.characterPotentialTechnique || 0) + (userAppend.characterBonusTechnique || 0),
                     visual: userAppend.visual + (userAppend.characterPotentialVisual || 0) + (userAppend.characterBonusVisual || 0)
                 }
-                addStat(stat, appendStat)
+                
+                addStat(stat, appendStat) 
             }
             return stat
+            //return structuredClone(stat)
         }
         if(this.stat['training'] != undefined){//如果可以特训
             addStat(stat, this.stat['training'])
@@ -262,8 +267,8 @@ export class Card {
             addStat(stat, this.stat['episodes'][0])
             addStat(stat, this.stat['episodes'][1])
         }
-
         return stat
+        //return structuredClone(stat)
     }
     getSkill(): Skill {
         return new Skill(this.skillId)

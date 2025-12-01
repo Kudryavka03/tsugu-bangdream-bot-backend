@@ -260,7 +260,7 @@ export class Player {
         //计算卡牌本身属性
         var cardDataList = this.profile.mainDeckUserSituations.entries
         var cardStatList = []
-        var cardStat: Stat = {//所有卡牌的属性总和
+        const cardStat: Stat = {//所有卡牌的属性总和
             performance: 0,
             technique: 0,
             visual: 0,
@@ -275,9 +275,10 @@ export class Player {
             })()
             calcStatPromise.push(calcStatAsync)
         }   // 多线程优化
-        var promises = await Promise.all(calcStatPromise)
+        const promises = await Promise.all(calcStatPromise)
         for(var p of promises){
-            var tempStatAsync0 = p
+            const tempStatAsync0 = p
+            console.log(cardStat, tempStatAsync0)
             addStat(cardStat, tempStatAsync0)
             cardStatList.push(tempStatAsync0)
         }
