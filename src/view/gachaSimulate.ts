@@ -11,10 +11,29 @@ import { resizeImage } from "@/components/utils";
 import { drawGachaDatablock } from "@/components/dataBlock/gacha";
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { setMainAPI } from "@/types/_Main";
 
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
 const maxWidth = 230 * 5
 const immediate = () => new Promise(res => setImmediate(res));// 降低优先级用
-export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    
+    console.log(gacha)
+    if (apiData && times < 10001) { // 如果是worker且抽卡次数小于10001
+        setMainAPI(apiData)
+        // 重构嘎查对象
+        var gacha = new Gacha(gacha.gachaId);
+    }
+    if (!apiData && times >300) return null; //如果不是worker且次数大于300，返回null，由路由引导至worker进行抽卡
     if (times > 10000) {
         return ['错误: 抽卡次数过多, 请不要超过10000次']
     }
@@ -57,8 +76,10 @@ export async function drawRandomGacha(gacha: Gacha, times: number = 10, compress
         for (let i = 0; i < times; i++) {
             promises.push(
                 (async () => {
+                    /*
                     if (times >300) 
                         await immediate();  // 降低优先级
+                    */
                     const card = getGachaRandomCard(gacha, i);
                     if (!gachaList[card.cardId]) {
                         gachaList[card.cardId] = 1;

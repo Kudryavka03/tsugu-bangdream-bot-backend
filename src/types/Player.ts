@@ -274,11 +274,11 @@ export class Player {
                 return card.calcStat(cardData)
             })()
             calcStatPromise.push(calcStatAsync)
-        }   // 多线程优化
+        }   // 异步优化
         const promises = await Promise.all(calcStatPromise)
         for(var p of promises){
             const tempStatAsync0 = p
-            console.log(cardStat, tempStatAsync0)
+            //console.log(cardStat, tempStatAsync0)
             addStat(cardStat, tempStatAsync0)
             cardStatList.push(tempStatAsync0)
         }

@@ -4,6 +4,7 @@ require('tsconfig-paths/register');
 const { drawSongList,initForWorker } = require('@/view/songList');
 const { drawEventList } = require('@/view/eventList');
 const { drawCardList } = require('@/view/cardList');
+const {drawRandomGacha} = require('@/view/gachaSimulate')
 
 
 module.exports = async function (task) {
@@ -36,5 +37,13 @@ module.exports.drawCardList = async function (task) {
     task.compress,
     task.after_training,
     task.mainAPI
+  );
+};
+module.exports.drawRandomGacha = async function (task) {
+  return await drawRandomGacha(
+    task.gacha,
+    task.times,
+    task.compress,
+    task.apiData,
   );
 };

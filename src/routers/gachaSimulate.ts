@@ -7,6 +7,8 @@ import { listToBase64 } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { piscina } from '@/WorkerPool';
+import mainAPI from '@/types/_Main';
 
 const router = express.Router();
 
@@ -30,7 +32,7 @@ router.post(
     const { mainServer, times, compress, gachaId } = req.body;
 
     try {
-      const result = await commandGachaSimulate(getServerByServerId(mainServer), times, compress, gachaId);
+      let result = await commandGachaSimulate(getServerByServerId(mainServer), times, compress, gachaId);
       res.send(listToBase64(result));
     } catch (e) {
       console.log(e);
@@ -70,8 +72,26 @@ async function commandGachaSimulate(
       return ['错误: 该卡池不存在'];
     }
   }
-  return await drawRandomGacha(gacha, times || 10, compress);
-
+  
+  let r =  await drawRandomGacha(gacha, times || 10, compress);
+  if (r == null){
+    // 意味着查询数量过大要使用worker来进行处理，否则阻塞主线程
+  r = (await piscina.drawList.run({
+    gacha:gacha,
+    times:times,
+    compress:compress,
+    apiData:mainAPI
+    },{name:'drawRandomGacha'}))
+    //console.log(r)
+    
+    return  r.map(toBuffer);
 }
 
+}
+function toBuffer(x: any): Buffer | string {
+  if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+      return Buffer.from(x);
+  }
+  return x; // string 或已是 Buffer
+}
 export { router as gachaSimulateRouter }
