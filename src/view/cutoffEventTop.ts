@@ -316,7 +316,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             rankBetweenLastTick.push(0)
         }
        // console.log((nowScore-lastScore) / countChange==0?1:countChange)
-        avgRankChange.push(Math.round((nowScore-lastScore) / (countChange==0?1:countChange)))    // 把均Pt
+        avgRankChange.push(countChange==0?0:Math.round((nowScore-lastScore) / countChange))    // 把均Pt
         if (i == 0) {
             rankBetween.push(0)
         }
