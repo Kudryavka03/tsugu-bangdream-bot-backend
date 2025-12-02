@@ -57,7 +57,7 @@ export class CutoffEventTop{
         if(this.isInitfull){
             return;
         }
-        const topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=120000`,0,3,false);
+        const topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=0`,0,3,false);
         if(topData == undefined){
             this.isExist = false;
             return;

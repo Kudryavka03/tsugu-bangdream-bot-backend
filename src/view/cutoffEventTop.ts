@@ -267,7 +267,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     const now = new Date();
 
     var calcTimestamp = new Date(now);
-    if (tier != 114514){
+    if (playerId != 114514){
     calcTimestamp.setMinutes(0);
     calcTimestamp.setSeconds(0);
     calcTimestamp.setMilliseconds(0);
