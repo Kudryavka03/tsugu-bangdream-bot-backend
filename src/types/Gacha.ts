@@ -130,7 +130,7 @@ export class Gacha {
     }
     async getData(update: boolean = true) {
         var time = update ? 0 : 1 / 0
-        const gachaData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/gacha/${this.gachaId}.json`, time)
+        const gachaData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/gacha/${this.gachaId}.json`, time,1,false)
         return gachaData
     }
     async getBannerImage(): Promise<Image> {

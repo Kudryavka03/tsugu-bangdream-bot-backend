@@ -199,7 +199,7 @@ export class Event {
     }
     async getData(update: boolean = true) {
         var time = update ? 0 : 1 / 0
-        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time);
+        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,false);
         //console.log(eventData)
         //eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]
         return eventData

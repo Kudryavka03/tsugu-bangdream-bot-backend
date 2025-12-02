@@ -163,43 +163,47 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     //活动期间卡池卡牌
     var getEventGachaAndCardPromiseList:Promise<{ gachaList, gachaCardList }>[]= []
 
-
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
         if (event.startAt[server] == null) {
+            getEventGachaAndCardPromiseList.push(null)
             continue
         }
         getEventGachaAndCardPromiseList.push(getEventGachaAndCardList(event, server))
     }
     const getEventGachaAndCardFinalList = await Promise.all(getEventGachaAndCardPromiseList);
-    for (var i = 0; i < getEventGachaAndCardFinalList.length; i++) {
+    for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
-        var EventGachaAndCardList = getEventGachaAndCardFinalList[i]
-        var tempGachaList = EventGachaAndCardList.gachaList
-        var tempGachaCardList = EventGachaAndCardList.gachaCardList
-        for (let i = 0; i < tempGachaList.length; i++) {
-            const tempGacha = tempGachaList[i];
-            if (gachaIdList.indexOf(tempGacha.gachaId) != -1) {
-                continue
-            }
-            if (i == 0) {
-                drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
-                //gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
-            }
-            else {
-                drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha))
-                //gachaImageList.push(await drawGachaDatablock(tempGacha))
-            }
-            gachaIdList.push(tempGacha.gachaId)
+        if (event.startAt[server] == null) {
+            continue
         }
-        for (let i = 0; i < tempGachaCardList.length; i++) {
-            const tempCard = tempGachaCardList[i];
-            if (gachaCardIdList.indexOf(tempCard.cardId) != -1) {
-                continue
+            var EventGachaAndCardList = getEventGachaAndCardFinalList[i]
+            var tempGachaList = EventGachaAndCardList.gachaList
+            var tempGachaCardList = EventGachaAndCardList.gachaCardList
+            for (let i = 0; i < tempGachaList.length; i++) {
+                const tempGacha = tempGachaList[i];
+                if (gachaIdList.indexOf(tempGacha.gachaId) != -1) {
+                    continue
+                }
+                if (i == 0) {
+                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                    //gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                }
+                else {
+                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha))
+                    //gachaImageList.push(await drawGachaDatablock(tempGacha))
+                }
+                gachaIdList.push(tempGacha.gachaId)
             }
-            gachaCardIdList.push(tempCard.cardId)
-            gachaCardList.push(tempCard)
-        }
+            for (let i = 0; i < tempGachaCardList.length; i++) {
+                const tempCard = tempGachaCardList[i];
+                if (gachaCardIdList.indexOf(tempCard.cardId) != -1) {
+                    continue
+                }
+                gachaCardIdList.push(tempCard.cardId)
+                gachaCardList.push(tempCard)
+            }
+        
     }
 
     drawCardListInListPromise.push(drawCardListInList({    // 这个是不需要等待IO的
