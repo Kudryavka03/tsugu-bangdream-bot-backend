@@ -37,6 +37,7 @@ router.post(
 
 export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number): Promise<Array<Buffer | string>> {
     if (!playerId && !tier) {
+        // 这里查前十车速总表
         return ['请输入玩家id或排名']
     }
     const eventId = getPresentEvent(mainServer).eventId

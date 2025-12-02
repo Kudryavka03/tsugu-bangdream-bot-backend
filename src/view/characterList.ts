@@ -61,8 +61,8 @@ export async function drawCharacterList(matches: FuzzySearchResult, displayedSer
         textSize: 800
     })
     let all = []
-    all.push(drawTitle('查询', '角色列表'))
-    all.push(drawDatablock({
+    all.push(await drawTitle('查询', '角色列表'))
+    all.push(await drawDatablock({
         list: [characterListImage]
     }))
     var buffer = await outputFinalBuffer({

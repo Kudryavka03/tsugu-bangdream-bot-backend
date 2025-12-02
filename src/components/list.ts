@@ -260,6 +260,69 @@ export async function drawListByServerList(content: Array<string | null>, key?: 
 }
 
 
+// 横向组合：宽度为所有子图宽度相加，高度为最高图的高度
+export function drawListMergeMin(
+    imageList: Array<Canvas | Image>,
+    drawLine: boolean = false,
+    align: "top" | "bottom" | "center" = "top"
+): Canvas {
+    // 计算总宽度与最大高度
+    let totalWidth = 0;
+    let maxHeight = 0;
+
+    for (const element of imageList) {
+        if (element) {
+            totalWidth += element.width;
+            if (element.height > maxHeight) maxHeight = element.height;
+        }
+    }
+
+    // 生成画布
+    const canvas = new Canvas(totalWidth, maxHeight);
+    const ctx = canvas.getContext("2d");
+
+    // 分割线（保持你的原逻辑）
+    const line: Canvas = drawDottedLine({
+        width: 10,
+        height: canvas.height,
+        startX: 5,
+        startY: 5,
+        endX: 5,
+        endY: canvas.height - 5,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    });
+
+    // 绘制
+    let x = 0;
+
+    for (let i = 0; i < imageList.length; i++) {
+        const element = imageList[i];
+        if (!element) continue;
+
+        let y = 0;
+        if (align === "bottom")
+            y = maxHeight - element.height;
+        else if (align === "center")
+            y = (maxHeight - element.height) / 2;
+
+        ctx.drawImage(element, x, y);
+
+        // 分隔线：在两项之间
+        if (drawLine && i > 0) {
+            ctx.drawImage(line, x - 5, 0);
+        }
+
+        // 移动 x
+        x += element.width;
+    }
+
+    return canvas;
+}
+
+
+
 //横向组合较短list，高度为最高的list，宽度平分
 export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number = 800, drawLine: boolean = false, align: "top" | "bottom" | "center" = "top"): Canvas {
     var maxHeight = 0
