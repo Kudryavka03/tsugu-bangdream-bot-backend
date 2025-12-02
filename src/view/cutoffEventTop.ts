@@ -267,9 +267,11 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     const now = new Date();
 
     var calcTimestamp = new Date(now);
+    if (tier != 114514){
     calcTimestamp.setMinutes(0);
     calcTimestamp.setSeconds(0);
     calcTimestamp.setMilliseconds(0);
+    }
     var thisHour = calcTimestamp.getTime();
     //console.log(thisHour)
 
@@ -291,13 +293,17 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         var isFirst = true
         const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照时间段排的分数，最高返回最近100次的变化分数，从最近到最远。
         //console.log( playerRating.length)
-        for (let j = 0; j + 1 < playerRating.length; j += 1) {
-            if (playerRating[j + 1].value == -1) {
+
+        for (let j = 0; j  < playerRating.length; j += 1) {
+            if (playerRating[j ].value == -1) {
                 break
             }
             //console.log(playerRating[j].time)
             if (playerRating[j].time >thisHour) continue
-            if (playerRating[j].time <LastHour) continue
+            if (playerRating[j].time <LastHour) {
+                lastScore = playerRating[j].value
+                break
+            }
             if(isFirst) {
                 nowScore = playerRating[j].value
                 isFirst = false
