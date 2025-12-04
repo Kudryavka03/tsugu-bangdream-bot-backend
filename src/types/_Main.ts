@@ -108,7 +108,7 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
-    await preCacheIcon()
+    //await preCacheIcon()
     var shouldUpdateTime = new Date()  // 设置为当前分钟的0时
     shouldUpdateTime.setMinutes(0)
     shouldUpdateTime.setSeconds(0)
@@ -128,7 +128,7 @@ async function loadMainAPI(useCache: boolean = false) {
 //TopRateSpeedCacheTime = new Date().getTime()
 logger('mainAPI', "initializing...")
 loadMainAPI(true).then(() => {
-    //preCacheIcon()
+    preCacheIcon()
     logger('mainAPI', "initializing done")
     loadMainAPI()
 })
