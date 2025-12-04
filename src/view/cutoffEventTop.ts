@@ -18,6 +18,7 @@ import { logger } from '@/logger';
 import { drawText } from '@/image/text';
 import { drawTips } from '@/components/tips';
 import { changeTimePeriodFormat, changeTimefomant, formatSeconds } from '@/components/list/time';
+import { TopRateSpeed } from '@/types/_Main';
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
@@ -70,7 +71,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
 }
 
 export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
-    if (playerId == 114514 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
+    if (playerId == 1 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
     // 因为没用上所以凭感觉优化了一下，不知道能不能用
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
@@ -244,12 +245,20 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 }
 
 export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+    var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+    if (cutoffEventTop.status != "in_progress") {
+        return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
+    }
+    if (playerId < 1 ){    // 如果不等于114514就返回缓存。缓存每隔5分钟刷新一次
+        if (TopRateSpeed) return TopRateSpeed   // 如果缓存不存在就走正常获取流程
+    }
+    let subTimeTips = (playerId==2)?'上个时段统计':'即刻统计'
     var event = new Event(eventId);
     const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
     });
-    let count = 0
+    let pId = playerId
     if (!maxCount) {
         maxCount = 20
     }
@@ -267,11 +276,15 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     const now = new Date();
 
     var calcTimestamp = new Date(now);
-    if (playerId != 114514){
-    calcTimestamp.setMinutes(0);
-    calcTimestamp.setSeconds(0);
-    calcTimestamp.setMilliseconds(0);
+
+    /*
+    else {
+
+        calcTimestamp.setMinutes(0);
+        calcTimestamp.setSeconds(0);
+        calcTimestamp.setMilliseconds(0);
     }
+    */
     var thisHour = calcTimestamp.getTime();
     //console.log(thisHour)
 
@@ -286,7 +299,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         playerId = userInRankings[i].uid
         var user = cutoffEventTop.getUserByUid(playerId);
         userName.push(user.name)
-        rank.push(userInRankings[i].point)  // 玩家当前时刻分数
+          // 玩家当前时刻分数
+          rank.push(userInRankings[i].point)
         let countChange = 0
         let lastScore = 0
         let nowScore = 0
@@ -306,6 +320,9 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
             if(isFirst) {
                 nowScore = playerRating[j].value
+                //
+                rank[i] = nowScore  // 玩家状态将会显示
+                //rank.push(nowScore)
                 isFirst = false
             }
             if (playerRating[j].value != playerRating[j + 1].value) {
@@ -338,14 +355,15 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         rankForBetween.push(rank);
     }
     var all = [];
-    all.push(await drawTitle('T10时速排名', `${serverNameFullList[mainServer]}表`));
+    
+    all.push(await drawTitle('T10时速排名', `${serverNameFullList[mainServer]} ${subTimeTips}`));
     var list = [], imageList = []
-    const widthMax = 200+300+420+250+250+400+300+300+200
+    const widthMax = 200+300+420+250+275+300+300+300+200
     var timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`
     
-    list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: '分数',maxWidth:250 })
+    list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: pId==2?'统计时分数':'分数',maxWidth:275 })
 
-    ,await drawList({ key: '分差',maxWidth:250 }),await drawList({ key: '1小时内分数变化',maxWidth:400 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
+    ,await drawList({ key: '上下分差',maxWidth:250 }),await drawList({ key: '1小时内分差',maxWidth:300 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
     await drawList({ key: '把均PT' ,maxWidth:200})]))
     const FullLine: Canvas = drawDottedLine({
         width: widthMax,
@@ -365,9 +383,9 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             await drawList({ key: `${k+1}`,maxWidth:200}),
             await drawList({ key: `${userInRankings[k].uid}`,maxWidth:300}),
             await drawList({ key: `${userName[k]}`,maxWidth:420}),
-            await drawList({ key: `${rank[k]}`,maxWidth:250}),
+            await drawList({ key: `${rank[k]}`,maxWidth:275}),
             await drawList({ key: `${rankBetween[k]}`,maxWidth:250}),
-            await drawList({ key: `${rankBetweenLastTick[k]}`,maxWidth:400}),
+            await drawList({ key: `${rankBetweenLastTick[k]}`,maxWidth:300}),
             await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
             await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
             await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
@@ -376,7 +394,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     }
     list.push(...imageList)
     all.push(await drawDatablock({ list}))
-    all.push(await drawTips({text:timeTips}))
+    all.push(await drawTips({text:timeTips,maxWidth:widthMax}))
     //all.push(...list)
     all.push(await drawEventDatablockPromise)
     var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })

@@ -5,9 +5,11 @@ import { readExcelFile } from '@/types/utils'
 import { logger } from '@/logger'
 import * as path from 'path'
 import { getBandIcon } from './Band'
-import { Server, getIcon } from './Server'
+import { Server, getIcon, getServerByServerId } from './Server'
 import { Attribute, attributeIconCache } from './Attribute'
 import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { drawTopRateSpeedRank } from '@/view/cutoffEventTop'
+import { getPresentEvent } from './Event'
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -19,7 +21,7 @@ if (!isMainThread && parentPort) {
   }
 
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
-
+export let TopRateSpeed
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname
 export function setMainAPI(data) {
     Object.keys(mainAPI).forEach(k => delete mainAPI[k]); // 清空原有数据
@@ -105,6 +107,12 @@ async function loadMainAPI(useCache: boolean = false) {
         }
     }
     await preCacheIcon()
+    var nowTime = new Date()
+    if(nowTime.getMinutes() <5 || !TopRateSpeed){
+        logger('mainAPI','Cache drawTopRateSpeedRank......')
+        const eventId = getPresentEvent(getServerByServerId(3)).eventId
+        TopRateSpeed = await drawTopRateSpeedRank(eventId,2,0,0,getServerByServerId(3),true)
+    }
 
     logger('mainAPI', 'mainAPI loaded')
 
@@ -112,7 +120,7 @@ async function loadMainAPI(useCache: boolean = false) {
 
 logger('mainAPI', "initializing...")
 loadMainAPI(true).then(() => {
-    preCacheIcon()
+    //preCacheIcon()
     logger('mainAPI', "initializing done")
     loadMainAPI()
 })
