@@ -108,7 +108,7 @@ async function loadMainAPI(useCache: boolean = false) {
     }
     await preCacheIcon()
     var nowTime = new Date()
-    if(nowTime.getMinutes() <5 || !TopRateSpeed){
+    if((nowTime.getMinutes() <6 || !TopRateSpeed) && !useCache ){
         logger('mainAPI','Cache drawTopRateSpeedRank......')
         const eventId = getPresentEvent(getServerByServerId(3)).eventId
         TopRateSpeed = await drawTopRateSpeedRank(eventId,2,0,0,getServerByServerId(3),true)
