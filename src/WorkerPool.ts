@@ -7,7 +7,8 @@ export const piscina = {
         minThreads: 1,
         maxThreads: 1,
         concurrentTasksPerWorker: 8,
-        idleTimeout:0
+        idleTimeout:0,
+        //argv:[' --allow-natives-syntax ']
     }),/*
     drawDetail: new Piscina({
         filename: path.resolve(__dirname, './worker/drawSongDetail.worker.js'),
@@ -37,3 +38,7 @@ piscina.drawEventList.on('message', (msg) => {
 piscina.drawEventList.run({},{name:'initWorker'})
 */
 piscina.drawList.run({},{name:'initWorker'})
+
+setInterval(() => {
+    piscina.drawList.run({ warmup: true }, { name: 'warmup' });
+  }, 15000);

@@ -28,7 +28,7 @@ export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix,
 export function setMainAPI(data) {
     Object.keys(mainAPI).forEach(k => delete mainAPI[k]); // 清空原有数据
     Object.assign(mainAPI, data); // 复制新数据
-    console.log('mainAPI set in worker');
+    logger('setMainApi','mainAPI set in worker');
 }
 var preCacheIconFlags = false
 //加载mainAPI

@@ -47,3 +47,4 @@ module.exports.drawRandomGacha = async function (task) {
     task.apiData,
   );
 };
+module.exports.warmup  = (t) => { return true; };
