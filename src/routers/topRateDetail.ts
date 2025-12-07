@@ -5,7 +5,7 @@ import { listToBase64 } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { body } from 'express-validator';
 import express from 'express';
-import { drawTopRateDetail } from '@/view/cutoffEventTop';
+import { drawTopRateChanged, drawTopRateDetail, drawTopRateSleep, drawTopRateSpeedRank } from '@/view/cutoffEventTop';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 
@@ -19,14 +19,15 @@ router.post(
         body('tier').optional().isInt(),
         body('count').optional().isInt(),
         body('compress').optional().isBoolean(),
+        body('mode').optional().isInt(),    // 1：实时查岗  3：查停摆   2：查变动
     ],
     middleware,
     async (req: Request, res: Response) => {
 
-        const { mainServer, playerId, tier, count, compress } = req.body;
+        const { mainServer, playerId, tier, count, compress,mode } = req.body;
 
         try {
-            const result = await commandTopRateDetail(getServerByServerId(mainServer), playerId, tier, compress, count);
+            const result = await commandTopRateDetail(getServerByServerId(mainServer), playerId, tier, compress, count,mode);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -35,12 +36,15 @@ router.post(
     }
 );
 
-export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number): Promise<Array<Buffer | string>> {
-    if (!playerId && !tier) {
+export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number,mode:number = 0): Promise<Array<Buffer | string>> {
+    if ((mode !=1)&&!playerId && !tier) {
         // 这里查前十车速总表
         return ['请输入玩家id或排名']
     }
     const eventId = getPresentEvent(mainServer).eventId
+    if(mode == 1 )return await drawTopRateSpeedRank(eventId, playerId, tier, maxCount, mainServer, compress)
+    if(mode == 3 )return await drawTopRateSleep(eventId, playerId, tier, maxCount, mainServer, compress)
+    if(mode == 2 )return await drawTopRateChanged(eventId, playerId, tier, maxCount, mainServer, compress)
     return await drawTopRateDetail(eventId, playerId, tier, maxCount, mainServer, compress)
 }
 

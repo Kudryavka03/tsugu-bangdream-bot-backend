@@ -55,14 +55,24 @@ export function changeTimefomant(timeStamp: number | null) {//时间戳到年月
     }
     var date = new Date(Math.floor(timeStamp / 1000) * 1000)
     var nMinutes: string
+    var nHours: string
     if (date.getMinutes() < 10) {
         nMinutes = "0" + date.getMinutes().toString()
         if (date.getMinutes() == 0) { nMinutes = "00" }
     }
+    
+
     else {
         nMinutes = date.getMinutes().toString()
     }
-    var temp = date.getFullYear().toString() + "年" + (date.getMonth() + 1).toString() + "月" + date.getDate().toString() + "日 " + date.getHours().toString() + ":" + nMinutes
+    if (date.getHours() < 10) {
+        nHours = "0" + date.getHours().toString()
+        if (date.getHours() == 0) { nHours = "00" }
+    }
+    else{
+        nHours = date.getHours().toString()
+    }
+    var temp = date.getFullYear().toString() + "年" + (date.getMonth() + 1).toString() + "月" + date.getDate().toString() + "日 " + nHours + ":" + nMinutes
     return temp
 }
 

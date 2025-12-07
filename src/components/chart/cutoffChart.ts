@@ -129,12 +129,12 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
     }
 
 }
-export async function drawCutoffEventTopChart(CutoffEventTop: CutoffEventTop, setStartToZero = false, server: Server = Server['jp']) {
+export async function drawCutoffEventTopChart(CutoffEventTop: CutoffEventTop, setStartToZero = false, server: Server = Server['jp'],playerId?:number,w:number =800,h:number =900) {
     var datasets = []
     if (CutoffEventTop == undefined) {
         return (new Canvas(1, 1))
     }
-    var allData = CutoffEventTop.getChartData();
+    var allData = CutoffEventTop.getChartData(undefined,playerId);
     function removeBraces(text: string): string {
         var newText = text.replace(/\[[^\]]*\]/g, "");
         return newText;
@@ -156,5 +156,5 @@ export async function drawCutoffEventTopChart(CutoffEventTop: CutoffEventTop, se
         colorNumber++
     }
     var data = { datasets: datasets }
-    return await drawTimeLineChart({ data, start: new Date(CutoffEventTop.startAt), end: new Date(CutoffEventTop.endAt), setStartToZero }, true)
+    return await drawTimeLineChart({ data, start: new Date(CutoffEventTop.startAt), end: new Date(CutoffEventTop.endAt), setStartToZero }, true,w,h)
 }

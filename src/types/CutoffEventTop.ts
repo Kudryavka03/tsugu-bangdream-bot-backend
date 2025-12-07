@@ -94,13 +94,17 @@ export class CutoffEventTop{
             }
         }
     }
-    getChartData(setStartToZero = false):{[key:number]:{x:Date,y:number}[]}{
+    getChartData(setStartToZero = false,playerId?:number):{[key:number]:{x:Date,y:number}[]}{
         if (this.isExist == false) {
             return;
         }
         var chartDate:{[key:number]:{x:Date,y:number}[]} = {};
+
         for(let i =0;i<this.points.length;i++){
             const element = this.points[i]
+            if(playerId!=undefined){
+                if (element.uid!=playerId) continue
+            }
             if(!(element.uid in chartDate)){
                 chartDate[element.uid] = [];
                 if(setStartToZero){

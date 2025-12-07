@@ -72,12 +72,12 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
 
 export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     if (playerId == 1 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
-    if (playerId == 3 ) return drawTopRateSleep(eventId,playerId,tier,maxCount,mainServer,compress)
-    if (playerId == 4 ) return drawTopRateChanged(eventId,playerId,tier,maxCount,mainServer,compress)
+    if (playerId == 3 ) return drawTopRateSleep(eventId,1007987242,tier,maxCount,mainServer,compress)
+    if (playerId == 4 ) return drawTopRateChanged(eventId,1004512554,tier,maxCount,mainServer,compress)
     if (!maxCount) {
         maxCount = 20
     }
-    if (maxCount >10000) return [`错误: 查岗次数过多，请适当缩减查岗的次数。次数过多会占用大量Bot硬件资源且图片可能会无法被正常送出。如需查T10时速表请回复查岗 0`];
+    if (maxCount >100) return [`错误: 查岗次数过多，请适当缩减查岗的次数。次数过多会占用大量Bot硬件资源且图片可能会无法被正常送出。如需查T10时速表请回复查岗 0`];
     // 因为没用上所以凭感觉优化了一下，不知道能不能用
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
@@ -114,7 +114,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             }
             playerId = userInRankings[i].uid
             var user = cutoffEventTop.getUserByUid(playerId);
-            drawPlayerRankingInListPromise1.push(drawPlayerRankingInList(user, 'white', mainServer))
+            drawPlayerRankingInListPromise1.push(drawPlayerRankingInList(user, 'white', mainServer,widthMax))
             /*
             var playerRankingImage = await drawPlayerRankingInList(user, 'white', mainServer);
 
@@ -413,17 +413,24 @@ export async function drawTopRateSleep(eventId: number, playerId: number, tier: 
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
     }
+
+
     var event = new Event(eventId);
     const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
     });
     await cutoffEventTop.initFull(0);
+    if(!playerId){
+        var userInRankings = cutoffEventTop.getLatestRanking();
+        playerId = userInRankings[tier-1].uid
+        console.log(playerId)
+    }
     var all = [];
     var breakTime = 1490000 // 如果间隔相差25min则认定为休息
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
     // console.log(playerId)
-    console.log(playerRating)
+   // console.log(playerRating)
     var breakTimeSt = [];
     var breakTimeEd = [];
     var StIndex = playerRating.length-1;
@@ -453,6 +460,100 @@ export async function drawTopRateSleep(eventId: number, playerId: number, tier: 
         }
 
     }
+
+    var all = [];
+
+    all.push(await drawTitle('查停摆', `${serverNameFullList[mainServer]}`));
+    {
+        const list: Array<Image | Canvas> = [];
+        // var event = new Event(eventId);
+        // all.push(await drawEventDatablock(event, [mainServer]));
+        //名片
+        var widthMax = 420+420+270
+        var userInRankings = cutoffEventTop.getLatestRanking();
+        var drawPlayerRankingInListPromise1 = []
+        for (let i = 0; i < userInRankings.length; i++) {
+            if (playerId && userInRankings[i].uid != playerId || tier && tier != i + 1) {
+                continue
+            }
+            playerId = userInRankings[i].uid
+            var user = cutoffEventTop.getUserByUid(playerId);
+            drawPlayerRankingInListPromise1.push(drawPlayerRankingInList(user, 'white', mainServer,widthMax))
+            /*
+            var playerRankingImage = await drawPlayerRankingInList(user, 'white', mainServer);
+
+            if (playerRankingImage != undefined) {
+                list.push(resizeImage({ image: playerRankingImage, widthMax }));
+            }
+            */
+        }
+        var drawPlayerRankingInListResult1 = await Promise.all(drawPlayerRankingInListPromise1)
+        for(var r of drawPlayerRankingInListResult1){
+            if (r != undefined) {
+              list.push(r);
+            }
+        }
+
+        if (list.length > 0) {
+            all.push(await drawDatablock({ list, maxWidth: 400+400+200+200+250 }))
+        }
+        else 
+            return [`玩家当前不在${serverNameFullList[mainServer]}: 活动${eventId}前十名里`]
+    }
+  
+    const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer,playerId,widthMax,900).catch(err => {
+        logger('drawCutoffEventTopChart error:', err);
+        return null;
+    });
+    var list = [], imageList = []
+    //下面是ai生成的
+// 分割线
+
+const FullLine2: Canvas = drawDottedLine({
+    width: widthMax,
+    height: 30,
+    startX: 15,
+    startY: 15,
+    endX: widthMax,
+    endY: 15,
+    radius: 2,
+    gap: 10,
+    color: "#a8a8a8"
+})
+
+list.push(drawListMergeMin([
+    await drawList({ key: '开始时间', maxWidth: 420 }),
+    await drawList({ key: '结束时间', maxWidth: 420 }),
+    await drawList({ key: '停摆时长', maxWidth: 270 }),
+]))
+list.push(FullLine2)
+// 数据行
+for (let j = allCount> 10? allCount -10 : 0; j < allCount; j++) {    // 人工注：只允许查后10
+
+    
+
+
+    imageList.push(drawListMergeMin([
+        await drawList({ key: `${changeTimefomant(breakTimeSt[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimefomant(breakTimeEd[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimePeriodFormat(breakTimeEd[j] - breakTimeSt[j],false)}`, maxWidth: 270 }),
+    ]))
+
+    imageList.push(FullLine2)
+}
+list.push(...imageList)
+list.push(await drawCutoffEventTopChartPromise)
+all.push(await drawDatablock({ list}))
+    all.push(await drawEventDatablockPromise)
+
+    /*
+    for(var j = 0;j<allCount;j++){
+        console.log(`${changeTimeSt[j]} - ${changeTimeEd[j]}  ${changeTimeCounts[j]}  ${changeTimeTotalPts[j]}`)
+    }
+    */
+    var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
+    return [buffer]
+
     for(var j = 0;j<allCount;j++){
         console.log(`${breakTimeSt[j]} - ${breakTimeEd[j]} `)
     }
@@ -461,6 +562,7 @@ export async function drawTopRateSleep(eventId: number, playerId: number, tier: 
 
 export async function drawTopRateChanged(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+
     
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
@@ -471,6 +573,11 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
         return null;
     });
     await cutoffEventTop.initFull(0);
+    if(playerId == undefined){
+        var userInRankings = cutoffEventTop.getLatestRanking();
+        playerId = userInRankings[tier-1].uid
+    }
+    //console.log(playerId)
     var all = [];
     var breakTime = 1500000 // 如果间隔相差25min则认定为休息
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
@@ -562,10 +669,112 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
             continue
         }
     }
+    var all = [];
+    var widthMax = 420+420+200+200+250
+    all.push(await drawTitle('查变动', `${serverNameFullList[mainServer]}`));
+    {
+        const list: Array<Image | Canvas> = [];
+        // var event = new Event(eventId);
+        // all.push(await drawEventDatablock(event, [mainServer]));
+        //名片
+        var userInRankings = cutoffEventTop.getLatestRanking();
+        var drawPlayerRankingInListPromise1 = []
+        for (let i = 0; i < userInRankings.length; i++) {
+            if (playerId && userInRankings[i].uid != playerId || tier && tier != i + 1) {
+                continue
+            }
+            playerId = userInRankings[i].uid
+            var user = cutoffEventTop.getUserByUid(playerId);
+            drawPlayerRankingInListPromise1.push(drawPlayerRankingInList(user, 'white', mainServer,widthMax))
+            /*
+            var playerRankingImage = await drawPlayerRankingInList(user, 'white', mainServer);
+
+            if (playerRankingImage != undefined) {
+                list.push(resizeImage({ image: playerRankingImage, widthMax }));
+            }
+            */
+        }
+        var drawPlayerRankingInListResult1 = await Promise.all(drawPlayerRankingInListPromise1)
+        for(var r of drawPlayerRankingInListResult1){
+            if (r != undefined) {
+              list.push(r);
+            }
+        }
+
+        if (list.length > 0) {
+            all.push(await drawDatablock({ list, maxWidth: 400+400+200+200+250 }))
+        }
+        else 
+            return [`玩家当前不在${serverNameFullList[mainServer]}: 活动${eventId}前十名里`]
+    }
+    var list = [], imageList = []
+    
+    const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer,playerId,widthMax,900).catch(err => {
+        logger('drawCutoffEventTopChart error:', err);
+        return null;
+    });
+    //下面部分是ai生成的
+// 分割线
+
+const FullLine2: Canvas = drawDottedLine({
+    width: widthMax,
+    height: 30,
+    startX: 15,
+    startY: 15,
+    endX: widthMax,
+    endY: 15,
+    radius: 2,
+    gap: 10,
+    color: "#a8a8a8"
+})
+
+list.push(drawListMergeMin([
+    await drawList({ key: '开始时间', maxWidth: 420 }),
+    await drawList({ key: '结束时间', maxWidth: 420 }),
+    await drawList({ key: '变动次数', maxWidth: 200 }),
+    await drawList({ key: '把均Pt', maxWidth: 200 }),
+    await drawList({ key: '总变动Pt', maxWidth: 250 }),
+]))
+list.push(FullLine2)
+// 数据行
+var totalTimes = 0
+for(let h = 0;h<allCount;h++){
+    totalTimes +=(changeTimeEd[h] - changeTimeSt[h])
+}
+for (let j = allCount> 10? allCount -10 : 0; j < allCount; j++) {    // 人工注：只允许查后10
+
+    // 把均Pt = 总变化Pt / 次数（避免除 0）
+    const avgPt = changeTimeCounts[j] > 0 
+        ? Math.floor(changeTimeTotalPts[j] / changeTimeCounts[j])
+        : "0"
+    imageList.push(drawListMergeMin([
+        await drawList({ key: `${changeTimefomant(changeTimeSt[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimefomant(changeTimeEd[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimeCounts[j]}`, maxWidth: 200 }),
+        await drawList({ key: `${avgPt}`, maxWidth: 200 }),
+        await drawList({ key: `${changeTimeTotalPts[j]}`, maxWidth: 250 }),
+    ]))
+
+    imageList.push(FullLine2)
+}
+list.push(...imageList)
+var eventNowTimestamp = Date.now() - event.startAt[mainServer]
+var avgPerDayTimesPresent = totalTimes / eventNowTimestamp
+
+var avePerDayTimes = Math.floor(86400000 * avgPerDayTimesPresent)
+//console.log(eventNowTimestamp,avgPerDayTimesPresent,avePerDayTimes)
+
+list.push(await drawList({ key: `有效数据内总计：${changeTimePeriodFormat(totalTimes,false)} | 平均每天：${changeTimePeriodFormat(avePerDayTimes,false)}`, maxWidth: 1250 }))
+list.push(await drawCutoffEventTopChartPromise)
+all.push(await drawDatablock({ list}))
+    all.push(await drawEventDatablockPromise)
+    /*
     for(var j = 0;j<allCount;j++){
         console.log(`${changeTimeSt[j]} - ${changeTimeEd[j]}  ${changeTimeCounts[j]}  ${changeTimeTotalPts[j]}`)
     }
-    return ['Check Console']
+    */
+    var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
+    return [buffer]
 }
 
 export function getRatingByPlayer(points: Array<{

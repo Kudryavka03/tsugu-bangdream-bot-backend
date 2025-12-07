@@ -21,11 +21,11 @@ interface User {
     currentPt: number
 }
 
-export async function drawPlayerRankingInList(user: User, backgroudColor: string = 'white', server: Server): Promise<Canvas> {
-    var canvas = new Canvas(800, 110);
+export async function drawPlayerRankingInList(user: User, backgroudColor: string = 'white', server: Server,w:number=800,h:number=110): Promise<Canvas> {
+    var canvas = new Canvas(w, h);
     var ctx = canvas.getContext('2d');
     ctx.fillStyle = backgroudColor;
-    ctx.fillRect(0, 0, 800, 110);
+    ctx.fillRect(0, 0, w, h);
 
     function removeBraces(text: string): string {
         var newText = text.replace(/\[[^\]]*\]/g, "");
@@ -107,7 +107,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
         textSize: 23,
         maxWidth: 150
     });
-    ctx.drawImage(playerRankImage, 790 - playerRankImage.width, 10);
+    ctx.drawImage(playerRankImage, w-10 - playerRankImage.width, 10);
 
     //id
     var idImage = await drawText({
@@ -115,7 +115,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
         textSize: 20,
         maxWidth: 150
     });
-    ctx.drawImage(idImage, 790 - idImage.width, 45);
+    ctx.drawImage(idImage, w-10 - idImage.width, 45);
 
 
     //pt
@@ -125,7 +125,7 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
         maxWidth: 150
     });
     
-    ctx.drawImage(ptImage, 790 - ptImage.width, 70);
+    ctx.drawImage(ptImage, w-10- ptImage.width, 70);
 
 
     return canvas;

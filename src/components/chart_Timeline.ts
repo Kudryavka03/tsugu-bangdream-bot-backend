@@ -27,10 +27,10 @@ interface drawTimeLineChartOptions {
 // 6. 主函数：生成时间轴图表
 export async function drawTimeLineChart(
   { start, end, setStartToZero = false, data }: drawTimeLineChartOptions,
-  displayLabel = false
+  displayLabel = false,widthNum:number = 800,heightNum:number =900
 ) {
-  const width = 800;
-  const height = 900;
+  const width = widthNum;
+  const height = heightNum;
 
   // 7. 创建 skia-canvas 实例
   const canvas = new Canvas(width, height);
