@@ -72,6 +72,12 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
 
 export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     if (playerId == 1 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
+    if (playerId == 3 ) return drawTopRateSleep(eventId,playerId,tier,maxCount,mainServer,compress)
+    if (playerId == 4 ) return drawTopRateChanged(eventId,playerId,tier,maxCount,mainServer,compress)
+    if (!maxCount) {
+        maxCount = 20
+    }
+    if (maxCount >10000) return [`错误: 查岗次数过多，请适当缩减查岗的次数。次数过多会占用大量Bot硬件资源且图片可能会无法被正常送出。如需查T10时速表请回复查岗 0`];
     // 因为没用上所以凭感觉优化了一下，不知道能不能用
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
@@ -244,7 +250,8 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     return [buffer];
 }
 
-export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
@@ -259,10 +266,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         return null;
     });
     let pId = playerId
-    if (!maxCount) {
-        maxCount = 20
-    }
-    var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+
+    //var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
     var userInRankings = cutoffEventTop.getLatestRanking(); // 前十当前排名，其中包含UID跟Point
     var rank = []   // 分数
@@ -402,7 +407,166 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     return [buffer];
 }
 
+export async function drawTopRateSleep(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+    
+    if (cutoffEventTop.status != "in_progress") {
+        return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
+    }
+    var event = new Event(eventId);
+    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
+    await cutoffEventTop.initFull(0);
+    var all = [];
+    var breakTime = 1490000 // 如果间隔相差25min则认定为休息
+    const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
+    // console.log(playerId)
+    console.log(playerRating)
+    var breakTimeSt = [];
+    var breakTimeEd = [];
+    var StIndex = playerRating.length-1;
+    var tempScore =  playerRating[StIndex].value;
+    var allCount = 0;
+    if (playerRating.length <3) return ['数据唔够Bot统计喔']
+    for (var i =playerRating.length-1;i>0;i--){
+        if (playerRating[i].value != tempScore){  //如果分数不一样了,那就读取上一个一样的数据。因为是倒过来，所以i-1意味着比i时间要大的记录。
+            if ((playerRating[i-1].time - playerRating[StIndex].time) > breakTime){   // 如果前后间隔大于设定的休息时间，这两段之间是休息的
+                breakTimeSt.push(playerRating[StIndex].time)    //push开始的时间
+                breakTimeEd.push(playerRating[i-1].time)    // push 不一样的上一个时间
+                StIndex = i
+                tempScore = playerRating[i].value
+                allCount++
+            }
+            else{   // 如果不算是休息，则更新StIndex及tempScore方便下一次计算
+                StIndex = i
+                tempScore = playerRating[i].value
+            }
+        }
+        else if(i == 1){    //一直处于暂停中
+           // console.log(i)
+            //console.log(playerRating[StIndex].time,playerRating[i-1].time)
+            breakTimeSt.push(playerRating[StIndex].time)    //push开始的时间
+            breakTimeEd.push(playerRating[i-1].time)    // push 不一样的上一个时间
+            allCount++
+        }
 
+    }
+    for(var j = 0;j<allCount;j++){
+        console.log(`${breakTimeSt[j]} - ${breakTimeEd[j]} `)
+    }
+    return ['Check Console']
+}
+
+export async function drawTopRateChanged(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+    
+    if (cutoffEventTop.status != "in_progress") {
+        return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
+    }
+    var event = new Event(eventId);
+    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
+    await cutoffEventTop.initFull(0);
+    var all = [];
+    var breakTime = 1500000 // 如果间隔相差25min则认定为休息
+    const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
+    var changeTimeSt = [];
+    var changeTimeEd = [];
+    var changeTimeTotalPts = [];    // 总Pts
+    var changeTimeCounts = [];  // 把均Pt
+    var allCount = 0
+/*
+1. PlayRating中途会有-1的存在，先将-1的处理完毕
+2. 从高到低排Pt
+3. 重复的要特殊标记
+*/
+    var fixPlayerRating = []
+    var oldValue = 0;
+    for(var i = playerRating.length-1;i>0;i--){   //从尾倒回头,[i-1]永远要比[i]分数高,反向读取进fixPlayerRating
+        if (playerRating[i].value == -1) continue
+        var isContinuousStatus = false
+        if(playerRating[i].value == oldValue) continue
+        if(playerRating[i].value == playerRating[i-1].value)  isContinuousStatus = true
+        oldValue = playerRating[i].value
+        fixPlayerRating.push({time:playerRating[i].time,value:playerRating[i].value,isContinuous:isContinuousStatus})
+    }
+    // 这样处理完毕后，fixPlayerRating中就不会存在相同的value，以及value为-1的参数
+    // 接下来开始处理fixPlayerRating，此时fixPlayerRating已经是从低到高排序了
+    var tempSt = 0
+    var tempEt = 0
+    var isProcessing = false// 判定当前是新段还是旧段处理中
+    var totalCount = 0
+    var totalPts = 0
+    for(var i  = 1;i<fixPlayerRating.length;i++){
+        if ((fixPlayerRating[i].time - fixPlayerRating[i-1].time >= breakTime) && isProcessing == false){  // 如果没处理，前后关系为休息状态
+            continue
+        }
+        if (i == (fixPlayerRating.length-1)  && isProcessing == true){   // 如果是最后一个，且当前正在被处理
+            totalCount++
+            totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
+            tempEt = fixPlayerRating[i].time
+            //console.log(tempEt)
+            changeTimeSt.push(tempSt)
+            changeTimeEd.push(tempEt)
+            changeTimeCounts.push(totalCount)
+            changeTimeTotalPts.push(totalPts)
+            isProcessing = false    // 标记为不再处理的状态
+            allCount++//标记已经完成push了
+            continue
+
+        }
+        if ((fixPlayerRating[i+1].time - fixPlayerRating[i].time >= breakTime) && isProcessing == true){   // 如果在处理中的段被认定为休息了，记录并且另开新段
+            totalCount++
+            totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
+            //console.log(`认定休息：i: ${i}  ${fixPlayerRating[i].time}  ${fixPlayerRating[i-1].time}`)
+            tempEt = fixPlayerRating[i].time
+            //console.log(tempEt)
+            changeTimeSt.push(tempSt)
+            changeTimeEd.push(tempEt)
+            changeTimeCounts.push(totalCount)
+            changeTimeTotalPts.push(totalPts)
+            isProcessing = false    // 标记为不再处理的状态
+            totalCount = 0
+            totalPts = 0
+            allCount++//标记已经完成push了
+            continue
+
+        }
+
+        if ((fixPlayerRating[i].time - fixPlayerRating[i-1].time < breakTime) && isProcessing == true){  // 如果当前处于处理中的段且跟上一个段相比
+            //console.log(`处理中：${fixPlayerRating[i].time} ${fixPlayerRating[i-1].time} `)
+            //tempEt = fixPlayerRating[i].time
+            totalCount++
+            totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
+            continue
+        }
+
+        if((fixPlayerRating[i].time - fixPlayerRating[i-1].time < breakTime) && isProcessing == false){ // 如果没处理，先后关系为连接关系，则(最先处理，比如第零个第一个)
+
+            totalCount = 0
+            totalPts = 0
+            isProcessing = true
+            tempSt = fixPlayerRating[i-1].time
+            
+            if ( i > 1 &&fixPlayerRating[i-2].isContinuous){    // 如果是连续的，那么还需要将连续的给加回来
+                totalCount++
+                totalPts += (fixPlayerRating[i-1].value - fixPlayerRating[i-2].value)
+            }
+            totalCount++
+            totalPts += (fixPlayerRating[i].value - fixPlayerRating[i-1].value) // 以前面那个为基准，后面-前面
+            //console.log(totalPts)
+            continue
+        }
+    }
+    for(var j = 0;j<allCount;j++){
+        console.log(`${changeTimeSt[j]} - ${changeTimeEd[j]}  ${changeTimeCounts[j]}  ${changeTimeTotalPts[j]}`)
+    }
+    return ['Check Console']
+}
 
 export function getRatingByPlayer(points: Array<{
     time:number,
