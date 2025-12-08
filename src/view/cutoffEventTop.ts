@@ -594,9 +594,15 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
     var fixPlayerRating = []
     var oldValue = 0;
     for(var i = playerRating.length-1;i>0;i--){   //从尾倒回头,[i-1]永远要比[i]分数高,反向读取进fixPlayerRating
-        if (playerRating[i].value == -1) continue
+        if (playerRating[i].value == -1) {
+        if(fixPlayerRating.length>0) fixPlayerRating[fixPlayerRating.length-1].isContinuous =false
+        continue}
         var isContinuousStatus = false
-        if(playerRating[i].value == oldValue) continue
+        
+        if(playerRating[i].value == oldValue) {
+         if (playerRating[i-1].time-playerRating[i].time > breakTime) fixPlayerRating[fixPlayerRating.length-1].isContinuous =false
+        continue
+        }
         if(playerRating[i].value == playerRating[i-1].value)  isContinuousStatus = true
         oldValue = playerRating[i].value
         fixPlayerRating.push({time:playerRating[i].time,value:playerRating[i].value,isContinuous:isContinuousStatus})
