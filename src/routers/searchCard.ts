@@ -83,7 +83,7 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
             useEasyBG,
             compress,
             after_training,
-            mainAPI
+            mainAPI:{}
         },{name:'drawCardList'})).map(toBuffer)
 }
 

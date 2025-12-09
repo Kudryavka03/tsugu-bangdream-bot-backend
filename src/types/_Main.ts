@@ -11,6 +11,7 @@ import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { drawTopRateSpeedRank } from '@/view/cutoffEventTop'
 import { getPresentEvent } from './Event'
 import { Long } from 'mongodb'
+import { piscina } from '@/WorkerPool';
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -22,13 +23,18 @@ if (!isMainThread && parentPort) {
   }
 
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
-export let TopRateSpeed
+export let TopRateSpeed = null
  let TopRateSpeedCacheTime
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname
 export function setMainAPI(data) {
-    Object.keys(mainAPI).forEach(k => delete mainAPI[k]); // 清空原有数据
-    Object.assign(mainAPI, data); // 复制新数据
-    logger('setMainApi','mainAPI set in worker');
+    if (data == null){
+        logger('setMainAPI','setMainAPI try to set an null value,abort.')
+        return
+    } 
+    for (const key in data) {
+        mainAPI[key] = data[key];
+    }
+    logger('setMainAPI','Set apiData to Worker Successfully.')
 }
 var preCacheIconFlags = false
 //加载mainAPI
@@ -109,18 +115,12 @@ async function loadMainAPI(useCache: boolean = false) {
         }
     }
     //await preCacheIcon()
-    var shouldUpdateTime = new Date()  // 设置为当前分钟的0时
-    shouldUpdateTime.setMinutes(0)
-    shouldUpdateTime.setSeconds(0)
-    var nowTime = new Date()
+    if(isMainThread){
+        await piscina.drawList.run({
+        data: mainAPI,
+    },{name:'setMainApiToWorker'})
+}  
 
-    if(((!TopRateSpeed) && !useCache) ||  ((TopRateSpeed) && (nowTime.getTime() - TopRateSpeedCacheTime >3600000))){    // 如果缓存不存在，且第二次LoadMainAPI 或 缓存存在且时间>3600000
-        logger('mainAPI','Cache drawTopRateSpeedRank......')
-        const eventId = getPresentEvent(getServerByServerId(3)).eventId
-        TopRateSpeed = await drawTopRateSpeedRank(eventId,2,0,0,getServerByServerId(3),true)
-        //TopRateSpeedCacheTime = shouldUpdateTime.getTime()
-        TopRateSpeedCacheTime = shouldUpdateTime.getTime()
-    }
 
     logger('mainAPI', 'mainAPI loaded')
 

@@ -97,7 +97,7 @@ export async function commandSongWorker(displayedServerList, input, compress) {
             matches: fuzzySearchResult,
             displayedServerList,
             compress,
-            mainAPI
+            mainAPI:{}
         })).map(toBuffer)
     }
     // ➜ 直接调用 worker

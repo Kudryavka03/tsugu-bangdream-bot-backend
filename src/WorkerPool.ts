@@ -1,7 +1,8 @@
 import Piscina from 'piscina';
 import path from 'path';
+import { isMainThread } from 'worker_threads';
 
-export const piscina = {
+export const piscina = isMainThread?{
     drawList: new Piscina({ // draw song list
         filename: path.resolve(__dirname, './worker/drawSongList.worker.js'),
         minThreads: 1,
@@ -23,22 +24,17 @@ export const piscina = {
     concurrentTasksPerWorker: 1,
     
 }),*/
-};
-piscina.drawList.on('message', (msg) => {
-    if (msg.type === 'log') {
-        console.log(`[drawList Worker ${msg.threadId}]`, ...msg.args);
-    }
-});
-/*
-piscina.drawEventList.on('message', (msg) => {
-    if (msg.type === 'log') {
-        console.log(`[drawEvent Worker ${msg.threadId}]`, ...msg.args);
-    }
-});
-piscina.drawEventList.run({},{name:'initWorker'})
-*/
-piscina.drawList.run({},{name:'initWorker'})
+}:null;
+if (isMainThread && piscina) {
+    piscina.drawList.on('message', (msg) => {
+        if (msg.type === 'log') {
+            console.log(`[drawList Worker ${msg.threadId}]`, ...msg.args);
+        }
+    });
 
-setInterval(() => {
-    piscina.drawList.run({ warmup: true }, { name: 'warmup' });
-  }, 15000);
+    piscina.drawList.run({}, { name: 'initWorker' });
+
+    setInterval(() => {
+        piscina.drawList.run({ warmup: true }, { name: 'warmup' });
+    }, 15000);
+}

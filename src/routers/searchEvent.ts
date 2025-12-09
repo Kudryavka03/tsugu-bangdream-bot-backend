@@ -82,7 +82,7 @@ export async function commandEvent(displayedServerList: Server[], input: string 
             matches: fuzzySearchResult,
             displayedServerList,
             compress,
-            mainAPI
+            mainAPI:{}
         },{name:'drawEventList'})).map(toBuffer)
     }
 

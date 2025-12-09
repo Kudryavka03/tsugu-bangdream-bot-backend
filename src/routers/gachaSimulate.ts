@@ -80,7 +80,7 @@ async function commandGachaSimulate(
     gacha:gacha,
     times:times,
     compress:compress,
-    apiData:mainAPI
+    apiData:{}
     },{name:'drawRandomGacha'})).map(toBuffer)
     //console.log(r)
     
