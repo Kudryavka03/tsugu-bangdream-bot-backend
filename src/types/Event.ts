@@ -340,7 +340,7 @@ export function getPresentEvent(server: Server, time?: number) {
             }
         }
     }
-
+    let eventEndAtFlags:number = 0
     //如果没有活动进行中，则返回上一个刚结束的活动
     if (eventList.length == 0) {
         for (var key in eventListMain) {
@@ -348,7 +348,10 @@ export function getPresentEvent(server: Server, time?: number) {
             //如果在活动进行时
             if (event.startAt[server] != null && event.endAt[server] != null) {
                 if (event.endAt[server] <= time) {
-                    eventList.push(parseInt(key))
+                    if(event.endAt[server] > eventEndAtFlags){
+                        eventList.push(parseInt(key))
+                        eventEndAtFlags = event.endAt[server]
+                    }
                 }
             }
         }
@@ -362,7 +365,20 @@ export function getPresentEvent(server: Server, time?: number) {
     //如果有多个活动，则返回最后一个
     return new Event(eventList[eventList.length - 1])
 }
+function getLastestEventId(server: Server){
+    var eventListMain = mainAPI['events']
+    let startAt:number = 0
+    let eventId:number
 
+    for (var key in eventListMain) {
+        var r = new Event(parseInt(key))
+        if(r.startAt[server] > startAt){
+            startAt = r.startAt[server]
+            eventId = r.eventId
+        } 
+    }
+    return eventId
+}
 //根据服务器，将活动列表排序
 export function sortEventList(tempEventList: Event[], displayedServerList: Server[] = globalDefaultServer) {
     tempEventList.sort((a, b) => {
