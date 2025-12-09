@@ -4,6 +4,7 @@ import { Bestdoriurl, extraUrl, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
+import * as fs from 'fs';
 
 export class Cutoff {
     eventId: number;
@@ -74,11 +75,11 @@ export class Cutoff {
             */
             cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
             //cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
-            cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/ycx?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
+            cutoffPromise.push(JSON.stringify(fs.promises.readFile('MYCX_1000/ycx1000.json','utf-8')));
             var cutoffResult = await Promise.all(cutoffPromise)
             //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
-            pCutoffData = cutoffResult[1]
+            pCutoffData = this.tier==1000?cutoffResult[1]:cutoffData    // 只针对千线进行预测
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)

@@ -1232,11 +1232,31 @@ class DataHandler:
         try:
 
 
-            print("开始绘图/渲染输出...")
-            plot_ret = self.plot_final(
-                target_df, future_t, skeleton_pred, norm_adj_full, full_t_score, full_score,
-                output_path=output_path, return_type=return_type
-            )
+            print("开始输出JSON...")
+            #plot_ret = self.plot_final(
+            #    target_df, future_t, skeleton_pred, norm_adj_full, full_t_score, full_score,
+            #    output_path=output_path, return_type=return_type
+            #)
+            try:
+                import json
+                json_out = {
+                    "result": True,
+                    "cutoffs": [
+                        {
+                            "time": int(self.meta['start_at'] + t * 3600 * 1000),
+                            "ep": int(ep)
+                        }
+                        for t, ep in zip(full_t_score, full_score)
+                    ]
+                }
+                json_path = f"ycx1000.json"
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(json_out, f, ensure_ascii=False)
+                print(f"预测 JSON 已输出: {json_path}")
+                logger.info(f"Saved JSON cutoffs to {json_path}")
+            except Exception as e:
+                print(f"写入 JSON 失败: {e}")
+                logger.warning(f"Failed to write JSON output: {e}")
             # diagnostic: report what plot_final returned
             try:
                 tname = type(plot_ret).__name__ if plot_ret is not None else 'NoneType'
