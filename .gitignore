@@ -21,3 +21,5 @@ logs/*
 undefined/
 undefined/
 PerfLog/
+prediction.png
+predictor.log
