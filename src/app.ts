@@ -31,6 +31,9 @@ import { topRateDetailRouter } from './routers/topRateDetail';
 import { logger } from '@/logger'
 import * as dotenv from 'dotenv';
 import { canvasPool } from './image/text';
+import { teamBuildDetailRouter } from '@/routers/teamBuildDetail'
+import { calcResultRouter } from './routers/calcResult';
+import { searchCompositionRouter } from '@/routers/searchComposition';
 
 
 export var LagTimes:number
@@ -59,6 +62,9 @@ app.use('/eventStage', eventStageRouter)
 app.use('/songRandom', songRandomRouter);
 app.use('/fuzzySearch', fuzzySearchRouter);
 app.use('/topRateDetail', topRateDetailRouter);
+
+app.use('/teamBuildDetail', teamBuildDetailRouter);
+app.use('/calcResult', calcResultRouter);
 
 
 if (process.env.LOCAL_DB == 'true') {

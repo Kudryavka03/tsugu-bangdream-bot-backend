@@ -15,6 +15,8 @@
 
 本项目合并了部分来自 https://github.com/yyf-0404/tsugu-bangdream-bot 的优化或特性。
 
+本分支为合并了组队组曲特性的分支，可能存在各种问题，请悉知。当功能稳定后，将会并回Main分支。
+
 ## 🚪 MAY DO
 
 1. 你告诉我
@@ -25,11 +27,11 @@
 
 ## 🚪 WON'T DO
 
-1. 组队组曲，因为我不知道怎么用
+~~1. 组队组曲，因为我不知道怎么用~~
 
 ## 🏠 后端部署
 
-> 需要Extra后端，为预测线2提供服务，可自行去除预测线2功能，则不需要Extra后端
+> 不再需要Extra后端
 
 > 如果您对本项目满意，别忘了点一个KiraKira DokiDoki的星标哦~
 
@@ -44,8 +46,12 @@ npm install -g pm2
 npm install 
 # 此时安装时间可能较长，并且需要可以完善编译 canvas 的环境
 # 编译并启动后端
+# 对于Windows环境，请使用NodeJS 16执行npm install后再升级到NodeJS 18+
 npx tsc && npx tsc-alias
 ```
+根目录下建议先执行complier.bat再执行run_windows_complied.bat
+
+> 对于预测线2，请安装Python 3.13+版本，然后进入MYCX_1000目录运行predictMain.bat脚本
 
 ## 📖 文章
 

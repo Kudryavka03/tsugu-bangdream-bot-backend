@@ -54,7 +54,7 @@ export async function drawDifficulityList2(song: Song, imageHeight: number = 60,
 
 
 
-export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number) {
+export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number,choose: boolean = true) {
     var tempcanv = new Canvas(imageHeight, imageHeight)
     var ctx = tempcanv.getContext("2d")
     if (difficultyColorList[difficultyType] != undefined) {
@@ -63,8 +63,15 @@ export async function drawDifficulity(difficultyType: number, playLevel: number,
     else {
         ctx.fillStyle = "#f1f1f1"
     }
-    ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2, 0, 2 * Math.PI)
-    ctx.fill()
+    if (choose) {
+        ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2, 0, 2 * Math.PI)
+        ctx.fill()
+    }
+    else {
+        ctx.lineWidth = 5
+        ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2 - ctx.lineWidth / 2, 0, 2 * Math.PI)
+        ctx.stroke()
+    }
     var levelText = await drawText({
         textSize: imageHeight / 3 * 2,
         text: playLevel.toString(),
@@ -119,3 +126,15 @@ export async function drawDifficulityListWithNotes(song: Song, imageHeight: numb
     }
     return canvas
 }
+
+export async function drawDifficulityListWithDiff(song: Song, difficulty: number, imageHeight: number = 60, spacing: number = 10): Promise<Canvas> {
+    var difficultyCount = Object.keys(song.difficulty).length
+    var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight)
+    var ctx = canvas.getContext("2d")
+    for (var d in song.difficulty) {
+        let i = parseInt(d)
+        ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight, i == difficulty), i * (imageHeight + spacing), 0)
+    }
+    return canvas
+}
+

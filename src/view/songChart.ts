@@ -3,9 +3,10 @@ import { Band } from '@/types/Band'
 import * as BestdoriPreview from '@/components/BestdoriPreview.cjs'
 import { getServerByPriority } from '@/types/Server'
 import { Server } from '@/types/Server'
-import { assetsRootPath, globalDefaultServer, serverNameFullList } from '@/config';
+import { Bestdoriurl, assetsRootPath, globalDefaultServer, serverNameFullList } from '@/config';
 import * as path from 'path';
 import Piscina from 'piscina'
+import { callAPIAndCacheResponse } from '@/api/getApi'
 const workerPath = path.resolve(__dirname, "../components/BestdoriPreview.cjs");
 const BestdoriPreviewPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[],env:{PROJECT_ROOT: __dirname,ASROOT:assetsRootPath} });
 

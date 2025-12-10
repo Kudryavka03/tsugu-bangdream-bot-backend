@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "",
+      "project": "CMakeLists.txt",
+      "projectTarget": "calc.dll (E:\\UserData\\Download\\backend\\backend\\src\\teamBuilder\\lib\\calc.dll)",
+      "name": "calc.dll (E:\\UserData\\Download\\backend\\backend\\src\\teamBuilder\\lib\\calc.dll)"
+    }
+  ]
+}
