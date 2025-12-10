@@ -33,8 +33,10 @@ if (isMainThread && piscina) {
     });
 
     piscina.drawList.run({}, { name: 'initWorker' });
-
+/*
     setInterval(() => {
         piscina.drawList.run({ warmup: true }, { name: 'warmup' });
     }, 15000);
+
+*/
 }

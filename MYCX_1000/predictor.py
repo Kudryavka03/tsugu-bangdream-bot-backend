@@ -713,7 +713,7 @@ class DataHandler:
         if count is None:
             count = int(self.config.get('similar_count', 5))
 
-        print(f'{count}')
+        #print(f'{count}')
         found = 0
         # 建议 max_workers 设置为 4~8，太高容易被服务器拒绝服务
         max_workers = 5 
