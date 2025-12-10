@@ -43,9 +43,10 @@ def fetch_event_meta(event_id):
     except:
         return None
 
-def fetch_tier_1000_data(event_id):
+def fetch_tier_1000_data(event_id,tiers):
     """获取 T1000 分数线数据 (Tracker API)"""
-    tracker_url = f"{BASE_URL}tracker/data?server={SERVER}&event={event_id}&tier=1000"
+    tracker_url = f"{BASE_URL}tracker/data?server={SERVER}&event={event_id}&tier={tiers}"
+    
     try:
         r = HTTP_SESSION.get(tracker_url, timeout=10)
         r.raise_for_status()

@@ -539,9 +539,9 @@ class DataHandler:
         except Exception:
             return 8
 
-    def load_target_data(self):
-        print(f"获取目标活动 {self.target_event_id} 数据...")
-        df = fetch_tier_1000_data(self.target_event_id)
+    def load_target_data(self,tiers):
+        print(f"获取目标活动 {self.target_event_id}  数据...")
+        df = fetch_tier_1000_data(self.target_event_id,tiers)
         if df is None or df.empty: raise ValueError("T1000 数据为空")
         
         # 自动修正 start_ts 以跳过维护期
@@ -628,7 +628,7 @@ class DataHandler:
             
         return df
 
-    def _process_single_candidate(self, curr):
+    def _process_single_candidate(self, curr,tiers):
         """
         处理单个活动 ID 的辅助函数，用于线程池调用。
         如果符合条件并成功获取数据，返回处理好的数据字典；否则返回 None。
@@ -645,7 +645,7 @@ class DataHandler:
                 return None
 
             # 3. 获取 T1000 历史数据
-            df_hist = fetch_tier_1000_data(curr)
+            df_hist = fetch_tier_1000_data(curr,tiers)
             if df_hist is None or df_hist.empty:
                 return None
 
@@ -678,7 +678,7 @@ class DataHandler:
             # print(f"Error processing event {curr}: {e}")
             return None
 
-    def find_similar_events(self, count=None):
+    def find_similar_events(self, count=None,tiers=1000):
         print(f"寻找同类 [{self.event_type}] 活动...")
         from concurrent.futures import ThreadPoolExecutor, as_completed
         # 优化路径：试图使用 bestdori 提供的全量索引以快速定位同类型活动 做标记
@@ -713,6 +713,7 @@ class DataHandler:
         if count is None:
             count = int(self.config.get('similar_count', 5))
 
+        print(f'{count}')
         found = 0
         # 建议 max_workers 设置为 4~8，太高容易被服务器拒绝服务
         max_workers = 5 
@@ -728,7 +729,7 @@ class DataHandler:
             # 提交所有任务
             # future_to_eid 是一个字典，用于追踪哪个 future 对应哪个 event_id
             future_to_eid = {
-                executor.submit(self._process_single_candidate, eid): eid 
+                executor.submit(self._process_single_candidate, eid,tiers): eid
                 for eid in candidates
             }
 
@@ -757,7 +758,7 @@ class DataHandler:
                 executor.shutdown(wait=False)
                 raise
 
-    def run_prediction(self, return_type=None):
+    def run_prediction(self, return_type=None,tiers=1000):
         """
         Run the prediction pipeline.
 
@@ -1249,7 +1250,8 @@ class DataHandler:
                         for t, ep in zip(full_t_score, full_score)
                     ]
                 }
-                json_path = f"ycx1000.json"
+                #-3标记只是针对国服的预测
+                json_path = f"ycx{tiers}-3.json"
                 with open(json_path, "w", encoding="utf-8") as f:
                     json.dump(json_out, f, ensure_ascii=False)
                 print(f"预测 JSON 已输出: {json_path}")
@@ -1508,8 +1510,8 @@ if __name__ == "__main__":
         # 假设预测 xxx，时间冻结在 xxh
         # handler = DataHandler(276, debug_hours=60)
         handler = DataHandler()
-        handler.load_target_data()
-        handler.find_similar_events()
+        handler.load_target_data(1000)
+        handler.find_similar_events(1000)
         
         if handler.history_events:
             handler.run_prediction()

@@ -75,11 +75,11 @@ export class Cutoff {
             */
             cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
             //cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
-            cutoffPromise.push(JSON.stringify(fs.promises.readFile('MYCX_1000/ycx1000.json','utf-8')));
+            cutoffPromise.push(JSON.stringify(this.readPredict2Data(this.tier)));
             var cutoffResult = await Promise.all(cutoffPromise)
             //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
-            pCutoffData = this.tier==1000?cutoffResult[1]:cutoffData    // 只针对千线进行预测
+            pCutoffData = this.tier==null?cutoffResult[1]:cutoffData    // 只针对千线进行预测
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
@@ -148,6 +148,15 @@ export class Cutoff {
     predict2(): number {
         this.predictEP2 = this.pCutoffs[this.pCutoffs.length-1]['ep']
         return this.predictEP2
+    }
+    readPredict2Data(tier){
+        try{
+            if(fs.existsSync(`MYCX_1000/ycx${tier}-3`))
+            return fs.readFileSync(`MYCX_1000/ycx${tier}-3`,'utf-8')
+        }
+        catch{
+            return null
+        }
     }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
