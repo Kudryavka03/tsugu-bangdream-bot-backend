@@ -46,10 +46,12 @@ npm install -g pm2
 npm install 
 # 此时安装时间可能较长，并且需要可以完善编译 canvas 的环境
 # 编译并启动后端
-# 对于Windows环境，请使用NodeJS 16执行npm install后再升级到NodeJS 18+
+# 对于Windows环境，请使用NodeJS 16 + Python3.10 执行npm install后再升级到NodeJS 18+
 npx tsc && npx tsc-alias
 ```
 根目录下建议先执行complier.bat再执行run_windows_complied.bat
+
+teamBuilder中的Lib，如果不依靠TSM解释器，需要自行移入dist目录中。
 
 > 对于预测线2，请安装Python 3.13+版本，然后进入MYCX_1000目录运行predictMain.bat脚本
 
