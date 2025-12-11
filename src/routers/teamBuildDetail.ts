@@ -338,7 +338,7 @@ export async function commandTeamBuildDetail(playerId: number, mainServer: Serve
     if (currentEvent != player.currentEvent) {
         player = await playerDB.updCurrentEvent(playerId, mainServer, currentEvent)
     }
-    console.log(player)
+    //console.log(player)
     return await drawTeamBuildDetail(player, mainServer, useEasyBG, compress)
 }
 

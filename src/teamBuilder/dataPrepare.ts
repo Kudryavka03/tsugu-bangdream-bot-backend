@@ -10,6 +10,7 @@ import { PlayerDB } from "@/database/playerDB";
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { compositionResultDB } from "@/database/compositionResultDB";
 import { drawResult } from "@/view/calcResult";
+import { logger } from "@/logger";
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -45,7 +46,8 @@ const playerDB = new PlayerDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27
 const resultDB = new compositionResultDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
 export async function workerDataInit(playerId:number, server: Server,currentEvent:number,save:boolean,desc?: string) {
     let player = await playerDB.updCurrentEvent(playerId, server, currentEvent) // 
-    console.log(playerId,server,currentEvent,player)
+    //console.log(playerId,server,currentEvent,player)
+    console.log('dataPrepare')
     let res =  await dataPrepare(player,server)
     res.print()
     const output = []
@@ -58,6 +60,7 @@ export async function workerDataInit(playerId:number, server: Server,currentEven
     return output
 }
 export async function dataPrepare(player: playerDetail, server: Server) {
+    console.log('dataPrepare')
     const event = new Event(player.currentEvent)
     if (!event.isExist) {
         throw new Error('错误: 活动不存在')
@@ -100,6 +103,7 @@ export async function dataPrepare(player: playerDetail, server: Server) {
         function initTeamList(depth: number = 0, Set: number = 0, team: Array<cardInfo> = []) {
             if (depth == 5) {
                 const info = new teamInfo()
+                if(false)console.log(team)
                 info.team = team
                 info.set = Set
 
@@ -111,21 +115,24 @@ export async function dataPrepare(player: playerDetail, server: Server) {
                     if (!attribute) attribute = info.card.attribute
                     if (attribute != info.card.attribute) attribute = '~all'
                 }
-
+                
                 const scoreUp = team.map(info => {
                     if (info.scoreUp.unificationActivateEffectValue) {
                         if (info.scoreUp.unificationActivateConditionBandId && info.scoreUp.unificationActivateConditionBandId != bandId)
-                            return info.scoreUp.default
+                            // 因为BD数据可能会缺失，就会导致后边Bitmask无法命中，产生无限递归，通常出现在155/135的卡中。根据经验，-0.1就是通常场景。
+                            return isNaN(info.scoreUp.default)? info.scoreUp.unificationActivateEffectValue - 0.1 :info.scoreUp.default
                         if (info.scoreUp.unificationActivateConditionType && info.scoreUp.unificationActivateConditionType.toLocaleLowerCase() != attribute)
-                            return info.scoreUp.default
-                        // console.log(info.scoreUp.unificationActivateConditionType, attribute)
+                            return isNaN(info.scoreUp.default)? info.scoreUp.unificationActivateEffectValue - 0.1 :info.scoreUp.default
+                        //console.log(info.scoreUp.unificationActivateConditionType, attribute)
                         return info.scoreUp.unificationActivateEffectValue
                     }
                     return info.scoreUp.default
                 })
-
+                //console.log(charts.length)
                 for (var i = 0; i < charts.length; i += 1) {
+                    if(false)console.log(scoreUp)
                     const res = charts[i].getMaxMetaOrder(team, scoreUp)
+                    
                     info.order.push(res.team)
                     info.capital.push(res.capital)
                     info.scoreUp.push(res.scoreUp)
@@ -138,7 +145,7 @@ export async function dataPrepare(player: playerDetail, server: Server) {
                 let id = cardList[i].card.characterId
                 // console.log(characterSet)
                 if (Set >> i & 1) {
-                    break
+                    continue  
                 }
                 if (characterSet.has(id)) continue
                 characterSet.add(id)
@@ -147,7 +154,6 @@ export async function dataPrepare(player: playerDetail, server: Server) {
             }
         }
         initTeamList()
-        console.log(teamList.length)
     }
     if (teamList.length > 65536) {
         throw new Error("方案数过多，请减少一些卡牌吧")

@@ -420,7 +420,7 @@ export class playerDetail {
     }
     //海螺包和极上咖啡需要取最大值
     const minLevel = this.areaItem[61].level < this.areaItem[62].level ? 61 : 62  //原代码59/72 ？
-    console.trace()
+    //console.trace()
     subStat(areaItemPercent[AreaItemType.attribute]['~all'].stat, (new AreaItem(minLevel)).getPercent(this.areaItem[minLevel].level))
     return areaItemPercent
   }

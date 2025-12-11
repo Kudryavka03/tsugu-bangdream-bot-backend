@@ -60,7 +60,7 @@ module.exports.setOtherFixToWorker = async function (task) {
   );
 };
 module.exports.dataPrepare = async function (task) {
-  console.log(task.playerId)
+  //console.log(task.playerId)
   return await workerDataInit(
     task.playerId,
     task.mainServer,

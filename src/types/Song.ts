@@ -430,27 +430,40 @@ export class Chart {
         capital: cardInfo,
         scoreUp: Array<number>
     } {
-        const dp = new Array<number>(1 << 5).fill(0), choose = new Array<number>(1 << 5).fill(0)
+        let debugFlags = false;
+        const dp = new Array<number>(1 << 5).fill(0), choose = new Array<number>(1 << 5).fill(-1)
         dp[0] = this.meta.noSkill
+        for (let j = 0; j < 5; j++) {
+            
+            if(debugFlags)console.log(`check item ${j}`, {
+                duration: list[j].duration,
+                rateup: list[j].rateup,
+                scoreUp: scoreUp[j],
+                meta0: this.getSkillMeta(0, list[j].duration, scoreUp[j], list[j].rateup)
+            });
+        }
         for (var i = 0; i < 1 << 5; i += 1) {
             var k = 0
             for (var j = 0; j < 5; j += 1) {
                 if (i >> j & 1)
                     k += 1
             }
-            for (var j = 0; j < 5; j += 1) {
+            for (let j = 0; j < 5; j += 1) {
                 if (i >> j & 1)
                     continue
-                    const tmp = dp[i] + this.getSkillMeta(k, list[j].duration, scoreUp[j], list[j].rateup)
+                const tmp = dp[i] + this.getSkillMeta(k, list[j].duration, scoreUp[j], list[j].rateup)
                 if (tmp > dp[i | 1 << j]) {
+                    if(debugFlags)console.log(`update dp[${i}|${1<<j} = ${i | (1<<j)}] using j=${j}, from dp[${i}] and getSkillMeta return ${this.getSkillMeta(k, list[j].duration, scoreUp[j], list[j].rateup)}`)
                     dp[i | 1 << j] = tmp
                     choose[i | 1 << j] = j
                 }
+                //console.log("final dp:", dp)
+                //console.log("final choose:", choose)
             }
         }
 
         var meta = 0, capital, capitalScoreUp = 0
-        for (var i = 0; i < 5; i++) {
+        for (let i = 0; i < 5; i++) {
             const tmp = this.getSkillMeta(5, list[i].duration, scoreUp[i], list[i].rateup)
             if (tmp > meta) {
                 meta = tmp
@@ -459,12 +472,13 @@ export class Chart {
             }
         }
         meta += dp[(1 << 5) - 1]
-
         const order = []
         var i = (1 << 5) - 1
-        while (i != 0) {
-            order.push(choose[i])
-            i ^= 1 << choose[i]
+        while (i !== 0) {
+            const j = choose[i];
+            if (j === -1) throw new Error(`State ${i} was never assigned in DP`);
+            order.push(j);
+            i ^= 1 << j;
         }
         order.reverse()
         const team = order.map(i => list[i])

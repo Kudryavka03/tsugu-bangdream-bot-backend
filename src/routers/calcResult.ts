@@ -35,7 +35,7 @@ router.post('',
         const { playerId, mainServer, eventId, useEasyBG, compress, save, description } = req.body;
 
         try {
-            if(isRunningTeamBuilderCalculator) {
+            if(!isRunningTeamBuilderCalculator) {
                 isRunningTeamBuilderCalculator = true
                 isRunningTeamBuilderCalculatorTaskId = new Date().getTime()
             const result = await commandCalcResult(playerId, getServerByServerId(mainServer), useEasyBG, compress, eventId, save, description);
@@ -43,7 +43,10 @@ router.post('',
             res.send(listToBase64(result));
             }
             else{
+                
                 var str = `当前已经有一个组队组曲的计算正在进行，任务ID为：${isRunningTeamBuilderCalculatorTaskId}\n请稍后再发送计算请求叭\n组队组曲通常需要1分钟时间用于计算，计算期间Tsugu的部分功能会受限或暂时无响应。`
+                //console.log(str)
+                res.send(listToBase64([str]));
             }
         } catch (e) {
             isRunningTeamBuilderCalculator = false
@@ -71,6 +74,7 @@ export async function commandCalcResult(playerId: number, mainServer: Server, us
     if (!save) {
         save = false
     }
+    console.log('开始计算......')
     //let res: buildResult = await dataPrepare(player, mainServer)
     let result = (await piscina.drawList.run({
         playerId:playerId,
