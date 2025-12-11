@@ -15,6 +15,8 @@ import { drawResult } from "@/view/calcResult";
 import { compositionResultDB } from "@/database/compositionResultDB";
 import { piscina } from '@/WorkerPool';
 
+export let isRunningTeamBuilderCalculator = false   // 只允许一个组队组曲计算进行
+export let isRunningTeamBuilderCalculatorTaskId = 0 // 记录组队组曲任务的开始执行时间
 const router = express.Router();
 const playerDB = new PlayerDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
 const resultDB = new compositionResultDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
@@ -33,9 +35,18 @@ router.post('',
         const { playerId, mainServer, eventId, useEasyBG, compress, save, description } = req.body;
 
         try {
+            if(isRunningTeamBuilderCalculator) {
+                isRunningTeamBuilderCalculator = true
+                isRunningTeamBuilderCalculatorTaskId = new Date().getTime()
             const result = await commandCalcResult(playerId, getServerByServerId(mainServer), useEasyBG, compress, eventId, save, description);
+            isRunningTeamBuilderCalculator = false
             res.send(listToBase64(result));
+            }
+            else{
+                var str = `当前已经有一个组队组曲的计算正在进行，任务ID为：${isRunningTeamBuilderCalculatorTaskId}\n请稍后再发送计算请求叭\n组队组曲通常需要1分钟时间用于计算，计算期间Tsugu的部分功能会受限或暂时无响应。`
+            }
         } catch (e) {
+            isRunningTeamBuilderCalculator = false
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
         }
