@@ -145,7 +145,7 @@ export async function dataPrepare(player: playerDetail, server: Server) {
                 let id = cardList[i].card.characterId
                 // console.log(characterSet)
                 if (Set >> i & 1) {
-                    continue  
+                    break;  
                 }
                 if (characterSet.has(id)) continue
                 characterSet.add(id)
