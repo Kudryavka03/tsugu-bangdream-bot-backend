@@ -67,6 +67,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     
     var heavyLoad = false
     // 计算歌曲模糊搜索结果
+    //console.log(matches)
     const tempSongList = matchSongList(matches, displayedServerList)
 
     if (tempSongList.length == 0) {

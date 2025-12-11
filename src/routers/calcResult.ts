@@ -13,6 +13,7 @@ import { buildResult } from "@/teamBuilder/types"
 import { dataPrepare } from "@/teamBuilder/dataPrepare";
 import { drawResult } from "@/view/calcResult";
 import { compositionResultDB } from "@/database/compositionResultDB";
+import { piscina } from '@/WorkerPool';
 
 const router = express.Router();
 const playerDB = new PlayerDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
@@ -53,22 +54,27 @@ export async function commandCalcResult(playerId: number, mainServer: Server, us
         currentEvent = getPresentEvent(mainServer).eventId
     }
     if (currentEvent != player.currentEvent) {
-        player = await playerDB.updCurrentEvent(playerId, mainServer, currentEvent)
+        //player = await playerDB.updCurrentEvent(playerId, mainServer, currentEvent)
     }
 
     if (!save) {
         save = false
     }
-    const res: buildResult = await dataPrepare(player, mainServer)
-    res.print()
-    const output = []
-    if (save) {
-        res.description = description
-        const saveRes = await resultDB.addResult(player.currentEvent, res)
-        output.push(`上传成功，当前活动共有${saveRes.compositionList.length}个方案`)
-    }
-    output.push(...await drawResult(res, currentEvent, useEasyBG, compress))
-    return output
-}
+    //let res: buildResult = await dataPrepare(player, mainServer)
+    let result = (await piscina.drawList.run({
+        playerId:playerId,
+        mainServer:mainServer,
+        eventId:currentEvent,
+        save:save,
+        desc:description
+    },{name:'dataPrepare'})).map(toBuffer)
 
+    return result
+}
+function toBuffer(x: any): Buffer | string {
+    if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+        return Buffer.from(x);
+    }
+    return x; // string 或已是 Buffer
+  }
 export { router as calcResultRouter }

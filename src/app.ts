@@ -62,7 +62,7 @@ app.use('/eventStage', eventStageRouter)
 app.use('/songRandom', songRandomRouter);
 app.use('/fuzzySearch', fuzzySearchRouter);
 app.use('/topRateDetail', topRateDetailRouter);
-
+app.use('/searchComposition', searchCompositionRouter)
 app.use('/teamBuildDetail', teamBuildDetailRouter);
 app.use('/calcResult', calcResultRouter);
 

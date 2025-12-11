@@ -25,7 +25,7 @@ if (!isMainThread && parentPort) {
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
-export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname
+export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname
 export function setMainAPI(data) {
     if (data == null){
         logger('setMainAPI','setMainAPI try to set an null value,abort.')
@@ -35,6 +35,18 @@ export function setMainAPI(data) {
         mainAPI[key] = data[key];
     }
     logger('setMainAPI','Set apiData to Worker Successfully.')
+}
+export function setOtherFix(data) {
+    //console.log(data)
+    if (data == null){
+        logger('setOtherFix','setOtherFix try to set an null value,abort.')
+        return
+    } 
+    areaItemFix = data.areaItemFix
+    skillCNfix = data.skillCNfix
+    eventCharacterParameterBonusFix = data.eventCharacterParameterBonusFix
+    songNickname = data.songNickname
+    logger('setOtherFix','Set setOtherFix to Worker Successfully.')
 }
 var preCacheIconFlags = false
 //加载mainAPI
@@ -119,6 +131,10 @@ async function loadMainAPI(useCache: boolean = false) {
         await piscina.drawList.run({
         data: mainAPI,
     },{name:'setMainApiToWorker'})
+    await piscina.drawList.run({
+        data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname},
+    },{name:'setOtherFixToWorker'})
+
 }  
 
 

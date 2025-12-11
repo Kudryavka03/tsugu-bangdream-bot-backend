@@ -309,6 +309,7 @@ export class playerDetail {
     this.areaItem = {}
     this.characterBouns = {}
     const areaItemData = mainAPI['areaItems']
+    //console.log(areaItemData)
     for (const areaItemId in areaItemData) {
       this.areaItem[areaItemId] = { level: 0 }
     }
@@ -418,7 +419,8 @@ export class playerDetail {
       addStat(areaItemPercent[type][id].stat, item.getPercent(this.areaItem[areaItemId].level))
     }
     //海螺包和极上咖啡需要取最大值
-    const minLevel = this.areaItem[59].level < this.areaItem[72].level ? 59 : 72
+    const minLevel = this.areaItem[61].level < this.areaItem[62].level ? 61 : 62  //原代码59/72 ？
+    console.trace()
     subStat(areaItemPercent[AreaItemType.attribute]['~all'].stat, (new AreaItem(minLevel)).getPercent(this.areaItem[minLevel].level))
     return areaItemPercent
   }

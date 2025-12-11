@@ -126,9 +126,9 @@ router.post('/updateSong',
         body('mainServer').custom(isServer), // Custom validation for 'server' field
         body('useEasyBG').isBoolean(), // Validation for 'useEasyBG' field
         body('compress').optional().isBoolean(),
-        body('id').isInt(),
-        body('songId').isInt(),
-        body('difficulty').isInt()
+        body('id').isInt(),     // 这个是组曲中的第几首歌，对应0，1，2（共三首）
+        body('songId').isInt(), // 歌曲id
+        body('difficulty').isInt()  // 这个是歌曲难度，其中0对应Easy，2对应HD，3对应EX，4对应SP
     ],
     middleware,
     async (req: Request, res: Response) => {
@@ -270,9 +270,9 @@ router.post('/addCard',
         body('mainServer').custom(isServer), // Custom validation for 'server' field
         body('useEasyBG').isBoolean(), // Validation for 'useEasyBG' field
         body('compress').optional().isBoolean(),
-        body('skill_level').isInt(),
-        body('break_rank').isInt(),
-        body('text').isString(),
+        body('skill_level').isInt(),    // 技能等级
+        body('break_rank').isInt(),     // 破
+        body('text').isString(),        // 搜索关键字，最好是卡牌id
     ],
     middleware,
     async (req: Request, res: Response) => {
@@ -338,6 +338,7 @@ export async function commandTeamBuildDetail(playerId: number, mainServer: Serve
     if (currentEvent != player.currentEvent) {
         player = await playerDB.updCurrentEvent(playerId, mainServer, currentEvent)
     }
+    console.log(player)
     return await drawTeamBuildDetail(player, mainServer, useEasyBG, compress)
 }
 

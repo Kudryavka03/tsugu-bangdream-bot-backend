@@ -6,6 +6,20 @@ import { AreaItemType } from "@/types/AreaItem";
 import { Library } from "ffi-napi"
 import path from "path"
 import { IntArray }  from "./types"
+import { PlayerDB } from "@/database/playerDB";
+import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { compositionResultDB } from "@/database/compositionResultDB";
+import { drawResult } from "@/view/calcResult";
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
+
 const lib = Library(path.join(__dirname, 'lib', 'libcalc.dll'), {
     'calc': ['int', ['int', 'int', IntArray, IntArray, IntArray]],
     'calc1': ['int', ['int', 'int', IntArray, IntArray, IntArray]],
@@ -26,6 +40,22 @@ export function checkCard(player: playerDetail, eventType: string, length: numbe
         return '当前卡牌过少，无法进行组队，使用 导入配置 或者 添加卡牌 来添加吧'
     }
     return ''
+}
+const playerDB = new PlayerDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
+const resultDB = new compositionResultDB(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/', 'tsugu-bangdream-bot')
+export async function workerDataInit(playerId:number, server: Server,currentEvent:number,save:boolean,desc?: string) {
+    let player = await playerDB.updCurrentEvent(playerId, server, currentEvent) // 
+    console.log(playerId,server,currentEvent,player)
+    let res =  await dataPrepare(player,server)
+    res.print()
+    const output = []
+    if (save) {
+        res.description = desc
+        const saveRes = await resultDB.addResult(player.currentEvent, res)
+        output.push(`上传成功，当前活动共有${saveRes.compositionList.length}个方案`)
+    }
+    output.push(...await drawResult(res, currentEvent, true, true))
+    return output
 }
 export async function dataPrepare(player: playerDetail, server: Server) {
     const event = new Event(player.currentEvent)

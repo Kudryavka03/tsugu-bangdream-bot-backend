@@ -20,6 +20,8 @@ export class AreaItem {
     targetBandIds: Array<number>;
     constructor(areaItemId: number) {
         this.areaItemId = areaItemId
+        //console.log(mainAPI['areaItems'])
+        //if()
         const areaItemData = areaItemFix[areaItemId.toString()] ?? mainAPI['areaItems'][areaItemId.toString()]
         if (areaItemData == undefined) {
             this.isExist = false;
