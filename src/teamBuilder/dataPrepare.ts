@@ -19,7 +19,7 @@ if (!isMainThread && parentPort) {
       });
     };
   }
-
+console.log(path.join(__dirname, 'lib', 'libcalc.dll'))
 const lib = Library(path.join(__dirname, 'lib', 'libcalc.dll'), {
     'calc': ['int', ['int', 'int', IntArray, IntArray, IntArray]],
     'calc1': ['int', ['int', 'int', IntArray, IntArray, IntArray]],
