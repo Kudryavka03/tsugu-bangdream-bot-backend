@@ -5,6 +5,7 @@ import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
 import * as fs from 'fs';
+import path from 'path'
 
 export class Cutoff {
     eventId: number;
@@ -75,11 +76,11 @@ export class Cutoff {
             */
             cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
             //cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
-            cutoffPromise.push(JSON.stringify(this.readPredict2Data(this.tier)));
+            cutoffPromise.push(this.readPredict2Data(this.tier).then(JSON.parse));
             var cutoffResult = await Promise.all(cutoffPromise)
-            //console.log(cutoffResult)
             cutoffData = cutoffResult[0]
-            pCutoffData = this.tier==null?cutoffResult[1]:cutoffData    // 只针对千线进行预测
+            //console.log(cutoffResult)
+            pCutoffData = cutoffResult[1]==null?cutoffData:cutoffResult[1]    // 只针对千线进行预测
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
@@ -149,14 +150,20 @@ export class Cutoff {
         this.predictEP2 = this.pCutoffs[this.pCutoffs.length-1]['ep']
         return this.predictEP2
     }
-    readPredict2Data(tier){
-        try{
-            if(fs.existsSync(`MYCX_1000/ycx${tier}-3`))
-            return fs.readFileSync(`MYCX_1000/ycx${tier}-3`,'utf-8')
-        }
-        catch{
-            return null
-        }
+    readPredict2Data(tier) {
+        return new Promise((resolve) => {
+            let filePathPredict = path.resolve(process.cwd(), `MYCX_1000/ycx${tier}-3.json`);
+    
+            fs.readFile(filePathPredict, 'utf-8', (err, data) => {
+                if (err) {
+                    console.log('null');
+                    resolve(null);
+                } else {
+                    console.log(data);
+                    resolve(data);
+                }
+            });
+        });
     }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
