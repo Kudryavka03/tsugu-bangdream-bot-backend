@@ -156,10 +156,10 @@ export class Cutoff {
     
             fs.readFile(filePathPredict, 'utf-8', (err, data) => {
                 if (err) {
-                    console.log('null');
+                    //console.log('null');
                     resolve(null);
                 } else {
-                    console.log(data);
+                    //console.log(data);
                     resolve(data);
                 }
             });
