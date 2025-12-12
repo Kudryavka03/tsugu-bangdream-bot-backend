@@ -42,7 +42,7 @@ export async function drawTimeLineChart(
       Math.max(...dataset.data.map((pt: any) => pt.y))
     )
   );
-
+  
   // 9. 配置 Chart.js 选项
   const options = {
     plugins: {
@@ -67,7 +67,7 @@ export async function drawTimeLineChart(
       },
       y: {
         min: 0,
-        max: (yMax + 1000) * 1.1,
+        max: Math.floor((yMax + 1000) * 1.1), // 美观输出
       },
     },
   };
