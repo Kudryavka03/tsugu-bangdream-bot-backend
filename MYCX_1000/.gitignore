@@ -1,5 +1,5 @@
 # Ignore everything except Python source files and this .gitignore
-*
+
 
 # Keep this file
 !.gitignore
@@ -14,3 +14,4 @@
 !requirements.txt
 !example
 !example/*
+!predictor*
