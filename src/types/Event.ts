@@ -26,6 +26,7 @@ export class Event {
     eventId: number;
     isExist: boolean = false;
     isInitFull = false;
+    data = null;
     eventType: string;
     eventName: Array<string | null>;
     bannerAssetBundleName: string;
@@ -206,11 +207,14 @@ export class Event {
         for (const { rarity, rank, percent } of eventData["limitBreaks"]) {
             this.limitBreaks[rarity][rank] = percent
         }
+        
         this.isInitfull = true
     }
     async getData(update: boolean = true) {
+        if(this.data!= null) return this.data   // 如果存在了则直接返回this.data,不再访问callAPIAndCacheResponse
         var time = update ? 0 : 1 / 0
         var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,false);
+        this.data = eventData
         //console.log(eventData)
         //eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]
         return eventData

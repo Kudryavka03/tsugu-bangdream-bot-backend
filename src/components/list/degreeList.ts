@@ -38,7 +38,7 @@ export async function drawDegreeListInList({
 }
 
 export async function drawDegreeListOfEvent(event: Event, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
-    event.initFull()
+    if (!event.initFull)event.initFull()
     var list = []
     let tempDegreeList = []
     const listPromise: Promise<Canvas>[] = []; 
