@@ -22,6 +22,11 @@ import { TopRateSpeed } from '@/types/_Main';
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+    var event = new Event(eventId);
+    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
     await cutoffEventTop.initFull();
     if (!cutoffEventTop.isExist) {
         return [`错误: ${serverNameFullList[mainServer]} 活动不存在或数据不足`];
@@ -29,11 +34,8 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     var all = [];
     all.push(await drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
     var list: Array<Image | Canvas> = [];
-    var event = new Event(eventId);
-    const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
-        logger('drawEventDatablock error:', err);
-        return null;
-    });
+
+
     // all.push(await drawEventDatablock(event, [mainServer]));
     var drawPlayerRankingInListPromise = []
     const drawCutoffEventTopChartPromise = drawCutoffEventTopChart(cutoffEventTop, false, mainServer).catch(err => {
