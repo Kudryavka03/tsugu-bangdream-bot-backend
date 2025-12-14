@@ -8,6 +8,7 @@ import { stackImageHorizontal } from '@/components/utils';
 import { Server } from '@/types/Server';
 import { serverNameFullList } from '@/config';
 import { drawDatablock } from '@/components/dataBlock'
+import { formatSeconds } from "@/components/list/time";
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -63,7 +64,7 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,band
             drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
         }
         else{
-            if(!bandId) drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+            if(!bandId) drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}    时长：${formatSeconds(song.length)}`))
         }
         if(drawSongInListPromise.length >= 50) break
     }

@@ -4,7 +4,7 @@ import { Server, getServerByPriority } from "@/types/Server"
 import { Song } from "@/types/Song"
 import { drawText, releaseCanvas, setFontStyle } from "@/image/text"
 import { resizeImage } from "@/components/utils"
-import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNotes, drawDifficulityListWithDiff } from "@/components/list/difficulty"
+import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNotes, drawDifficulityListWithDiff, drawDifficulityWithNotes } from "@/components/list/difficulty"
 import { globalDefaultServer } from "@/config"
 import { drawList } from '../list'
 import { drawDottedLine } from '@/image/dottedLine'
@@ -53,7 +53,8 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         var difficultyImage = await drawDifficulityListInListWithNotes(song, 50, 10)
     }
     else {
-        var difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45)
+        var difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45, true,song.notes[difficulty])
+        //var difficultyImage = await drawDifficulityWithNotes(difficulty, song.difficulty[difficulty].playLevel, 45,true,song.notes[difficulty])
     }
     ctx.drawImage(difficultyImage, 800 - difficultyImage.width, 75 / 2 - difficultyImage.height / 2)
     return canvas

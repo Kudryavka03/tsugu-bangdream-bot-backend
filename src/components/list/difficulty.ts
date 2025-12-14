@@ -3,13 +3,12 @@ import { Song } from "@/types/Song"
 import { drawText, releaseCanvas } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
-export async function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10): Promise<Canvas> {
+export async function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10,dif?:string): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight + 10)
     var ctx = canvas.getContext("2d")
     for (var d in song.difficulty) {
         const i = parseInt(d);
-
         const diffCanvas = await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight - 10);
         const diffW = diffCanvas.width;
         const blockX = i * (imageHeight + spacing);
@@ -49,14 +48,28 @@ export async function drawDifficulityList2(song: Song, imageHeight: number = 60,
         let i = parseInt(d)
         ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing), 0)
     }
+    
     return canvas
+}
+export async function drawDifficulityWithNotes(difficultyType: number, playLevel: number, imageHeight: number,choose: boolean = true,notes?:number) {
+    var tempcanv = new Canvas(imageHeight, imageHeight + 30)
+    var ctx = tempcanv.getContext("2d")
+    ctx.drawImage(await drawDifficulity(difficultyType,playLevel,imageHeight,choose),0,8)
+    const notesText = await drawText({
+        textSize: imageHeight / 3.5,
+        text: notes.toString(),
+        maxWidth: imageHeight * 3.5
+    });
+    ctx.drawImage(notesText,(tempcanv.width -  notesText.width)/2,imageHeight+8)
+    return tempcanv
 }
 
 
-
-export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number,choose: boolean = true) {
-    var tempcanv = new Canvas(imageHeight, imageHeight)
+export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number,choose: boolean = true,notes?:number) {
+    var tempcanv = new Canvas(imageHeight, notes?imageHeight+30:imageHeight)
     var ctx = tempcanv.getContext("2d")
+    let offset = notes?8:0
+    //if (notes) ctx.drawImage(null,0,8)
     if (difficultyColorList[difficultyType] != undefined) {
         ctx.fillStyle = difficultyColorList[difficultyType]
     }
@@ -64,7 +77,7 @@ export async function drawDifficulity(difficultyType: number, playLevel: number,
         ctx.fillStyle = "#f1f1f1"
     }
     if (choose) {
-        ctx.arc(imageHeight / 2, imageHeight / 2, imageHeight / 2, 0, 2 * Math.PI)
+        ctx.arc(imageHeight / 2, (imageHeight / 2) + offset, imageHeight / 2, 0, 2 * Math.PI)
         ctx.fill()
     }
     else {
@@ -77,10 +90,18 @@ export async function drawDifficulity(difficultyType: number, playLevel: number,
         text: playLevel.toString(),
         maxWidth: imageHeight * 3
     })
-    ctx.drawImage(levelText, imageHeight / 2 - levelText.width / 2, imageHeight / 2 - levelText.height / 2)
-
+    ctx.drawImage(levelText, imageHeight / 2 - levelText.width / 2, (imageHeight / 2) + offset - levelText.height / 2)
+    if(notes){
+        const notesText = await drawText({
+            textSize: imageHeight / 3.5,
+            text: notes.toString(),
+            maxWidth: imageHeight * 3.5
+        });
+        ctx.drawImage(notesText,(tempcanv.width -  notesText.width)/2,imageHeight+offset)
+    }
     return (tempcanv)
 }
+
 export async function drawDifficulity2(difficultyType: number, playLevel: number, imageHeight: number,notes:number) {
     var tempcanv = new Canvas(imageHeight +60, imageHeight+60)
     var ctx = tempcanv.getContext("2d")
