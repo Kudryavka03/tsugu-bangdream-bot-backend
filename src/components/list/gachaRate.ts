@@ -16,7 +16,7 @@ export async function drawGachaRateInList(
   if (rates == null) {
     key = "概率分布";
     list.push(
-      drawList({
+      await drawList({
         key,
         text: `未提供概率分布数据`,
       })
