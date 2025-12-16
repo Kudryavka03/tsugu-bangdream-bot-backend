@@ -581,7 +581,7 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
     }
     //console.log(playerId)
     var all = [];
-    var breakTime = 1200000 // 如果间隔相差15min则认定为休息
+    var breakTime = 1500000 // 如果间隔相差15min则认定为休息
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
     var changeTimeSt = [];
     var changeTimeEd = [];
@@ -644,7 +644,7 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
             //allCount++
             totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
             partIndexRuntime=fixPlayerRating[i].part
-            
+            continue
          }
         if (fixPlayerRating[i].part>partIndexRuntime){//结束了上一轮但是由于上一轮没有统计分数，因此在这里统计
             allCount++
