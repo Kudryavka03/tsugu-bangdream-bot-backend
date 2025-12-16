@@ -581,13 +581,14 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
     }
     //console.log(playerId)
     var all = [];
-    var breakTime = 1500000 // 如果间隔相差25min则认定为休息
+    var breakTime = 1200000 // 如果间隔相差15min则认定为休息
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
     var changeTimeSt = [];
     var changeTimeEd = [];
     var changeTimeTotalPts = [];    // 总Pts
     var changeTimeCounts = [];  // 把均Pt
     var allCount = 0
+
 /*
 1. PlayRating中途会有-1的存在，先将-1的处理完毕
 2. 从高到低排Pt
@@ -595,6 +596,7 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
 */
     var fixPlayerRating = []
     var oldValue = 0;
+    var oldTime =0;
     for(var i = playerRating.length-1;i>0;i--){   //从尾倒回头,[i-1]永远要比[i]分数高,反向读取进fixPlayerRating
         if (playerRating[i].value == -1) {
         if(fixPlayerRating.length>0) fixPlayerRating[fixPlayerRating.length-1].isContinuous =false
@@ -607,7 +609,7 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
         }
         if(playerRating[i].value == playerRating[i-1].value)  isContinuousStatus = true
         oldValue = playerRating[i].value
-        fixPlayerRating.push({time:playerRating[i].time,value:playerRating[i].value,isContinuous:isContinuousStatus})
+        fixPlayerRating.push({time:playerRating[i].time,value:playerRating[i].value,isContinuous:isContinuousStatus,part:0})
     }
     // 这样处理完毕后，fixPlayerRating中就不会存在相同的value，以及value为-1的参数
     // 接下来开始处理fixPlayerRating，此时fixPlayerRating已经是从低到高排序了
@@ -616,66 +618,73 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
     var isProcessing = false// 判定当前是新段还是旧段处理中
     var totalCount = 0
     var totalPts = 0
+    var partIndex =0
     for(var i  = 1;i<fixPlayerRating.length;i++){
-        if ((fixPlayerRating[i].time - fixPlayerRating[i-1].time >= breakTime) && isProcessing == false){  // 如果没处理，前后关系为休息状态
-            continue
+
+        if (fixPlayerRating[i].time-fixPlayerRating[i-1].time>=breakTime ){
+            partIndex++
         }
-        if (i == (fixPlayerRating.length-1)  && isProcessing == true){   // 如果是最后一个，且当前正在被处理
+
+        fixPlayerRating[i].part = partIndex
+    }
+    var partIndexRuntime = -1
+    var  statusOKIndex = 2
+    for(var i = 1;i<fixPlayerRating.length;i++){
+        if(fixPlayerRating[i].time - fixPlayerRating[i-1] < breakTime) {    // 寻昭可以开始计算的Index
+            statusOKIndex = i
+            break
+        }
+    }
+    
+    for(var i  = statusOKIndex;i<fixPlayerRating.length;i++){ // 从第四个开始，因为第一个通常不准。
+        if (partIndexRuntime == -1){    // 初始状态，初始化
             totalCount++
+            tempSt =fixPlayerRating[i].time
+            tempEt =fixPlayerRating[i].time
+            //allCount++
             totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
-            tempEt = fixPlayerRating[i].time
-            //console.log(tempEt)
-            changeTimeSt.push(tempSt)
-            changeTimeEd.push(tempEt)
-            changeTimeCounts.push(totalCount)
-            changeTimeTotalPts.push(totalPts)
-            isProcessing = false    // 标记为不再处理的状态
-            allCount++//标记已经完成push了
-            continue
-
-        }
-        if ((fixPlayerRating[i+1].time - fixPlayerRating[i].time >= breakTime) && isProcessing == true){   // 如果在处理中的段被认定为休息了，记录并且另开新段
-            totalCount++
-            totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
-            //console.log(`认定休息：i: ${i}  ${fixPlayerRating[i].time}  ${fixPlayerRating[i-1].time}`)
-            tempEt = fixPlayerRating[i].time
-            //console.log(tempEt)
-            changeTimeSt.push(tempSt)
-            changeTimeEd.push(tempEt)
-            changeTimeCounts.push(totalCount)
-            changeTimeTotalPts.push(totalPts)
-            isProcessing = false    // 标记为不再处理的状态
-            totalCount = 0
-            totalPts = 0
-            allCount++//标记已经完成push了
-            continue
-
-        }
-
-        if ((fixPlayerRating[i].time - fixPlayerRating[i-1].time < breakTime) && isProcessing == true){  // 如果当前处于处理中的段且跟上一个段相比
-            //console.log(`处理中：${fixPlayerRating[i].time} ${fixPlayerRating[i-1].time} `)
-            //tempEt = fixPlayerRating[i].time
-            totalCount++
-            totalPts +=(fixPlayerRating[i].value - fixPlayerRating[i-1].value)
-            continue
-        }
-
-        if((fixPlayerRating[i].time - fixPlayerRating[i-1].time < breakTime) && isProcessing == false){ // 如果没处理，先后关系为连接关系，则(最先处理，比如第零个第一个)
-
-            totalCount = 0
-            totalPts = 0
-            isProcessing = true
-            tempSt = fixPlayerRating[i-1].time
+            partIndexRuntime=fixPlayerRating[i].part
             
-            if ( i > 1 &&fixPlayerRating[i-2].isContinuous){    // 如果是连续的，那么还需要将连续的给加回来
+         }
+        if (fixPlayerRating[i].part>partIndexRuntime){//结束了上一轮但是由于上一轮没有统计分数，因此在这里统计
+            allCount++
+            //totalCount++
+            //totalPts +=fixPlayerRating[i].value - fixPlayerRating[i-1].value
+            if (tempSt == tempEt) tempSt -=(2*1000*60)
+            changeTimeSt.push(tempSt)
+            changeTimeEd.push(tempEt)
+            changeTimeCounts.push(totalCount)
+            changeTimeTotalPts.push(totalPts)
+            totalCount=0
+            tempEt=0
+            tempSt=fixPlayerRating[i].time
+            totalPts=0
+            partIndexRuntime =fixPlayerRating[i].part   // 标记最新的Part
+         }
+
+
+        if (fixPlayerRating[i].part==partIndexRuntime){ 
+            if (fixPlayerRating[i-1].isContinuous && fixPlayerRating[i-1].part!=partIndexRuntime){ // 如果上一个part跟这个part不一样，即新分段，如果是连续的 
                 totalCount++
-                totalPts += (fixPlayerRating[i-1].value - fixPlayerRating[i-2].value)
+                tempEt =fixPlayerRating[i].time
+                totalPts +=fixPlayerRating[i].value - fixPlayerRating[i-1].value    // 这里要注意，
             }
-            totalCount++
-            totalPts += (fixPlayerRating[i].value - fixPlayerRating[i-1].value) // 以前面那个为基准，后面-前面
-            //console.log(totalPts)
-            continue
-        }
+            if (fixPlayerRating[i-1].part==partIndexRuntime){   // 如果是连续的一段
+                totalCount++
+                tempEt =fixPlayerRating[i].time
+                totalPts +=fixPlayerRating[i].value - fixPlayerRating[i-1].value    // 这里要注意，
+            }
+            tempEt =fixPlayerRating[i].time
+            //如果上一段不标记连续，则是新的开始，跳过
+         }
+         if (i == fixPlayerRating.length-1){//处理最后一个分数
+            allCount++
+            if (tempSt == tempEt) tempSt -=(2*1000*60)
+            changeTimeSt.push(tempSt)
+            changeTimeEd.push(tempEt)
+            changeTimeCounts.push(totalCount)
+            changeTimeTotalPts.push(totalPts)
+         }
     }
     var all = [];
     var widthMax = 420+420+200+200+250
@@ -749,7 +758,7 @@ var totalTimes = 0
 for(let h = 0;h<allCount;h++){
     totalTimes +=(changeTimeEd[h] - changeTimeSt[h])
 }
-for (let j = allCount> 10? allCount -10 : 0; j < allCount; j++) {    // 人工注：只允许查后10
+for (let j = allCount> 100? allCount -100 : 0; j < allCount; j++) {    // 人工注：只允许查后10
 
     // 把均Pt = 总变化Pt / 次数（避免除 0）
     const avgPt = changeTimeCounts[j] > 0 
