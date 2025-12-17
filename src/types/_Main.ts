@@ -94,8 +94,10 @@ async function loadMainAPI(useCache: boolean = false) {
             }
         }
     });
-
     await Promise.all(promiseAll);
+
+
+
     try { //能够实时更新而不重启清空缓存
         let songNicknameData = await readExcelFile(path.join(configPath, 'nickname_song.xlsx'))
         if(songNicknameData!=null) songNickname = songNicknameData  // 尽量避免定时更新api的时候无法查询到任何歌曲，

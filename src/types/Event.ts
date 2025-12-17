@@ -114,7 +114,7 @@ export class Event {
     bandId: number[]
 
     isInitfull: boolean = false
-
+    
     constructor(eventId: number) {
         this.eventId = eventId
         const eventData = mainAPI['events'][eventId.toString()]
@@ -320,7 +320,9 @@ export class Event {
         return (memberList)
     }
     async getRewardStamp(server:Server): Promise<Image> {
-        const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)
+        
+        //const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)
+        const allStamps = mainAPI['stamps']
         const rewards = this.pointRewards.filter(Boolean)[0]
         let rewardId = -1
         for(let i = 0; i < rewards?.length; i++){
