@@ -16,12 +16,36 @@ import { formatSeconds } from '@/components/list/time'
 import { drawDifficulityList } from '@/components/list/difficulty';
 import { drawDifficulity,drawDifficulity2,drawDifficulityListWithNotes } from '@/components/list/difficulty';
 import { drawText } from '@/image/text';
+import mainAPI from '@/types/_Main';
 
 export async function drawSongDetail(song: Song, displayedServerList: Server[] = globalDefaultServer, compress: boolean): Promise<Array<Buffer | string>> {
     if (song.isExist == false) {
         return ['错误: 歌曲不存在']
     }
-    await song.initFull()
+    var publishedAt = mainAPI['songs'][song.songId.toString()]['publishedAt']
+    var drawEventDatablockPromise:Promise<Canvas>[] = []
+    
+    //相关活动
+    var eventIdList = []//防止重复
+    for (var i = 0; i < displayedServerList.length; i++) {
+        var server = displayedServerList[i]
+        if (publishedAt[server] == null) {
+            continue
+        }
+        var event = getPresentEvent(server, publishedAt[server])
+        if (event != undefined && eventIdList.indexOf(event.eventId) == -1) {
+            eventIdList.push(event.eventId)
+            drawEventDatablockPromise.push(drawEventDatablock(event, displayedServerList, `${serverNameFullList[server]}相关活动`))
+            // all.push(eventDatablockImage)
+        }
+    }
+
+    const initData = await Promise.all([
+        Promise.all(drawEventDatablockPromise),
+        song.initFull()
+    ])
+    const drawEventDatablockResult = initData[0]
+    
     var list: Array<Image | Canvas> = []
     //标题
 
@@ -74,33 +98,17 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
        // all.push(songMetaListDataBlockImage)
     }
 
-    var drawEventDatablockPromise:Promise<Canvas>[] = []
-    //相关活动
-    var eventIdList = []//防止重复
-    for (var i = 0; i < displayedServerList.length; i++) {
-        var server = displayedServerList[i]
-        if (song.publishedAt[server] == null) {
-            continue
-        }
-        var event = getPresentEvent(server, song.publishedAt[server])
-        if (event != undefined && eventIdList.indexOf(event.eventId) == -1) {
-            eventIdList.push(event.eventId)
-            drawEventDatablockPromise.push(drawEventDatablock(event, displayedServerList, `${serverNameFullList[server]}相关活动`))
-            // all.push(eventDatablockImage)
-        }
-    }
+
     var drawSongDataBlockPromise:Promise<Canvas>[] = []
     //顶部歌曲信息框
-    drawSongDataBlockPromise.push(drawSongDataBlock(song))
+    drawSongDataBlockPromise.push(drawSongDataBlock(song))  // 理论不存在IO等待时间问题
     const results = await Promise.all([
         Promise.all(drawSongDataBlockPromise),
         Promise.all(drawSongMetaListDataBlockPromise),
-        Promise.all(drawEventDatablockPromise),
     ]);
     const [
         drawSongDataBlockResult,
         drawSongMetaListDataBlockResult,
-        drawEventDatablockResult
     ] = results
 
 
