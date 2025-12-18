@@ -137,7 +137,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     all.push(listImage)
     
     all.push(await drawTips({
-        text: '预测线1为Tsugu原版预测线\n预测线2仅对千线服务，想法来自：byydzh/MYCX_1000',
+        text: '预测线1为Tsugu原版预测线\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000',
         //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
     
