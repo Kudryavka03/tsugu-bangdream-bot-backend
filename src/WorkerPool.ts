@@ -9,7 +9,8 @@ export const piscina = isMainThread?{
         maxThreads: 1,
         concurrentTasksPerWorker: 8,
         idleTimeout:0,
-        //argv:[' --allow-natives-syntax ']
+        execArgv:[]
+        
     }),/*
     drawDetail: new Piscina({
         filename: path.resolve(__dirname, './worker/drawSongDetail.worker.js'),
