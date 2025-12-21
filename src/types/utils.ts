@@ -1,10 +1,7 @@
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
-const workerPath = path.resolve(__dirname, "../stringToNumberArrayWorker.js");
-import Piscina from 'piscina';
 import { logger } from '@/logger';
-const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[] });
 let SongListNicknameStat = null
 export async function readJSON(filepath: string): Promise<object> {//读取json文件子程序，返回json数据  
     var promise: object = new Promise(function (resolve, reject) {

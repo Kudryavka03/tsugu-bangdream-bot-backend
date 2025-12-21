@@ -3,21 +3,13 @@ import { CreateBG, CreateBGEazy } from '@/image/BG';
 import { assetsRootPath } from '@/config';
 import * as path from 'path';
 import { loadImageFromPath } from '@/image/utils';
-import Piscina from 'piscina';
-const workerPath = path.resolve(__dirname, "../toBufferWorker.js");
 var BGDefaultImage: Image
 var useGpu = false  // 控制是否使用GPU
 async function loadImageOnce() {
     BGDefaultImage = await loadImageFromPath(path.join(assetsRootPath, "/BG/live.png"));
 }
 loadImageOnce()
-//var worker = new Worker(workerPath); // if debug：new Worker(workerPath,{execArgv: ['--inspect=9235']})
-const pool = new Piscina({
-    filename: workerPath,
-    execArgv:[],
-    
-    maxThreads: 4  // 可自行调整
-});
+
 
 
 interface outputFinalOptions {

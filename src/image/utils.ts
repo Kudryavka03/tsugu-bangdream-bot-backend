@@ -28,7 +28,6 @@ export function getFontCanvasCtxFromPool(fontArgs: string) {
 //import Piscina from 'piscina';
 
 //const jsonWorker = new Worker('./jsonWorker.js');
-const workerPath = path.resolve(__dirname, "../readFileWorker.js");
 
 //const pool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4 });
 

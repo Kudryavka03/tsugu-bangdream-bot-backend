@@ -3,13 +3,9 @@ import { assetsRootPath } from '@/config';
 FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
 import * as path from 'path';
-import Piscina from 'piscina';
 import { getFontCanvasCtxFromPool } from './utils';
-import pLimit from 'p-limit';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
-const wrapTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
-const measureTextPool = new Piscina({ filename: workerPath,minThreads:4,maxThreads:4,execArgv:[],env:{ASROOT:assetsRootPath} });
-const limitDrawText = pLimit(5);
+
 interface warpTextOptions {
     text: string,
     textSize?: number,
@@ -25,26 +21,16 @@ interface CanvasPoolItem {
     busy: boolean; // 是否被占用
 }
 export const canvasPool: CanvasPoolItem[] = [];
+const normalCanvas = new Canvas(1, 1);
+const normalCtx = normalCanvas.getContext('2d');
+normalCtx.textBaseline = 'alphabetic';
+const drawTextCanvas: Canvas = new Canvas(1,1)
 
-// 获取一个可用 Canvas
-function acquireCanvas(width: number, height: number): Canvas {
-    for (const item of canvasPool) {
-        if (!item.busy && item.width >= width && item.height >= height) {
-            item.busy = true; // 标记占用
-            return item.canvas;
-        }
-    }
-    // 池里没有可用 Canvas，创建新的
-    const newCanvas = new Canvas(width, height);
-    canvasPool.push({ canvas: newCanvas, width, height, busy: true });
-    return newCanvas;
-}
+
 
 // 绘制完成后释放 Canvas
 export function releaseCanvas(canvas: Canvas) {
     return
-    const item = canvasPool.find(i => i.canvas === canvas);
-    if (item) item.busy = false;
 }
 /*
 //画文字,自动换行
@@ -86,30 +72,35 @@ export async function drawTextInWorker({
     return canvas;
 } 
 */
-export async function drawText({
+const drawTextMeasureTextCache= new Map<string, number>();
+export function drawTextMeasureText(text:string,textSize:number,font?: "FangZhengHeiTi" | "old" | "default") {
+    var MeasureTextFlags = `${text}-${textSize}-${font}`
+    if(drawTextMeasureTextCache.has(MeasureTextFlags))return drawTextMeasureTextCache.get(MeasureTextFlags)
+    const drawTextCanvasCtx = drawTextCanvas.getContext('2d')
+    setFontStyle(drawTextCanvasCtx, textSize, font);
+    var width = drawTextCanvasCtx.measureText(text).width
+    drawTextMeasureTextCache.set(MeasureTextFlags,width)
+    return width
+}
+export  function drawText({
     text,
     textSize = 40,
     maxWidth,
     lineHeight = textSize * 4 / 3,
     color = "#505050",
     font = "old"
-}: warpTextOptions): Promise<Canvas> {
-    var wrappedTextData = await wrapText({ text, maxWidth, lineHeight, textSize });
+}: warpTextOptions): Canvas {
+    var wrappedTextData =  wrapText({ text, maxWidth, lineHeight, textSize });
     if (wrappedTextData.numberOfLines == 0) {
         //var canvas: Canvas = new Canvas(1, lineHeight);
         var canvas = new Canvas(1, lineHeight)
 
     }
     else if (wrappedTextData.numberOfLines == 1) {
-        //var canvas: Canvas = reCanvas;
-        //var  ctx = getFontCanvasCtxFromPool();
-        //var width = maxWidth = ctx.measureText(wrappedTextData.wrappedText[0]).width
-        var fontArgs = setFontStyleArgs(textSize,font)
-        var measureTextData = wrappedTextData.wrappedText[0]
-        var width = await measureTextPool.run({fontArgs,measureTextData},{name:'measureTextWorker'})
-        maxWidth = width
-        //var canvas = new Canvas(width, lineHeight);
-        var canvas = new Canvas(width, lineHeight)
+
+        
+        var width = maxWidth = drawTextMeasureText(wrappedTextData.wrappedText[0],textSize,font)
+        canvas = new Canvas(width, lineHeight);
 
     }
     else {
@@ -136,39 +127,24 @@ export async function drawText({
 }
 
 
-export function drawTextLimit(options) {
-    return limitDrawText(() => drawText(options));
-}
 
-const wrapTextCache  = new Map<string, warpTextOptions>();
-export async function wrapText({
+const wrapTextCache  = new Map<string, { numberOfLines: number; wrappedText: string[]; }>();
+export function wrapText({
     text,
     textSize,
     maxWidth,
     lineHeight,
     font = "old"
 }: warpTextOptions) {
-    const key = `${textSize}:${font}:${text}`;
-    if(wrapTextCache.has(key)){
-        return wrapTextCache.get(key)
-    }
-    else{
-        var data = await wrapTextPool.run({text,textSize,maxWidth,lineHeight,font},{name:'wrapText'})
-        wrapTextCache.set(key,data)
-        return data
-    }
-    
-    const canvas = new Canvas(1, 1);
-    const ctx = canvas.getContext('2d');
+    var wrapFlags = `${text}-${textSize}-${maxWidth}-${font}`
+    if (wrapTextCache.has(wrapFlags)) return wrapTextCache.get(wrapFlags)
+    setFontStyle(normalCtx, textSize, font);
     const temp = text.split('\n');
-    ctx.textBaseline = 'alphabetic';
-    setFontStyle(ctx, textSize, font);
-
     for (var i = 0; i < temp.length; i++) {
         let temptext = temp[i]
         let a = 0
         for (var n = 0; n < temptext.length; n++) {
-            if (maxWidth > ctx.measureText(temptext.slice(0, temptext.length - n)).width) {
+            if (maxWidth > normalCtx.measureText(temptext.slice(0, temptext.length - n)).width) {
                 a = n
                 break
             }
@@ -187,10 +163,12 @@ export async function wrapText({
             i--;
         }
     }
-    return {
+    var result = {
         numberOfLines: temp.length,
         wrappedText: temp,
-    };
+    }
+    wrapTextCache.set(wrapFlags,result)
+    return result;
 }
 
 interface TextWithImagesOptions {

@@ -157,7 +157,6 @@ export async function drawList({
     if(textImage.height != 0){
         ctx.drawImage(textImage, 20, keyImage.height + 10);
     }
-    if (isNeedToRelease) releaseCanvas(textImage)
     return canvas;
 }
 
