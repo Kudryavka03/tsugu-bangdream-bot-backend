@@ -93,16 +93,9 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         if(isMainThread) return null
         heavyLoad = true
         logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
-        songPromises = tempSongList.map(song =>
-            limit(() =>
-              new Promise(resolve => {
-                setImmediate(async () => {
-                  const img = await drawSongInList(song, undefined, undefined, displayedServerList);
-                  resolve(img);
-                });
-              })
-            )
-          );
+        for (let i = 0; i < tempSongList.length; i++) {
+            songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
+        }
     }
     var songImages = await Promise.all(songPromises);
     //var t2 = Date.now()

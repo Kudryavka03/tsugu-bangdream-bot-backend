@@ -112,16 +112,9 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         if (isMainThread) return null // 如果不是worker，那么就返回null。Null被中间件捕获到后会直接发去Worker请求
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
         heavyLoad = true
-        eventPromises = tempEventList.map((events,i) =>
-            limit(() =>
-              new Promise(resolve => {
-                setImmediate(async () => {
-                  const img = await drawEventInList(events, displayedServerList);
-                  resolve({ index: i, image: img });
-                });
-              })
-            )
-          );
+        for (var i = 0; i < tempEventList.length; i++) {
+            eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
+        }
     }
 
     var eventResults = await Promise.all(eventPromises);
