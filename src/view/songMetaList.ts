@@ -61,7 +61,7 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,band
         precent = Math.round(precent * 100) / 100
         //console.log(bandId)
         if (bandId && song.bandId == bandId){
-            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}`))
+            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}    时长：${formatSeconds(song.length)}`))
         }
         else{
             if(!bandId) drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}    时长：${formatSeconds(song.length)}`))
