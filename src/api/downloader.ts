@@ -7,16 +7,6 @@ const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
 export const showDownloadLog = false
-const workerPath = path.resolve(__dirname, "../readFileWorker.js");
-
-import Piscina from 'piscina';
-
-
-
-// 在低性能服务器上不应该使用Worker。Worker会使得receiveMessageOnPort阻塞主线程。别问我怎么知道的
-const pool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[] });
-const readPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:1,execArgv:[] });
-//const existPool = new Piscina({ filename: workerPath,minThreads:1,maxThreads:4,execArgv:[] });
 
 export async function download(   // GPT写的
   url: string,
@@ -290,17 +280,17 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
 // 综合考虑还是用回之前的方案，1kb文件创建worker本身就是不小的开销了
 // IO使用池
 async function loadJson(path) {
-  const str = await pool.run(path,{name:'readJsonText'})
+  const str = await fs.promises.readFile(path,'utf-8')
   var body = JSON.parse(str)
   return body
 }
 
 async function loadFile(p: string): Promise<Buffer> {
-  return Buffer.from(await readPool.run(p,{name:'readFiles'}));
+  return await fs.promises.readFile(p)
 }
 
-export async function fileExists(path: string): Promise<boolean> {
-   return await readPool.run(path,{name:'fileExists'})
+export async function fileExists(path: string) {
+   return fs.existsSync(path)
 }
 
 

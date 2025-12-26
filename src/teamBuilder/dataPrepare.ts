@@ -47,7 +47,7 @@ const resultDB = new compositionResultDB(process.env.MONGODB_URI ?? 'mongodb://l
 export async function workerDataInit(playerId:number, server: Server,currentEvent:number,save:boolean,desc?: string) {
     let player = await playerDB.updCurrentEvent(playerId, server, currentEvent) // 
     //console.log(playerId,server,currentEvent,player)
-    console.log('dataPrepare')
+    //console.log('dataPrepare')
     let res =  await dataPrepare(player,server)
     res.print()
     const output = []
@@ -60,7 +60,7 @@ export async function workerDataInit(playerId:number, server: Server,currentEven
     return output
 }
 export async function dataPrepare(player: playerDetail, server: Server) {
-    console.log('dataPrepare')
+    //console.log('dataPrepare')
     const event = new Event(player.currentEvent)
     if (!event.isExist) {
         throw new Error('错误: 活动不存在')

@@ -184,7 +184,8 @@ export class Player {
         if (this.isInitfull) {
             return
         }
-        var cacheTime = useCache ? 1 / 0 : 0;
+        //var cacheTime = useCache ? 1 / 0 : 0;
+        var cacheTime = useCache ? 3600 : 0;    //如果使用缓存的化，缓存一小时
         try {
             var playerData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/player/${Server[this.server]}/${this.playerId}?mode=${mode}`, cacheTime, 1,false);
         }

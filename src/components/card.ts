@@ -221,7 +221,7 @@ export async function drawCardIllustration({
     if (!starList.normal || !starList.trained) {
         await loadImageOnce();
     }
-    console.log(typeof(starList.normal))
+    //console.log(typeof(starList.normal))
     for (var i = 0; i < card.rarity; i++) {//星星数量
         ctx.drawImage(star, 5, 780 - 100 * i, 110, 110)
     }

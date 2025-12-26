@@ -162,8 +162,8 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     //相关来源
     var tempEventIdList = []//用于防止重复
     var tempGachaIdList = []
-    var eventImageList: Array<Canvas | Image> = []
-    var gachaImageList: Array<Canvas | Image> = []
+    //var eventImageList: Array<Canvas | Image> = []
+    //var gachaImageList: Array<Canvas | Image> = []
 
     var drawEventDatablockPromise: Promise<Canvas>[] = []
     var gachaImageListPromise: Promise<Canvas>[] = []

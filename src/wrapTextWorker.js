@@ -71,7 +71,7 @@ export async function drawTextInternalWorker({
 
     ctx.fillStyle = color;
     var wrappedText = wrappedTextData.wrappedText
-    console.log(wrappedText)
+    //console.log(wrappedText)
     
     for (var i = 0; i < wrappedText.length; i++) {
         ctx.fillText(wrappedText[i], 0, y);

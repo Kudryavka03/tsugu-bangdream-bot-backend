@@ -239,7 +239,7 @@ export async function drawListByServerList(content: Array<string | null>, key?: 
     // 如果所有服务器内容都为空，选择优先级最高的服务器
     if (tempcontent.length == 0) {
         const tempServer = getServerByPriority(content, serverList);
-        console.log(content)
+        //console.log(content)
         tempcontent.push(await getIcon(tempServer));
        
         tempcontent.push(content[tempServer]);

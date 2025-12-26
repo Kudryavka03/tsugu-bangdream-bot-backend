@@ -45,8 +45,8 @@ export async function drawRoonInList(room: Room) {
     const timeNow = new Date().getTime()
 
     //头像
-    const Icon = await getUserIcon()
-    // const Icon = await getUserIcon(room.avatarUrl)
+    //const Icon = await getUserIcon()
+    const Icon = await getUserIcon(room.avatarUrl)
     //文本
     const textList: Canvas[] = []
     var timesFrom = await drawText({
@@ -80,7 +80,7 @@ export async function drawRoonInList(room: Room) {
     ctxUp.fillStyle = '#a8a8a8'
     ctxUp.fillRect(200, 0, 5, height)
     let list = [canvasUp]
-    if (room.player != undefined && false) {
+    if (room.player != undefined) {
         const player = new Player(room.player.playerId, room.player.server)
         await player.initFull(true)
         if (player.isExist && !player.initError) {
@@ -118,11 +118,17 @@ async function drawPlayerDetailInRoomList(player: Player) {
     //画牌子
     var degreeImageList: Array<Canvas | Image> = []
     var userProfileDegreeMap = player.profile.userProfileDegreeMap.entries
-    for (var i in userProfileDegreeMap) {
-        var tempDegree = userProfileDegreeMap[i]
-        var tempDegreeImage = await drawDegree(new Degree(tempDegree.degreeId), player.server)
+    const promises: Promise<Canvas | Image>[] = []
+    for (const key in userProfileDegreeMap) {
+        const tempDegree = userProfileDegreeMap[key]
+    
+        const p = drawDegree(new Degree(tempDegree.degreeId), player.server)
+        promises.push(p)
+    }
+    const images = await Promise.all(promises)
+    for (const img of images) {
         degreeImageList.push(resizeImage({
-            image: tempDegreeImage,
+            image: img,
             heightMax: 35
         }))
         degreeImageList.push(new Canvas(10, 35))
