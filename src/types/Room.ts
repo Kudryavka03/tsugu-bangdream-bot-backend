@@ -71,7 +71,7 @@ export async function queryAllRoom(): Promise<Room[]> {
                     const time = roomListBandoriStation[i].time
                     const rawMsg = roomListBandoriStation[i].rawMessage
                     for(var index in roomList ){
-                        if(roomList[index].number == room.number){
+                        if(roomList[index].number == room.number && roomList[index].time < time){   // 当本地车牌时间早于车站上传时间
                             roomList[index].time = time
                             roomList[index].rawMessage = rawMsg
                             break
@@ -86,7 +86,6 @@ export async function queryAllRoom(): Promise<Room[]> {
     }
     //如果本地已经有房间号列表，就不再从BandoriStation获取
 
-
     //按时间排序
     roomList.sort((a, b) => {
         return b.time - a.time
@@ -94,7 +93,7 @@ export async function queryAllRoom(): Promise<Room[]> {
     //清除所有150秒以前的车牌
     const now = Date.now();
     const numberSet = new Set();
-	const finalRoomList = [];	
+	  const finalRoomList = [];	
     for (let i = 0; i < roomList.length; i++) {
         const room = roomList[i];
         if (now - room.time > 1000 * 150) {
@@ -105,15 +104,14 @@ export async function queryAllRoom(): Promise<Room[]> {
     //去重，每个房间号只保留最新的一条
     // const numberList = []; //用于去重
     for (const room of roomList) {
-    // 超过 150 秒直接跳过
-		if (now - room.time > 150 * 1000) continue;
-
-		// 每个房间号只保留最新
-		if (!numberSet.has(room.number)) {
-			numberSet.add(room.number);
-			finalRoomList.push(room);
-		}
-	}
+      // 超过150秒直接跳过
+		  if (now - room.time > 150 * 1000) continue;
+		  // 每个房间号只保留最新
+		  if (!numberSet.has(room.number)) {
+			  numberSet.add(room.number);
+			  finalRoomList.push(room);
+		  }
+	  }
     return finalRoomList
 }
 
