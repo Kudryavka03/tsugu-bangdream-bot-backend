@@ -252,6 +252,10 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     list.push(line)
     list.push(await drawSkillInList({ key: '技能', card: card, content: skill }, displayedServerList))
     list.push(line)
+        //标题
+    list.push(await drawListByServerList(card.prefix, '标题', displayedServerList))
+    list.push(line)
+
     for(var r of drawListByServerListResult){
         list.push(r)
         list.push(line)
