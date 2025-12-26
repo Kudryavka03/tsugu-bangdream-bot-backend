@@ -74,10 +74,11 @@ export async function queryAllRoom(): Promise<Room[]> {
                         if(roomList[index].number == room.number){
                             roomList[index].time = time
                             roomList[index].rawMessage = rawMsg
+                            break
                         }
                     }
                 }
-            }
+            }   // TODO： 合并双重扫描
         }
         catch (e) {
             console.log(e)
