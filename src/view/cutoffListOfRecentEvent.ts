@@ -100,7 +100,9 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                 predictText = '?'
             }
             else {
-                predictText = cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString()
+                const pEP1 = cutoff.predictEP.toString()
+                const pEP2 = cutoff.predictEP.toString()
+                predictText = pEP1==pEP2?cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString():cutoff.predictEP.toString() + ' | ' + '不预测'
             }
             cutoffContent.push(`当前预测线: ${predictText}\n`)
             cutoffContent.push(`最新分数线: ${cutoff.latestCutoff.ep.toString()}\n`)

@@ -59,7 +59,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         else {
             var predictText = cutoff.predictEP.toString()
             var predictText2 = cutoff.predictEP2.toString()
-            if(cutoff.latestCutoff.ep.toString() == predictText2) predictText2='不预测'
+            if(cutoff.latestCutoff.ep.toString() == predictText2) predictText2='不预测或暂无数据'
         }
 
         //预测线和时速
