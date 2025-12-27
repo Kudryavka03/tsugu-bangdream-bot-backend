@@ -84,6 +84,12 @@ export class Cutoff {
         }
         else {
             cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            // 检查缓存是否合法
+            if (this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length].time >910000 ){
+                cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+            } //如果最后一个记录的时间减去endAt 大于15分多点则需要更新
+
+            
             //cutoffData = await callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
             pCutoffData = cutoffData
         }
