@@ -1,5 +1,5 @@
 # Ignore everything except Python source files and this .gitignore
-
+*
 
 # Keep this file
 !.gitignore
@@ -14,4 +14,10 @@
 !requirements.txt
 !example
 !example/*
-!predictor*
+
+!data_source.py
+!domain_models.py
+!prediction_engine.py
+!math_models.py
+!visualizer.py
+!main_pipeline.py
