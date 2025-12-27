@@ -8,6 +8,8 @@ import express from 'express';
 import { body } from 'express-validator';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
+import { downloadFile } from '@/api/downloadFile';
+import { getUserIcon } from '@/api/userIcon';
 
 const router = express.Router();
 
@@ -71,10 +73,13 @@ async function getRoomList(roomList: any) {
     }
     return tempRoom;
   });
-
+  const preCacheAvatar = roomList.map(async (room:any)=>{
+    return getUserIcon(room.avatarUrl)
+  })
   // 等待所有并行操作完成
-  const result = await Promise.all(promises);
-  return result;
+  const result = await Promise.all([Promise.all(promises),Promise.all(preCacheAvatar)]);
+  console.log(result)
+  return result[0];
 }
 
 
