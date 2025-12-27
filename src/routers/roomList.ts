@@ -78,7 +78,7 @@ async function getRoomList(roomList: any) {
   })
   // 等待所有并行操作完成
   const result = await Promise.all([Promise.all(promises),Promise.all(preCacheAvatar)]);
-  console.log(result)
+  //console.log(result)
   return result[0];
 }
 
