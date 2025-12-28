@@ -5,7 +5,8 @@ export const middleware = (req: Request, res: Response, next: NextFunction) => {
     const requestTime = Date.now();
     const timeString = new Date(requestTime).toString().split(' ')[4];
     // yyyy-MM-ddTHH:mm:ss
-    console.log(`[${timeString}] [Request] ${req.ip} ${req.baseUrl}${req.path}`, req.body);
+    var showBody = false
+    console.log(`[${timeString}] [Request] ${req.ip} ${req.baseUrl}${req.path}`, showBody?req.body:'');
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
