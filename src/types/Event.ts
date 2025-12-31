@@ -213,7 +213,7 @@ export class Event {
     async getData(update: boolean = true) {
         if(this.data!= null) return this.data   // 如果存在了则直接返回this.data,不再访问callAPIAndCacheResponse
         var time = update ? 0 : 1 / 0
-        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,false);
+        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,false,0);
         this.data = eventData
         //console.log(eventData)
         //eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]

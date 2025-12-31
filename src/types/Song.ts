@@ -184,7 +184,7 @@ export class Song {
         this.isInitfull = true
     }
     async getData() {
-        const songData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/songs/${this.songId}.json`,1,3,false)
+        const songData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/songs/${this.songId}.json`,1,3,false,0)
         return songData
     }
     getSongRip(): number {
