@@ -159,8 +159,8 @@ export class Cutoff {
     }
     readPredict2Data(tier) {
         return new Promise((resolve) => {
-            let filePathPredict = path.resolve(process.cwd(), `MYCX_1000/ycx${tier}-3.json`);
-    
+            let filePathPredict = path.resolve(process.cwd(), `MYCX_1000/ycx${tier}-${this.server}.json`);
+            //console.log(filePathPredict)
             fs.readFile(filePathPredict, 'utf-8', (err, data) => {
                 if (err) {
                     //console.log('null');

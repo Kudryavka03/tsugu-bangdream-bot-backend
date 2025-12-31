@@ -206,7 +206,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
         const stat = await fs.promises.stat(cacheFilePath);
         const now = Date.now();
         if (now - stat.mtimeMs < cacheTime * 1000){ // 如果不是强制读取，且缓存没过期，则读取缓存
-          console.log(now - stat.mtimeMs,cacheTime * 1000)
+          //console.log(now - stat.mtimeMs,cacheTime * 1000)
           isReadCache = true
         }
       }
