@@ -65,7 +65,7 @@ export class EventStage {
     }
     async getData(update: boolean = true, type: 'stages' | 'rotationMusics') {
         var time = update ? 0 : 1 / 0;
-        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/festival/${type}/${this.eventId}.json`, time);
+        var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/festival/${type}/${this.eventId}.json`, time,2,false);
         return eventData;
     }
 

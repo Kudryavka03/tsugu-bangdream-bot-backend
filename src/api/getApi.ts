@@ -23,7 +23,7 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
         if(rtLevel == 0){
           logger('callAPIAndCacheResponse','rtLevel is 0. Return Cache Data First then update data on background to Speed Up')
           apiData = await getJsonAndSave(url, cacheDir, fileName, 0,true);
-          getJsonAndSave(url, cacheDir, fileName, 0,false);
+          getJsonAndSave(url, cacheDir, fileName, 0.1,false); // 设置6分钟的缓冲区，防止短时间内重新获取。
           return apiData
         }
         if(rtLevel == 1){
