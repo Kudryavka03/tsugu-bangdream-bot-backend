@@ -96,7 +96,7 @@ export class Character {
     }
     async getData(update: boolean = true) {
         var time = update ? 0 : 1 / 0
-        var cardData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/characters/${this.characterId}.json`, time)
+        var cardData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/characters/${this.characterId}.json`, time,1,false,0)
         return cardData
     }
     async getIcon(): Promise<Image> {

@@ -34,7 +34,7 @@ export class Costume {
         if (this.isInitfull) {
             return
         }
-        var costumeData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/costumes/${this.costumeId}.json`)
+        var costumeData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/costumes/${this.costumeId}.json`,3,3,false,0)
         this.data = costumeData
         this.isExist = true;
         this.characterId = costumeData['characterId'];
