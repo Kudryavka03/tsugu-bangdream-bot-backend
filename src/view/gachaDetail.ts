@@ -127,21 +127,20 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
     //描述
     list.push(await drawListByServerList(gacha.description, '描述', displayedServerList))
     list.push(line)
-    list.push(await drawGachaRateInList(gacha, server))
-
-        //支付方法
-        for(var r of drawGachaRateInListResult){
-            list.push(r)
-        }
-
-    list.push(line)
+ 
 
 
 
-    //概率分布
+    
     for(var r of drawGashaPaymentMethodInListResult){
         list.push(r)
     }
+    list.push(line)
+    list.push(await drawGachaRateInList(gacha, server))
+    for(var r of drawGachaRateInListResult){
+        list.push(r)
+    }
+
     list.push(line)
 
     for(var r1 of drawGachaPickupInListResult){
