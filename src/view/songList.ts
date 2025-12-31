@@ -155,7 +155,10 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
         
         const tempSong = new Song(songIdList[i]);
         //console.log(tempSong)
-        
+        if (isEmptyObject(matches)){
+            tempSongList.push(tempSong)
+            continue
+        }
         for (let s of tempSong.musicTitle) {
             if (s && (s.toLowerCase().replace(/[!?]/g, '') == (matches['_all'][0] as string) || s.toLowerCase() == (matches['_all'][0] as string))) {
                 tempSongList.push(tempSong)
@@ -195,3 +198,6 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
     }
     return tempSongList
 }
+function isEmptyObject(obj) {
+    return (true && Object.keys(obj).length === 0);
+  }

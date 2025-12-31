@@ -9,7 +9,7 @@ import { matchSongList } from '@/view/songList';
 import { FuzzySearchResult } from "@/fuzzySearch";
 
 export async function drawSongRandom(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean, compress: boolean): Promise<Array<Buffer | string>> {
-
+    console.log(matches)
     // 计算歌曲模糊搜索结果
     var tempSongList: Array<Song> = matchSongList(matches, displayedServerList)
 
@@ -22,7 +22,7 @@ export async function drawSongRandom(matches: FuzzySearchResult, displayedServer
     const song = tempSongList[randomIndex]
 
     var all = []
-    all.push(drawTitle('查询', '随机歌曲'))
+    all.push(await drawTitle('查询', '随机歌曲'))
 
     //顶部歌曲信息框
     var songDataBlockImage = await drawSongDataBlock(song)
