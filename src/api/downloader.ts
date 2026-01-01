@@ -184,6 +184,7 @@ const memoryCache = new Map<string, any>();
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存
  // if (url.includes('312')) throw new Error("模拟错误返回")
+ var invaildCacheData = false
  if(showDownloadLog) logger('getJsonAndSave','Start Get API: '+url+' isForceUseCache '+isForceUseCache + ' cacheTime:' + cacheTime)
   if (apiDebug)console.trace()
   var existFiles = false
@@ -220,15 +221,21 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
           //const cachedData = await callWorker<string>('readJsonText', cacheFilePath);
 
           const cachedJson = await loadJson(cacheFilePath);
+          if (cachedJson){
           memoryCache.set(cacheFilePath, cachedJson);
           if(showDownloadLog) logger('getJsonAndSave','API: '+url + ` is Using Cache. Reason: isUnExpired: ${isUnExpired} isForceUseCache ${isForceUseCache} isReadCache ${isReadCache}`)
           return cachedJson;
+          }
+          else {
+            invaildCacheData = true
+            logger('getJsonAndSave','Local cache API is invaild. Need to Force update.')
+          }
         }
       }
     }
     const eTagFilePath = path.join(directory, `${fileName}.etag`);
 
-    await fileExists(eTagFilePath) && existFiles? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
+    (await fileExists(eTagFilePath) && existFiles && !invaildCacheData) ? eTag = await fs.promises.readFile(eTagFilePath,'utf-8') : undefined;
 
     const headers = eTag ? { 'If-None-Match': eTag } : {};
     let response;
@@ -282,6 +289,7 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
 // IO使用池
 async function loadJson(path) {
   const str = await fs.promises.readFile(path,'utf-8')
+  if (str.length == 0) return null  // 如果长度是0则返回null，告知需要强制更新数据
   var body = JSON.parse(str)
   return body
 }

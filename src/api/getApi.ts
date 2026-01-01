@@ -23,13 +23,13 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
         if(rtLevel == 0){
           logger('callAPIAndCacheResponse','rtLevel is 0. Return Cache Data First then update data on background to Speed Up')
           apiData = await getJsonAndSave(url, cacheDir, fileName, 0,true);
-          getJsonAndSave(url, cacheDir, fileName, 300, false)
+          if (isFinite(cacheTime)) getJsonAndSave(url, cacheDir, fileName, 300, false)
             .catch(err => {
               logger(
                 'callAPIAndCacheResponse',
                 `Background cache update failed for ${url}: ${err?.stack || err}`
               );
-            });   // 设置5分钟的缓冲区，防止新文件在短时间内重新获取。
+            });   // 设置5分钟的缓冲区，防止新文件在短时间内重新获取。如果是读取缓存的则不再重新获取
           return apiData
         }
         if(rtLevel == 1){
