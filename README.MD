@@ -54,7 +54,7 @@ npx tsc && npx tsc-alias
 teamBuilder中的Lib，如果不依靠TSM解释器，需要自行移入dist目录中。
 
 > 对于预测线2，请安装Python 3.13+版本，然后进入MYCX_1000目录运行predictMain.bat脚本
-
+https://github.com/byydzh/MYCX_1000
 ## 📖 文章
 
 > 相关文章: https://www.bilibili.com/read/cv24464090 
