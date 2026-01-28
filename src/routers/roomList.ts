@@ -65,7 +65,7 @@ async function getRoomList(roomList: any) {
       let server = room.player.server;
       if (isServer(server)) {
         const tempPlayer = new Player(room.player.playerId, server);
-        await tempPlayer.initFull(true); // 假设 initFull 是异步函数
+        await tempPlayer.initFull(true,1); // 假设 initFull 是异步函数。这里通知BD优先返回缓存数据。
         if (!tempPlayer.initError && tempPlayer.isExist) {
           tempRoom.setPlayer(tempPlayer);
         }

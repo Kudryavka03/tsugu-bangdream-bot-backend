@@ -43,7 +43,6 @@ export async function drawRoomListTitle() {
 const maxWidthText = 580
 export async function drawRoonInList(room: Room) {
     const timeNow = new Date().getTime()
-
     //头像
     //const Icon = await getUserIcon()
     const Icon = await getUserIcon(room.avatarUrl)
@@ -80,9 +79,9 @@ export async function drawRoonInList(room: Room) {
     ctxUp.fillStyle = '#a8a8a8'
     ctxUp.fillRect(200, 0, 5, height)
     let list = [canvasUp]
-    if (room.player != undefined) {
+    if (room.player != undefined) { // 是否取得缓存是高度跟cacheTime挂钩的。如果出现Bestdori通知客户端使用缓存的话，cacheTime不会更新。因此要给Player增加强制使用本地缓存的选项
         const player = new Player(room.player.playerId, room.player.server)
-        await player.initFull(true)
+        await player.initFull(true,1,true)
         if (player.isExist && !player.initError) {
             list.push(line)
             list.push(await drawPlayerDetailInRoomList(player))
