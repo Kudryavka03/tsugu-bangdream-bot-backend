@@ -180,7 +180,7 @@ export class Player {
         this.playerId = playerId;
         this.server = server;
     }
-    async initFull(useCache: boolean = false, mode: 0 | 1 | 2 | 3 = 2,forceUseLocalCache:boolean = false,RtLevel:0|1 =0) {
+    async initFull(useCache: boolean = false, mode: 0 | 1 | 2 | 3 = 2,forceUseLocalCache:boolean = false,RtLevel:0|1 =1) {
         if (this.isInitfull) {
             return
         }
