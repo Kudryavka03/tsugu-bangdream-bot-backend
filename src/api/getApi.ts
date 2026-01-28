@@ -2,6 +2,7 @@ import { getJsonAndSave } from '@/api/downloader';
 import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
 import { logger } from '@/logger';
 import * as path from 'path';
+import * as fs from 'fs';
 
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   const cacheDir = getCacheDirectory(url);
@@ -54,5 +55,10 @@ async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retry
   }
   throw new Error(`Failed to get JSON from "${url}" after ${retryCount} attempts`);
 }
-
+export async function existLocalCache(url:string){
+    const cacheDir = getCacheDirectory(url);
+    const fileName = getFileNameFromUrl(url);
+    const cacheFilePath = path.join(cacheDir || '', `${fileName || ''}`);
+    return fs.existsSync(cacheFilePath)
+}
 export { callAPIAndCacheResponse };

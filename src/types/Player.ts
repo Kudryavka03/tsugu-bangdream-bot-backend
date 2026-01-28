@@ -1,4 +1,4 @@
-import { callAPIAndCacheResponse } from '@/api/getApi';
+import { callAPIAndCacheResponse, existLocalCache } from '@/api/getApi';
 import { Bestdoriurl } from '@/config';
 import { Server } from '@/types/Server'
 import { Card, addStat, Stat } from '@/types/Card'
@@ -180,14 +180,15 @@ export class Player {
         this.playerId = playerId;
         this.server = server;
     }
-    async initFull(useCache: boolean = false, mode: 0 | 1 | 2 | 3 = 2,forceUseLocalCache:boolean = false) {
+    async initFull(useCache: boolean = false, mode: 0 | 1 | 2 | 3 = 2,forceUseLocalCache:boolean = false,RtLevel:0|1 =0) {
         if (this.isInitfull) {
             return
         }
         //var cacheTime = useCache ? 1 / 0 : 0;
         var cacheTime = useCache ? 3600 : 0;    //如果使用缓存的化，缓存一小时
+        var dataSrc = `${Bestdoriurl}/api/player/${Server[this.server]}/${this.playerId}?mode=${mode}`
         try {
-            var playerData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/player/${Server[this.server]}/${this.playerId}?mode=${mode}`, cacheTime, 1,forceUseLocalCache);
+            var playerData = await callAPIAndCacheResponse(dataSrc, cacheTime, 1,forceUseLocalCache,RtLevel);
         }
         catch {
             this.isExist = false;
