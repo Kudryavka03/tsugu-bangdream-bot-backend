@@ -24,10 +24,11 @@ loadImageOnce()
 export async function drawPlayerDetail(playerId: number, mainServer: Server, useEasyBG: boolean, compress: boolean): Promise<Array<Buffer | string>> {
     let result = []
     var player = new Player(playerId, mainServer)
-    //不使用缓存查询
-    await player.initFull(false, 3)
+    //尽可能不使用缓存查询。若等待时间过长，则使用缓存查询
+    await player.initFull(false, 2)
     if (player.initError) {
-        result.push(`错误: 查询玩家时发生错误: ${playerId}, 正在使用可用缓存`)
+        //result.push(`错误: 查询玩家时发生错误: ${playerId}, 正在使用可用缓存`)
+        result.push(`错误: 查询玩家时发生错误, 正在使用可用缓存`)
         //使用缓存查询，如果失败则返回失败
         player = new Player(playerId, mainServer)
         await player.initFull(false, 0)
