@@ -30,7 +30,7 @@ export const BestdoriapiPath = { //Bestdori网站的列表api路径
 }
 export const bindingPlayerPromptWaitingTime: number = 5 * 60 * 10000
 var prod = false
-export const Bestdoriurl: string = prod?'http://47.106.197.1:12025':'https://bestdori.com'; //Bestdori网站的url，BD跟车站应该都是在香港的，部署在香港访问更快。原URL https://bestdori.com
+export const Bestdoriurl: string = prod?'https://bestdori.com:12025':'https://bestdori.com'; //Bestdori网站的url，BD跟车站应该都是在香港的，部署在香港访问更快。原URL https://bestdori.com
 export const BandoriStationurl: string = 'https://api.bandoristation.com/'; //BandoriStation网站的url
 
 export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
