@@ -568,11 +568,12 @@ export interface songInRank {
 export function getMetaRanking(Fever: boolean, mainServer: Server): songInRank[] {
     var songIdList = Object.keys(mainAPI['meta'])
     var songRankList: songInRank[] = []
+    //var currentDateTime = new Date().getTime()
     for (let i = 0; i < songIdList.length; i++) {
         const songId = songIdList[i];
         var song = new Song(parseInt(songId))
         //如果在所选服务器都没有发布，则跳过
-        if (song.publishedAt[mainServer] == null) {
+        if (song.publishedAt[mainServer] == null ||Object.keys(song.notes).length == 0 ) { //song.publishedAt[mainServer] < currentDateTime
             continue
         }
 

@@ -17,7 +17,7 @@ export async function drawDifficulityListInListWithNotes(song: Song, imageHeight
 
         const notesText = await drawText({
             textSize: imageHeight / 3.5,
-            text: song.notes[i].toString(),
+            text: Object.keys(song.notes).length == 0 ?"?": song.notes[i].toString(),
             maxWidth: imageHeight * 3.5
         });
 
@@ -139,7 +139,7 @@ export async function drawDifficulityListWithNotes(song: Song, imageHeight: numb
         ctx.drawImage(await drawDifficulity(i, song.difficulty[i].playLevel, imageHeight), i * (imageHeight + spacing) + imageHeight / 2, 0)
         let notesText = await drawText({
             textSize: imageHeight / 3 * 2,
-            text: song.notes[i].toString(),
+            text: Object.keys(song.notes).length == 0 ?"?": song.notes[i].toString(),
             maxWidth: imageHeight * 3
         })
         ctx.drawImage(notesText, i * (imageHeight + spacing) + imageHeight - notesText.width / 2, imageHeight * 7 / 6)
