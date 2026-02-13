@@ -358,18 +358,18 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
 
 
-    cpTraceList.push(drawListMerge([await drawList({ text: `预计协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
+    cpTraceList.push(drawListMerge([await drawList({ text: `估算协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
     cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `预计协力获得的CP`}), await drawList({ text: `${Math.round(cooperationToCpsTotal) + Math.round(unRecordCooperationPts / 20)}`})])) // 记录的CP+未记录的Pt转CP 
+    cpTraceList.push(drawListMerge([await drawList({ text: `估算协力获得的CP`}), await drawList({ text: `${Math.round(cooperationToCpsTotal) + Math.round(unRecordCooperationPts / 20)}`})])) // 记录的CP+未记录的Pt转CP 
     cpTraceList.push(line)
     //console.log(cooperationToCpsTotal,unRecordCooperationPts)
     cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(协力/CP)`}), await drawList({ text: `${cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)} / ${cpCounts==0?0:Math.round(cpPtTotal / cpCounts)}`})]))   // 真实数据
     cpTraceList.push(line)
     cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(currentCpsLast50 / cpCountsLast50)}`})]))    // 真实数据
     cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `预计清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
+    cpTraceList.push(drawListMerge([await drawList({ text: `估算清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
     cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `预计现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
+    cpTraceList.push(drawListMerge([await drawList({ text: `估算现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
     //console.log(currentCps,unRecordCurrentCpValues)
     cpTraceList.push(line)
     all.push(await drawDatablock({ list:cpTraceList, topLeftText: `CP估算 (Beta)`}))
