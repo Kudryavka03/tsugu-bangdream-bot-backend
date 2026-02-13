@@ -422,7 +422,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         list.pop()
         all.push(await drawDatablock({ list, topLeftText: `近期统计数据`}))
     }
-
+    all.push(await drawEventDatablock(new Event(eventId), [mainServer]))
     // list.push(new Canvas(800, 50))
 
     // //折线图
