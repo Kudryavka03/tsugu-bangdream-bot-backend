@@ -244,6 +244,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     // 根据游戏内观察得出，CP一般是协力分数/20
     let f100CpCounts = 0    // 前100次一共清CP次数
     let f100CooeprCounts = 0 //  前100次一共协力次数
+    let cpTraceRange = 100  // 取样范围
     for(var cpindex = cpCount -2 ;cpindex > 0;cpindex--){ 
         // 判断数据是否正常
         if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
@@ -260,20 +261,20 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 currentCps -=1600
                 cpCounts++
                 cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
+                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
                 //console.log('清CP1600：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }else if (onceAddPt >= cp800){
                 currentCps -=800
                 cpCounts++
                 cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
+                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
                // console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }
             else if (onceAddPt >= cp400 && (playerRating[cpindex -1].value > 910000)){ // 与烧fever作分辨
                 currentCps -=400
                 cpCounts++
                 cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
+                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
                 //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }
             else{   // cp200 与 3火一把Pt没办法分辨。
@@ -281,7 +282,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 cooperationCounts++
                 cooperationPtTotal += onceAddPt
                 cooperationToCpsTotal+= (onceAddPt / 20)
-                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CooeprCounts++
+                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CooeprCounts++
             }
         }
     }
@@ -397,6 +398,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     console.log('现有记录协力 / 清CP次数 ',cooperationCounts,' / ',cpCounts)
     console.log('3火协力/CP200 基准估算：',cooperationAvgPt)
     console.log('平均清CP获得的PT / 当前已有数据CP Value / 当前已有数据CP数量',avgClearCpPts,cpPtTotal,cpCounts)
+    console.log('f100CpCounts：',f100CpCounts,'f100CooeprCounts',f100CooeprCounts)
             }
         }
     //近期统计数据
