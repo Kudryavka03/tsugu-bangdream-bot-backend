@@ -292,35 +292,40 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let cpCountsLast50 = 0    // 清CP的数据量
     let currentCpsLast50 = 0; // 
     let cooperationToCpsTotalLast50 = 0;  // 获取到的总CP
-
+    let last50CalcCount = 0
     // 根据游戏内观察得出，CP一般是协力分数/20
-    for(var cpindex = 50;cpindex > 0;cpindex--){
+    for(var cpindex = 0;cpindex < cpCount - 1;cpindex++){
         // 判断数据是否正常
-        if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
+        if (playerRating[cpindex ].value == playerRating[cpindex+1].value || playerRating[cpindex ].value == -1 || playerRating[cpindex].value == -1){
             continue
         }
+        if (last50CalcCount >= 50) break;
         else{
 
-            let onceAddPt = (playerRating[cpindex -1].value - playerRating[cpindex].value)  // index越小的value越大
+            let onceAddPt = (playerRating[cpindex].value - playerRating[cpindex+1].value)  // index越小的value越大
             if (onceAddPt >= cp1600){
                 currentCpsLast50 -=1600
                 cpCountsLast50++
                 cpPtTotalLast50 += onceAddPt
+                last50CalcCount++
             }else if (onceAddPt >= cp800){
                 currentCpsLast50 -=800
                 cpCountsLast50++
                 cpPtTotalLast50 += onceAddPt
+                last50CalcCount++
             }
             else if (onceAddPt >= cp400){
                 currentCpsLast50 -=400
                 cpCountsLast50++
                 cpPtTotalLast50 += onceAddPt
+                last50CalcCount++
             }
             else{   // cp200 与 3火一把Pt没办法分辨。
                 currentCpsLast50 += (onceAddPt / 20)
                 cooperationCountsLast50++
                 cooperationPtTotalLast50 += onceAddPt
                 cooperationToCpsTotalLast50 += (onceAddPt / 20)
+                last50CalcCount++
             }
         }
     }
@@ -379,7 +384,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     //console.log(cooperationToCpsTotal,unRecordCooperationPts)
     cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(协力/CP)`}), await drawList({ text: `${cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)} / ${cpCounts==0?0:Math.round(cpPtTotal / cpCounts)}`})]))   // 真实数据
     cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(currentCpsLast50 / cpCountsLast50)}`})]))    // 真实数据
+    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(cpPtTotalLast50 / cpCountsLast50)}`})]))    // 真实数据
     cpTraceList.push(line)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
     cpTraceList.push(line)
@@ -392,7 +397,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     console.log('记录内协力次数：',cooperationCounts ,' 缺失数据的协力次数（估计）',unRecordCooperationCounts)
     console.log('记录内协力获得的CP',cooperationToCpsTotal ,' 缺失数据的协力获得CP点数（预估）',Math.round(unRecordCooperationPts / 20))
     console.log('把均Pt(协力/CP)',`${cooperationPtTotal / cooperationCounts}/${cpPtTotal / cpCounts}`)
-    console.log('把均Pt(近50把)',`${cooperationPtTotalLast50 / cooperationCountsLast50}/${currentCpsLast50 / cpCountsLast50}`)
+    console.log('把均Pt(近50把)',`${cooperationPtTotalLast50 / cooperationCountsLast50}/${cpPtTotalLast50 / cpCountsLast50}`)
     console.log('记录内清CP次数 ',cpCounts,' 缺失数据的清CP次数（预估）',unRecordClearCpCounts)
     console.log('记录内现有CP ',currentCps,'缺失数据的清CP次数（预估）',unRecordCurrentCpValues)
     console.log('现有记录协力 / 清CP次数 ',cooperationCounts,' / ',cpCounts)
