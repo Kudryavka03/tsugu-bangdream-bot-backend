@@ -193,8 +193,9 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
         all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
+        // CP Traces
     if (mainAPI["events"][eventId.toString()]["eventType"]=="challenge"){
-    // CP Traces
+
     
     // 根据t10的习惯，一般是先清火再计算CP。以3火一把的协力为基准，作为CP200的值（通常情况下）。
     // 取前8次的CP平均值
@@ -215,7 +216,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
         else{
             let tmp = playerRating[cpindex -1].value - playerRating[cpindex].value
-            if(tmp !=0){
+            if(tmp !=0 && tmp<15000){   // 防止意外计算
                 cpCountTmp++
                 cooperationAvgPtTotalTmp += tmp
             }
@@ -239,6 +240,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let cooperationToCpsTotal = 0;  // 获取到的总CP
     let negativeOne = true // 是否存在-1
     let negativeOneToVaildValue = 0 // 记录从无到有的第一个Pt数，方便估算
+    let totalCpToPts = 0   // 有效数据（记录内）清CP所获得的总Pt数
     // 根据游戏内观察得出，CP一般是协力分数/20
     for(var cpindex = cpCount -2 ;cpindex > 0;cpindex--){ 
         // 判断数据是否正常
@@ -327,17 +329,9 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     // 记录当前有数据的协力与清cp的比例
     let cooperationRatio = cooperationCounts / ( cpCounts +cooperationCounts)
     let cpRatio = cpCounts / ( cpCounts +cooperationCounts) 
-
-    let avgClearCpPts = cpCounts==0?0:Math.round(currentCps / cpCounts)  // 平均清CP所用的PT
-    let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
-    let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
-    let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
-    let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量
-    let unRecordClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCpPts / avgClearCpPts)// 预估未记录的已经清CP的次数
-    //console.log(unRecordCpPts,avgClearCpPts)
-    let unRecordUnClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCooperationPts / avgClearCpPts) - unRecordClearCpCounts// 预估未记录的未清CP次数
-
-    let cp_clear_value = 0
+    console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
+    let avgClearCpPts = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)  // 平均清CP所用的PT
+        let cp_clear_value = 0  // 确定清cp挡位
             if (avgClearCpPts >= cp1600){
                 cp_clear_value = 1600
             }else if (avgClearCpPts >= cp800){
@@ -351,6 +345,16 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             }
     // 根据avg推算清cp挡位
     // 预估现有CP = 协力获得的CP - CP次数*CP挡位
+    let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
+    let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
+    console.log('unRecordCooperationPts',unRecordCooperationPts,'unRecordCpPts',unRecordCpPts)
+    let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
+    let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量
+    let unRecordClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCpPts / avgClearCpPts)// 预估未记录的已经清CP的次数
+    //console.log(unRecordCpPts,avgClearCpPts)s
+    let unRecordUnClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCooperationPts / avgClearCpPts) - unRecordClearCpCounts// 预估未记录的未清CP次数
+
+
     let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
 
 
@@ -368,15 +372,19 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     cpTraceList.push(drawListMerge([await drawList({ text: `预计现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
     //console.log(currentCps,unRecordCurrentCpValues)
     cpTraceList.push(line)
-    all.push(await drawDatablock({ list:cpTraceList, topLeftText: `CP预测 (Beta)`}))
-            /*
-    console.log('预估协力次数：',cooperationCounts + unRecordCooperationCounts)
-    console.log('预估协力获得的CP',cooperationToCpsTotal + Math.round(unRecordCooperationCounts / 20))
+    all.push(await drawDatablock({ list:cpTraceList, topLeftText: `CP估算 (Beta)`}))
+    let cpTraceDebugFlags = false
+            if (cpTraceDebugFlags){
+    console.log('记录内协力次数：',cooperationCounts ,' 缺失数据的协力次数（估计）',unRecordCooperationCounts)
+    console.log('记录内协力获得的CP',cooperationToCpsTotal ,' 缺失数据的协力获得CP点数（预估）',Math.round(unRecordCooperationPts / 20))
     console.log('把均Pt(协力/CP)',`${cooperationPtTotal / cooperationCounts}/${cpPtTotal / cpCounts}`)
     console.log('把均Pt(近50把)',`${cooperationPtTotalLast50 / cooperationCountsLast50}/${currentCpsLast50 / cpCountsLast50}`)
-    console.log('预估清CP次数',cpCounts + unRecordClearCpCounts)
-    console.log('预估现有CP',currentCps + unRecordCurrentCpValues)
-            */
+    console.log('记录内清CP次数 ',cpCounts,' 缺失数据的清CP次数（预估）',unRecordClearCpCounts)
+    console.log('记录内现有CP ',currentCps,'缺失数据的清CP次数（预估）',unRecordCurrentCpValues)
+    console.log('现有记录协力 / 清CP次数 ',cooperationCounts,' / ',cpCounts)
+    console.log('3火协力/CP200 基准估算：',cooperationAvgPt)
+    console.log('平均清CP获得的PT / 当前已有数据CP Value / 当前已有数据CP数量',avgClearCpPts,cpPtTotal,cpCounts)
+            }
         }
     //近期统计数据
     const timeList = [1, 3, 12, 24]
