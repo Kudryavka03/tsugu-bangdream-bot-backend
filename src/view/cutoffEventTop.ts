@@ -18,7 +18,7 @@ import { logger } from '@/logger';
 import { drawText } from '@/image/text';
 import { drawTips } from '@/components/tips';
 import { changeTimePeriodFormat, changeTimefomant, formatSeconds } from '@/components/list/time';
-import { TopRateSpeed } from '@/types/_Main';
+import mainAPI, { TopRateSpeed } from '@/types/_Main';
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
@@ -193,6 +193,191 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
         all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
+    if (mainAPI["events"][eventId.toString()]["eventType"]=="challenge"){
+    // CP Traces
+    
+    // 根据t10的习惯，一般是先清火再计算CP。以3火一把的协力为基准，作为CP200的值（通常情况下）。
+    // 取前8次的CP平均值
+    const cpTraceList = []
+    let cpCount = playerRating.length   // 这里是player分数表总数
+    let cpCountTmp = 0  // 用来确定循环次数
+    let cooperationAvgPt = 0    // 定义协力平均Pt
+    let cooperationAvgPtTotalTmp = 0    // 确定协力总Pt的一个临时变量
+    //console.log(playerRating)
+    let errCount = 0
+    for(var cpindex = cpCount -2 - 50;cpindex > 0;cpindex--){// 避免fever，从第52次开始算
+        if (cpCountTmp >50) break    //如果大于50次就可以跳出了
+        // 判断数据是否正常
+        
+        if (playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
+            errCount ++
+            continue
+        }
+        else{
+            let tmp = playerRating[cpindex -1].value - playerRating[cpindex].value
+            if(tmp !=0){
+                cpCountTmp++
+                cooperationAvgPtTotalTmp += tmp
+            }
+        }
+    }
+
+    if (!(cpCountTmp == 0 || cooperationAvgPtTotalTmp ==0)){
+        cooperationAvgPt = cooperationAvgPtTotalTmp / cpCountTmp
+    }
+    //console.log('该用户协力把均Pt基准：',cooperationAvgPt,' errCount',errCount)
+    // 定义各个CP的Pt增加基准
+    let cp200 = cooperationAvgPt    // cp200是没有办法与pt做区分的。但前排一般都是1600清cp。200清cp效率太低不太可能
+    let cp400 = cooperationAvgPt * 1.7
+    let cp800 = cooperationAvgPt * 3.7
+    let cp1600 = cooperationAvgPt * 7.7
+    let cooperationPtTotal = 0  // 判定为协力的总Pt
+    let cooperationCounts = 0   // 协力的数据量
+    let cpPtTotal = 0   // 判定为清CP的总Pt
+    let cpCounts = 0    // 清CP的数据量
+    let currentCps = 0; // CP数量（推断）
+    let cooperationToCpsTotal = 0;  // 获取到的总CP
+    let negativeOne = true // 是否存在-1
+    let negativeOneToVaildValue = 0 // 记录从无到有的第一个Pt数，方便估算
+    // 根据游戏内观察得出，CP一般是协力分数/20
+    for(var cpindex = cpCount -2 ;cpindex > 0;cpindex--){ 
+        // 判断数据是否正常
+        if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
+            //if (negativeOne)negativeOne = true
+            continue
+        }
+        else{
+            if (negativeOne){   // 这里已经不是-1了
+                negativeOneToVaildValue = playerRating[cpindex].value
+                negativeOne = false
+            }
+            let onceAddPt = (playerRating[cpindex -1].value - playerRating[cpindex].value)  // index越小的value越大
+            if (onceAddPt >= cp1600){
+                currentCps -=1600
+                cpCounts++
+                cpPtTotal += onceAddPt
+                //console.log('清CP1600：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+            }else if (onceAddPt >= cp800){
+                currentCps -=800
+                cpCounts++
+                cpPtTotal += onceAddPt
+               // console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+            }
+            else if (onceAddPt >= cp400 && (playerRating[cpindex -1].value > 910000)){ // 与烧fever作分辨
+                currentCps -=400
+                cpCounts++
+                cpPtTotal += onceAddPt
+                //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+            }
+            else{   // cp200 与 3火一把Pt没办法分辨。
+                currentCps += (onceAddPt / 20)
+                cooperationCounts++
+                cooperationPtTotal += onceAddPt
+                cooperationToCpsTotal+= (onceAddPt / 20)
+            }
+        }
+    }
+    let cooperationPtTotalLast50 = 0  // 判定为协力的总Pt
+    let cooperationCountsLast50 = 0   // 协力的数据量
+    let cpPtTotalLast50 = 0   // 判定为清CP的总Pt
+    let cpCountsLast50 = 0    // 清CP的数据量
+    let currentCpsLast50 = 0; // 
+    let cooperationToCpsTotalLast50 = 0;  // 获取到的总CP
+
+    // 根据游戏内观察得出，CP一般是协力分数/20
+    for(var cpindex = 50;cpindex > 0;cpindex--){
+        // 判断数据是否正常
+        if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
+            continue
+        }
+        else{
+
+            let onceAddPt = (playerRating[cpindex -1].value - playerRating[cpindex].value)  // index越小的value越大
+            if (onceAddPt >= cp1600){
+                currentCpsLast50 -=1600
+                cpCountsLast50++
+                cpPtTotalLast50 += onceAddPt
+            }else if (onceAddPt >= cp800){
+                currentCpsLast50 -=800
+                cpCountsLast50++
+                cpPtTotalLast50 += onceAddPt
+            }
+            else if (onceAddPt >= cp400){
+                currentCpsLast50 -=400
+                cpCountsLast50++
+                cpPtTotalLast50 += onceAddPt
+            }
+            else{   // cp200 与 3火一把Pt没办法分辨。
+                currentCpsLast50 += (onceAddPt / 20)
+                cooperationCountsLast50++
+                cooperationPtTotalLast50 += onceAddPt
+                cooperationToCpsTotalLast50 += (onceAddPt / 20)
+            }
+        }
+    }
+    // 处理-1到有数据这段时间的数据
+    let fullFeverPts = cooperationAvgPt * 2 * 12    // 固定12次
+    let maxPts = playerRating[0].value  // 当前最高分数
+    let ptsTotalUnRecord = maxPts - cooperationPtTotal - cpPtTotal // 未被BD记录在内的总Pt
+    //console.log(maxPts,cooperationPtTotal,cpPtTotal)
+    // 1. 前排通常不会这么快清CP
+    // 2. 通常BD后期稳定CP记录的时候，t10排名基本稳定了
+    // 这里暂时使用已有数据协力次数与清CP次数之比来处理未被BD记录在内的数据。
+
+    // 记录当前有数据的协力与清cp的比例
+    let cooperationRatio = cooperationCounts / ( cpCounts +cooperationCounts)
+    let cpRatio = cpCounts / ( cpCounts +cooperationCounts) 
+
+    let avgClearCpPts = cpCounts==0?0:Math.round(currentCps / cpCounts)  // 平均清CP所用的PT
+    let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
+    let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
+    let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
+    let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量
+    let unRecordClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCpPts / avgClearCpPts)// 预估未记录的已经清CP的次数
+    //console.log(unRecordCpPts,avgClearCpPts)
+    let unRecordUnClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCooperationPts / avgClearCpPts) - unRecordClearCpCounts// 预估未记录的未清CP次数
+
+    let cp_clear_value = 0
+            if (avgClearCpPts >= cp1600){
+                cp_clear_value = 1600
+            }else if (avgClearCpPts >= cp800){
+                cp_clear_value = 800
+            }
+            else if (avgClearCpPts >= cp400){
+                cp_clear_value = 400
+            }
+            else{
+                cp_clear_value = 200
+            }
+    // 根据avg推算清cp挡位
+    // 预估现有CP = 协力获得的CP - CP次数*CP挡位
+    let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
+
+
+    cpTraceList.push(drawListMerge([await drawList({ text: `预计协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
+    cpTraceList.push(line)
+    cpTraceList.push(drawListMerge([await drawList({ text: `预计协力获得的CP`}), await drawList({ text: `${Math.round(cooperationToCpsTotal) + Math.round(unRecordCooperationPts / 20)}`})])) // 记录的CP+未记录的Pt转CP 
+    cpTraceList.push(line)
+    //console.log(cooperationToCpsTotal,unRecordCooperationPts)
+    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(协力/CP)`}), await drawList({ text: `${cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)} / ${cpCounts==0?0:Math.round(cpPtTotal / cpCounts)}`})]))   // 真实数据
+    cpTraceList.push(line)
+    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(currentCpsLast50 / cpCountsLast50)}`})]))    // 真实数据
+    cpTraceList.push(line)
+    cpTraceList.push(drawListMerge([await drawList({ text: `预计清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
+    cpTraceList.push(line)
+    cpTraceList.push(drawListMerge([await drawList({ text: `预计现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
+    //console.log(currentCps,unRecordCurrentCpValues)
+    cpTraceList.push(line)
+    all.push(await drawDatablock({ list:cpTraceList, topLeftText: `CP预测 (Beta)`}))
+            /*
+    console.log('预估协力次数：',cooperationCounts + unRecordCooperationCounts)
+    console.log('预估协力获得的CP',cooperationToCpsTotal + Math.round(unRecordCooperationCounts / 20))
+    console.log('把均Pt(协力/CP)',`${cooperationPtTotal / cooperationCounts}/${cpPtTotal / cpCounts}`)
+    console.log('把均Pt(近50把)',`${cooperationPtTotalLast50 / cooperationCountsLast50}/${currentCpsLast50 / cpCountsLast50}`)
+    console.log('预估清CP次数',cpCounts + unRecordClearCpCounts)
+    console.log('预估现有CP',currentCps + unRecordCurrentCpValues)
+            */
+        }
     //近期统计数据
     const timeList = [1, 3, 12, 24]
     {
@@ -237,7 +422,6 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         list.pop()
         all.push(await drawDatablock({ list, topLeftText: `近期统计数据`}))
     }
-
 
     // list.push(new Canvas(800, 50))
 
