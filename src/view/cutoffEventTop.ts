@@ -239,9 +239,11 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let currentCps = 0; // CP数量（推断）
     let cooperationToCpsTotal = 0;  // 获取到的总CP
     let negativeOne = true // 是否存在-1
-    let negativeOneToVaildValue = 0 // 记录从无到有的第一个Pt数，方便估算
+    let negativeOneToVaildValue = 0 // 最后一个-1.
     let totalCpToPts = 0   // 有效数据（记录内）清CP所获得的总Pt数
     // 根据游戏内观察得出，CP一般是协力分数/20
+    let f100CpCounts = 0    // 前100次一共清CP次数
+    let f100CooeprCounts = 0 //  前100次一共协力次数
     for(var cpindex = cpCount -2 ;cpindex > 0;cpindex--){ 
         // 判断数据是否正常
         if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
@@ -250,7 +252,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
         else{
             if (negativeOne){   // 这里已经不是-1了
-                negativeOneToVaildValue = playerRating[cpindex].value
+                negativeOneToVaildValue = playerRating[cpindex].value +1
                 negativeOne = false
             }
             let onceAddPt = (playerRating[cpindex -1].value - playerRating[cpindex].value)  // index越小的value越大
@@ -258,17 +260,20 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 currentCps -=1600
                 cpCounts++
                 cpPtTotal += onceAddPt
+                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
                 //console.log('清CP1600：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }else if (onceAddPt >= cp800){
                 currentCps -=800
                 cpCounts++
                 cpPtTotal += onceAddPt
+                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
                // console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }
             else if (onceAddPt >= cp400 && (playerRating[cpindex -1].value > 910000)){ // 与烧fever作分辨
                 currentCps -=400
                 cpCounts++
                 cpPtTotal += onceAddPt
+                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CpCounts++
                 //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value)
             }
             else{   // cp200 与 3火一把Pt没办法分辨。
@@ -276,6 +281,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 cooperationCounts++
                 cooperationPtTotal += onceAddPt
                 cooperationToCpsTotal+= (onceAddPt / 20)
+                if ((f100CooeprCounts + f100CooeprCounts) < 100) f100CooeprCounts++
             }
         }
     }
@@ -327,8 +333,15 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     // 这里暂时使用已有数据协力次数与清CP次数之比来处理未被BD记录在内的数据。
 
     // 记录当前有数据的协力与清cp的比例
-    let cooperationRatio = cooperationCounts / ( cpCounts +cooperationCounts)
-    let cpRatio = cpCounts / ( cpCounts +cooperationCounts) 
+    /*
+     这里最开始的想法是记录所有的清CP/协力的比例，但是考虑到有些人一开始有一段时间没有在清CP
+     又有一些人是是后期清CP冲上来的，因此还是考虑
+     1. 取最后一次-1往后300条数据进行计算，计算ratio
+     2. 
+    */
+    let cooperationRatio = f100CooeprCounts / ( f100CpCounts +f100CooeprCounts)
+    let cpRatio = f100CpCounts / ( f100CpCounts +f100CooeprCounts)
+
     console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
     let avgClearCpPts = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)  // 平均清CP所用的PT
         let cp_clear_value = 0  // 确定清cp挡位
