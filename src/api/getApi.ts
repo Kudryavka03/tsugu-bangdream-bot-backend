@@ -4,7 +4,51 @@ import { logger } from '@/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 
+
+class ConcurrencyLimiter {
+  private maxConcurrent: number;
+  private activeCount = 0;
+  private queue: Array<() => void> = [];
+
+  constructor(maxConcurrent: number) {
+    this.maxConcurrent = maxConcurrent;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    // 如果当前并发数已达到上限，则等待队列中的任务释放
+    if (this.activeCount >= this.maxConcurrent) {
+      await new Promise<void>((resolve) => {
+        this.queue.push(resolve);
+      });
+    }
+
+    // 增加活跃计数，执行任务
+    this.activeCount++;
+    try {
+      return await fn();
+    } finally {
+      // 任务完成，减少活跃计数，并检查队列中是否有等待的任务
+      this.activeCount--;
+      if (this.queue.length > 0) {
+        const next = this.queue.shift();
+        await sleep(1000); // 暂停1000ms
+        next?.(); // 释放下一个等待的任务
+      }
+    }
+  }
+}
+
+const limiter = new ConcurrencyLimiter(8); // 限制8个并发请求
+
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
+  // 仅对Tracker等需要实时更新的API作限制
+  if (url.includes('api/tracker/data') || url.includes('mode=')) return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
+  // 全局资源豁免
+  // if (url.includes('/all.') || url.includes('/main.')|| url.includes('/misc.') || url.includes('/rates.json')) callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel)
+  return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
+};
+
+async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   const cacheDir = getCacheDirectory(url);
   const fileName = getFileNameFromUrl(url);
   // rtLevel：规定API的实时性。不同的等级将会被赋予不同的实时性。
@@ -61,4 +105,8 @@ export async function existLocalCache(url:string){
     const cacheFilePath = path.join(cacheDir || '', `${fileName || ''}`);
     return fs.existsSync(cacheFilePath)
 }
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 export { callAPIAndCacheResponse };
+
