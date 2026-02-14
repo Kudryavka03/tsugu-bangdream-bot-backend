@@ -29,7 +29,7 @@ if (!isMainThread && parentPort) {
 
 
 
-var workerApiData
+
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -60,9 +60,7 @@ export async function initForWorker() {
     await loadImageOnce()
     await preCacheIcon()
 }
-export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
-    if (apiData) setMainAPI(apiData)
-    workerApiData = apiData
+export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,message?:string): Promise<Array<Buffer | string>> {
     const limit = pLimit(10000);    // 限制3首歌同时绘制 // 进worker了，不关主线程事了，随便造了
     
     var heavyLoad = false
@@ -139,6 +137,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     })
     //return {{buffer},transferList: [buffer.buffer]}
     //console.log(Date.now())
+    if(message) return [message,buffer]
     return [buffer] // 目前暂时没法0拷贝，还在想办法ing
 }
 
@@ -170,7 +169,7 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
         return tempSongList
 
     for (let i = 0; i < songIdList.length; i++) {
-        const tempSong = new Song(songIdList[i],workerApiData);
+        const tempSong = new Song(songIdList[i]);
         var isMatch = match(matches, tempSong, ['songId']);
         //如果在所有所选服务器列表中都不存在，则不输出
         var numberOfNotReleasedServer = 0;

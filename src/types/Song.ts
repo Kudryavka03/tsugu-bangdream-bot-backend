@@ -139,7 +139,7 @@ export class Song {
         }
 
         //meta数据
-        const metaData = (mainAPI['songs'] == undefined)?apiData['meta'][songId.toString()]:mainAPI['meta'][songId.toString()]
+        const metaData = mainAPI['meta'][songId.toString()]
         if (metaData == undefined) {
             return
         }

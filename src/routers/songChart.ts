@@ -8,6 +8,7 @@ import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { drawSongList, matchSongList } from '@/view/songList';
+import { piscina } from '@/WorkerPool';
 
 const router = express.Router();
 
@@ -61,11 +62,26 @@ export async function commandSongChart(displayedServerList: Server[], songId: an
         }
         else if (tempSongList.length > 1) {
 
-            
-            return ['歌曲存在多个结果。建议改用歌曲ID进行搜索']
+            var result = await drawSongList(fuzzySearchResult,displayedServerList,compress,'搜索存在多个结果，建议改用歌曲ID进行谱面搜索：')
+                if (result == null){
+                    result = (await piscina.drawList.run({
+                        matches: fuzzySearchResult,
+                        displayedServerList,
+                        compress,
+                        message:'搜索存在多个结果，建议改用歌曲ID进行谱面搜索：'
+                    })).map(toBuffer)
+                }
+                // ➜ 直接调用 worker
+                return result;
         }
 
     }
+}
+function toBuffer(x: any): Buffer | string {
+    if (x instanceof Uint8Array && !(x instanceof Buffer)) {
+        return Buffer.from(x);
+    }
+    return x; // string 或已是 Buffer
 }
 
 export { router as songChartRouter }
