@@ -13,21 +13,25 @@
 
 ## 🚪 注意
 
-本项目合并了部分来自 https://github.com/yyf-0404/tsugu-bangdream-bot 的优化或特性。
+> 本项目合并了部分来自 https://github.com/yyf-0404/tsugu-bangdream-bot (Saaya) 的优化或特性。
 
-本分支为合并了组队组曲特性的分支，可能存在各种问题，请悉知。当功能稳定后，将会并回Main分支。
+> 本项目参考了部分来自 https://github.com/StarFreedomX/tsugu-bangdream-bot/tree/starfx-main (闪耀香澄汁) 的功能
 
-## 🚪 MAY DO
+> 本项目预测线2的实现直接来源于 https://github.com/byydzh/MYCX_1000 (邦多利国服千线预测姬)
 
-1. 你告诉我
+> 本项目做了非常多关于可能可以缩短网络IO等待上的优化，旨在为了更快的出图速度。在部分情况下可能会因为Bestdori API接口限流导致无法出图（将在未来解决），同时因为较为激进的缓存策略，对硬盘空间有一定需求，且可能会导致部分数据需要在第二次查询才会同步最新。
+
+
+## 🚪 TO DO
+
+API接口查询限流，防止因为过多的API查询请求导致Bestdori限流
+
+继续优化未来活动时间预测
 
 ## 🚪 IN PROGRESS
 
 暂时应该没什么要搞了
 
-## 🚪 WON'T DO
-
-~~1. 组队组曲，因为我不知道怎么用~~
 
 ## 🏠 后端部署
 
@@ -46,7 +50,7 @@ npm install -g pm2
 npm install 
 # 此时安装时间可能较长，并且需要可以完善编译 canvas 的环境
 # 编译并启动后端
-# 对于Windows环境，请使用NodeJS 16 + Python3.10 执行npm install后再升级到NodeJS 18+
+# 对于Windows环境，请使用NodeJS 16 + Python 3.10 执行npm install后再升级到NodeJS 18+ + Python 3.13
 npx tsc && npx tsc-alias
 ```
 根目录下建议先执行complier.bat再执行run_windows_complied.bat
@@ -54,19 +58,17 @@ npx tsc && npx tsc-alias
 teamBuilder中的Lib，如果不依靠TSM解释器，需要自行移入dist目录中。
 
 > 对于预测线2，请安装Python 3.13+版本，然后进入MYCX_1000目录运行predictMain.bat脚本
-https://github.com/byydzh/MYCX_1000
 ## 📖 文章
 
 > 相关文章: https://www.bilibili.com/read/cv24464090 
 
 
-## 📖 性能监测
+## 📖 性能监测 / Debug
 
 ```bash
 npm run cpu
 ```
 
-查活动 >1 零缓存下40s出图（异步优化后）
 
 
 
