@@ -202,6 +202,7 @@ function sleep(ms) {
   }
 async function drawEventInList(event: Event, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     //await event.initFull(false) //优化调度
+
     var textSize = 25 * 3 / 4;
     var content = []
     var Tips = []
@@ -222,6 +223,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
             Tips.push(`${changeTimefomant(event.startAt[server])} - ${changeTimefomant(event.endAt[server])}\n`)
         }
     }
+    console.log(`${changeTimefomant(GetProbablyTimeDifference(299, currentEvent))}`)
     //活动加成
     //属性
     var attributeListPromise:Promise<Image>[] = []

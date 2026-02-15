@@ -3,6 +3,7 @@ import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
 import { logger } from '@/logger';
 import * as path from 'path';
 import * as fs from 'fs';
+import { json } from 'stream/consumers';
 
 
 class ConcurrencyLimiter {
@@ -39,16 +40,21 @@ class ConcurrencyLimiter {
 }
 
 const limiter = new ConcurrencyLimiter(8); // 限制8个并发请求
-
+const debugFlags = false
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   // 仅对Tracker等需要实时更新的API作限制
   if (url.includes('api/tracker/data') || url.includes('mode=')) return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
-  // 全局资源豁免
-  // if (url.includes('/all.') || url.includes('/main.')|| url.includes('/misc.') || url.includes('/rates.json')) callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel)
-  return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
+  if (debugFlags && url.includes('/api/events/all.6.json')){
+    console.log('Debug Flags is set to TRUE and read part json from local')
+    var path = "all.6.json"
+    var jsonstr = fs.readFileSync(path,'utf-8')
+    return JSON.parse(jsonstr)
+  }
+  return callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel);
 };
 
 async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
+  
   const cacheDir = getCacheDirectory(url);
   const fileName = getFileNameFromUrl(url);
   // rtLevel：规定API的实时性。不同的等级将会被赋予不同的实时性。

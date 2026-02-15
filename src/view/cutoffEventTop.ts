@@ -231,7 +231,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let cp200 = cooperationAvgPt    // cp200是没有办法与pt做区分的。但前排一般都是1600清cp。200清cp效率太低不太可能
     let cp400 = cooperationAvgPt * 1.7
     let cp800 = cooperationAvgPt * 3.7
-    let cp1600 = cooperationAvgPt * 7.7
+    let cp1600 = cooperationAvgPt * 7.4
     let cooperationPtTotal = 0  // 判定为协力的总Pt
     let cooperationCounts = 0   // 协力的数据量
     let cpPtTotal = 0   // 判定为清CP的总Pt
@@ -276,6 +276,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 cpPtTotal += onceAddPt
                 if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
                 //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+                // 不统计CP400，与BD记录间隙相鉴别
             }
             else{   // cp200 与 3火一把Pt没办法分辨。
                 currentCps += (onceAddPt / 20)
@@ -344,13 +345,8 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
      又有一些人是是后期清CP冲上来的，因此还是考虑
      1. 取最后一次-1往后300条数据进行计算，计算ratio
      2. 
-    */
-    let cooperationRatio = f100CooeprCounts / ( f100CpCounts +f100CooeprCounts)
-    let cpRatio = f100CpCounts / ( f100CpCounts +f100CooeprCounts)
-
-    console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
-    let avgClearCpPts = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)  // 平均清CP所用的PT
-        let cp_clear_value = 0  // 确定清cp挡位
+    */    let avgClearCpPts = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)  // 平均清CP所用的PT
+           let cp_clear_value = 0  // 确定清cp挡位
             if (avgClearCpPts >= cp1600){
                 cp_clear_value = 1600
             }else if (avgClearCpPts >= cp800){
@@ -362,10 +358,35 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             else{
                 cp_clear_value = 200
             }
+    let cooperationRatio = f100CooeprCounts / ( f100CpCounts +f100CooeprCounts)
+    let cpRatio = f100CpCounts / ( f100CpCounts +f100CooeprCounts)
+    // 这里如果cooperationRatio < 0.7,则明显是不对的
+    if (cooperationRatio < 0.7){
+        // 我们就预估他CP收支是平很的
+        let cor = cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)
+        let cpr = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)
+        /*
+            则我们可以得到以下方程
+           var cpcor = cpr / cor
+           ptsTotalUnRecord = cor x + cpr y
+
+
+        */
+       let t1 = (cor / 20) / cp_clear_value 
+       let x = ptsTotalUnRecord / ((cpr*t1) + cor)   // 协力次数，x
+       let y = ((cor / 20) * x) / cp_clear_value // 清CP次数，y
+       console.log(x,y,cor,cpr)
+    cpRatio = y/(x+y)
+    cooperationRatio = x/(x+y)
+    }
+    console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
+
+
     // 根据avg推算清cp挡位
     // 预估现有CP = 协力获得的CP - CP次数*CP挡位
     let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
     let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
+   
     console.log('unRecordCooperationPts',unRecordCooperationPts,'unRecordCpPts',unRecordCpPts)
     let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
     let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量

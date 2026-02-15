@@ -73,7 +73,83 @@ export function GetProbablyTimeDifference(eventId: number, currentEvent: Event):
         - occupiedDays(currentEvent.startAt[Server.jp], currentEvent.endAt[Server.jp])
     )*24*3600*1000;
 
-    const timeStamp = tempEvent.startAt[Server.jp] + (currentEvent.startAt[Server.cn] - currentEvent.startAt[Server.jp]) + finishOffset + eventLengthOffset;
+    let sureEndEvent = 298  // 确定已经结束的Event，减少循环量
+    let unHoldEventOffset = 0   // 计算相对于当前国服最新活动来说，未举办活动的offset
+    let presentEvent = getPresentEvent(Server.cn).eventId   // 取得国服最新一期的活动
+
+    // 假如最新一期是314
+
+    // 假如国服314跟311调换顺序
+    // 但由于312跟313已经举办过了，不应该计算进入offset
+    // 首先列举出没有举办的活动的总日期
+    console.log(eventId,presentEvent)
+    if (eventId >= presentEvent){   // 如果预测的时间>= 国服最新一期的时间。如国服举办300，预测301
+        for (var i = presentEvent;i> sureEndEvent;i--){
+            var theEvent = new Event(i)
+            if (!theEvent.endAt[Server.cn]){   // 如果theEvent没有举办，循环下去。下面已经处理完毕的了
+                continue
+            }
+            // 往回寻找未举办的Event，将他们的offset加起来。
+            // offset设置为日服当前的startAt+日服对应上一个活动的startAt，包含无邦日
+            for (var j = i -1;j> sureEndEvent;j--){
+                let curEvent = new Event(j)
+                //let curPrvEvent = new Event(j-1)
+                if (!curEvent.startAt[Server.cn]){   // 如果curEvent没有举办过
+                    unHoldEventOffset += (occupiedDays(curEvent.startAt[Server.jp],theEvent.startAt[Server.jp])-1)*24*3600*1000  // 计算offset并加进去
+                    console.log(curEvent.startAt[Server.jp],theEvent.startAt[Server.jp],occupiedDays(curEvent.startAt[Server.jp],theEvent.startAt[Server.jp]))
+                    break   // 跳出当前循环
+                }
+                // 如果没有有效的数据，继续循环
+            }
+        }
+    // 正常情况下，假如315跟311调换，310及之前已经举办了，那么举办314的时候就能发现311没有举办，然后会计算311占用时长，然后加进去
+    }
+    else {   // 如果预测的时间< 国服最新一期的时间。
+        // 假如顺序298，301，299，300，303，302预测300（假如此时最新一期301）
+        // 此时要预测300的时间
+        // 可能 先检查对于自己而言小于自己的
+        let curTime = Date.now()
+        let presentEventJP = getPresentEvent(Server.jp).eventId   // 取得日服最新一期的活动
+        // 找出非连续的Event
+        let disContinuousEventId = 0
+        for(var i = sureEndEvent;i<presentEventJP;i++){
+            if (!new Event(i).startAt[Server.cn]){
+                disContinuousEventId = i
+                break
+            }
+        }   // 确定好非连续的EventID(299)后，此时如果要计算300的预测时间，从299开始，找到当前国服举办的未按顺序的最新活动
+        let noBanGDaysOffsetPrv = 0
+        if(presentEventJP != presentEvent){ // 如果日服最新的活动与国服不一样如312、313是一样的，那么presentEvent+1会报错
+            noBanGDaysOffsetPrv =  (occupiedDays(new Event(presentEvent).endAt[Server.jp],new Event(presentEvent+1).startAt[Server.jp] )-1)*24*3600*1000   // 计算当前正在进行活动的相对于日服的无邦日 
+        }
+        else{   // 如果相同，则计算待预测活动相对于日服的无邦日
+            noBanGDaysOffsetPrv = (occupiedDays( new Event(eventId-1).endAt[Server.jp],new Event(eventId).startAt[Server.jp])*24*3600*1000-1)   // 计算当前正在进行活动的相对于日服的无邦日 
+        }
+        // 假如顺序298，301，299，300，303，302预测300（假如此时最新一期301）
+        // 循环就是298-301，查看299，300的情况
+        // 298，301，300，299，302，303 当前300预测299 就是
+        // 298-300 预测299  应该也能预测成功
+        // 检查小于自己的活动是否有未举办的情形，加上
+        for (var i = eventId-1;i> sureEndEvent;i--){
+            let eventNow = new Event(i)
+            if (!eventNow.startAt[Server.cn]){  // 如果当前待检测的活动未举办，吧当前的活动offset加上
+                let eventPrev = new Event(i-1)
+                unHoldEventOffset += ((occupiedDays(eventPrev.startAt[Server.jp] , eventNow.startAt[Server.jp])-1)*24*3600*1000)
+            }
+        }
+        for(var i = eventId +1; i<= presentEvent; i++){   // 从现在计算+1活动，计算相对于正在进行活动的offset
+            let eventNow = new Event(i)
+            if (eventNow.startAt[Server.cn]){  // 如果当前待检测的活动已举办，吧当前的活动offset加上
+                let eventNext = new Event(i+1)  // Next可能会存在下标问题
+                unHoldEventOffset += ((occupiedDays(eventNow.startAt[Server.jp] , eventNext.startAt[Server.jp])-1)*24*3600*1000)
+            }
+        }
+        unHoldEventOffset += ((occupiedDays(new Event(disContinuousEventId - 1).startAt[Server.jp] , new Event(disContinuousEventId).startAt[Server.jp])-1)*24*3600*1000)
+        // 最后加上断联前的活动时长
+        unHoldEventOffset += noBanGDaysOffsetPrv    // 吧之前的无邦日offset计算加上
+    }
+    console.log('unHoldEventOffset',unHoldEventOffset)
+    const timeStamp = tempEvent.startAt[Server.jp] + (currentEvent.startAt[Server.cn] - currentEvent.startAt[Server.jp]) + finishOffset + eventLengthOffset + unHoldEventOffset;
     return timeStamp;
 }
 function occupiedDays(startTs: number, endTs: number): number {
