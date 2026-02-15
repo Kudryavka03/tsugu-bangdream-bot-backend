@@ -137,13 +137,16 @@ export function GetProbablyTimeDifference(eventId: number, currentEvent: Event):
                 unHoldEventOffset += ((occupiedDays(eventPrev.startAt[Server.jp] , eventNow.startAt[Server.jp])-1)*24*3600*1000)
             }
         }
+        /*
         for(var i = eventId +1; i<= presentEvent; i++){   // 从现在计算+1活动，计算相对于正在进行活动的offset
-            let eventNow = new Event(i)
-            if (eventNow.startAt[Server.cn]){  // 如果当前待检测的活动已举办，吧当前的活动offset加上
-                let eventNext = new Event(i+1)  // Next可能会存在下标问题
-                unHoldEventOffset += ((occupiedDays(eventNow.startAt[Server.jp] , eventNext.startAt[Server.jp])-1)*24*3600*1000)
-            }
+
         }
+        */
+            let eventTemp = new Event(presentEvent)
+            if (eventTemp.startAt[Server.cn]){  // 如果当前待检测的活动已举办，吧当前的活动offset加上
+                let eventTempNext = new Event(i+1)  // Next可能会存在下标问题
+                unHoldEventOffset += ((occupiedDays(eventTemp.startAt[Server.jp] , eventTempNext.startAt[Server.jp])-1)*24*3600*1000)
+            }
         unHoldEventOffset += ((occupiedDays(new Event(disContinuousEventId - 1).startAt[Server.jp] , new Event(disContinuousEventId).startAt[Server.jp])-1)*24*3600*1000)
         // 最后加上断联前的活动时长
         unHoldEventOffset += noBanGDaysOffsetPrv    // 吧之前的无邦日offset计算加上
