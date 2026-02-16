@@ -44,13 +44,15 @@ export function GetProbablyTimeDifference(eventId: number, currentEvent: Event):
     let presentEventJP = getPresentEvent(Server.jp).eventId   // 取得日服最新一期的活动
     let currentEventWithNoBanGDaysTotalOffset = 0
     let currentEventId = currentEvent.eventId
+    let eventLenOffset = occupiedDays(new Event(currentEventId).startAt[Server.cn],new Event(currentEventId).endAt[Server.cn])-
+    occupiedDays(new Event(currentEventId).startAt[Server.jp],new Event(currentEventId).endAt[Server.jp])
     // 计算当前正在进行的活动含无邦日当天一共有多少天
     if (currentEventId < presentEventJP){
-        currentEventWithNoBanGDaysTotalOffset = (occupiedDays(new Event(currentEventId).startAt[Server.jp],new Event(currentEventId+1).startAt[Server.jp])-1)*24*3600*1000
+        currentEventWithNoBanGDaysTotalOffset = (occupiedDays(new Event(currentEventId).startAt[Server.jp],new Event(currentEventId+1).startAt[Server.jp])-1+eventLenOffset)*24*3600*1000
     }
     else{
         // 如果当前活动与日服并行，则计算无邦日就从上一个endAt到这一个endAt
-        currentEventWithNoBanGDaysTotalOffset = (occupiedDays(new Event(currentEventId-1).endAt[Server.jp],new Event(currentEventId).endAt[Server.jp])-1)*24*3600*1000
+        currentEventWithNoBanGDaysTotalOffset = (occupiedDays(new Event(currentEventId-1).endAt[Server.jp],new Event(currentEventId).endAt[Server.jp])-1+eventLenOffset)*24*3600*1000
     }
     let ProbablyTimeOffset = currentEvent.startAt[Server.cn]    // 等于正在举办活动的StartAt
     for(var i = sureEndEvent ;i<presentEventJP;i++){
