@@ -9,6 +9,7 @@ import { globalDefaultServer, Bestdoriurl } from '@/config';
 import { stringToNumberArray } from '@/types/utils'
 import { logger } from '@/logger';
 import { Card } from './Card';
+import { GetProbablyTimeDifference } from '@/components/list/time';
 
 var eventDataCache = {}
 
@@ -357,6 +358,7 @@ export class Event {
 
 //获取当前进行中的活动,如果期间没有活动，则返回上一个刚结束的活动
 export function getPresentEvent(server: Server, time?: number) {
+    //if (server == Server.cn) return new Event(301)
     if (!time) {
         time = Date.now()
     }
@@ -417,6 +419,24 @@ export function sortEventList(tempEventList: Event[], displayedServerList: Serve
         for (var i = 0; i < displayedServerList.length; i++) {
             var server = displayedServerList[i]
             if (a.startAt[server] == null || b.startAt[server] == null) {
+                if (server == Server.cn){
+                    // 再尝试通过预估时间排序
+                    let prvEvent = null
+                    let nxtEvent = null
+                    if (a.startAt[server] == null){
+                        prvEvent = GetProbablyTimeDifference(a.eventId,getPresentEvent(server))
+                    }else{
+                        prvEvent = a.startAt[server]
+                    }
+                    if (b.startAt[server] == null){
+                        nxtEvent = GetProbablyTimeDifference(b.eventId,getPresentEvent(server))
+                    }else{
+                        nxtEvent = b.startAt[server]
+                    }
+                    if (prvEvent != null || nxtEvent != null){
+                        return prvEvent - nxtEvent
+                    }
+                }
                 continue
             }
             if (a.startAt[server] != b.startAt[server]) {

@@ -223,7 +223,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
             Tips.push(`${changeTimefomant(event.startAt[server])} - ${changeTimefomant(event.endAt[server])}\n`)
         }
     }
-    console.log(`${changeTimefomant(GetProbablyTimeDifference(299, currentEvent))}`)
+    //console.log(`${changeTimefomant(GetProbablyTimeDifference(299, currentEvent))}`)
     //活动加成
     //属性
     var attributeListPromise:Promise<Image>[] = []
