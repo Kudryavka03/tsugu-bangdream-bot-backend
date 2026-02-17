@@ -415,6 +415,7 @@ function getLastestEventId(server: Server){
 }
 //根据服务器，将活动列表排序
 export function sortEventList(tempEventList: Event[], displayedServerList: Server[] = globalDefaultServer) {
+    let presentEventCN = getPresentEvent(Server.cn)
     tempEventList.sort((a, b) => {
         for (var i = 0; i < displayedServerList.length; i++) {
             var server = displayedServerList[i]
@@ -424,12 +425,12 @@ export function sortEventList(tempEventList: Event[], displayedServerList: Serve
                     let prvEvent = null
                     let nxtEvent = null
                     if (a.startAt[server] == null){
-                        prvEvent = GetProbablyTimeDifference(a.eventId,getPresentEvent(server))
+                        prvEvent = GetProbablyTimeDifference(a.eventId,presentEventCN)
                     }else{
                         prvEvent = a.startAt[server]
                     }
                     if (b.startAt[server] == null){
-                        nxtEvent = GetProbablyTimeDifference(b.eventId,getPresentEvent(server))
+                        nxtEvent = GetProbablyTimeDifference(b.eventId,presentEventCN)
                     }else{
                         nxtEvent = b.startAt[server]
                     }
