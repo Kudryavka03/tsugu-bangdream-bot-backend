@@ -229,8 +229,8 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     //console.log('该用户协力把均Pt基准：',cooperationAvgPt,' errCount',errCount)
     // 定义各个CP的Pt增加基准
     let cp200 = cooperationAvgPt    // cp200是没有办法与pt做区分的。但前排一般都是1600清cp。200清cp效率太低不太可能
-    let cp400 = cooperationAvgPt * 1.7
-    let cp800 = cooperationAvgPt * 3.7
+    let cp400 = cooperationAvgPt * 1.6
+    let cp800 = cooperationAvgPt * 3.5
     let cp1600 = cooperationAvgPt * 7.4
     let cooperationPtTotal = 0  // 判定为协力的总Pt
     let cooperationCounts = 0   // 协力的数据量
