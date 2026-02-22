@@ -10,8 +10,9 @@ from base_distribution import (
     fetch_tier_1000_data,
     fetch_top10_max_speed,
     BASE_URL,
-    SERVER,
+    SERVER
 )
+
 logger = logging.getLogger('predictor.datasource')
 TIERS = 1000
 class BestdoriDataSource:
@@ -151,11 +152,14 @@ class BestdoriDataSource:
             logger.warning(f"Error fetching current scale: {e}")
             return None
 
-    def find_similar_events(self, target_event_id, event_type, count=5):
+    def find_similar_events(self, target_event_id, event_type, count=5, ignore_ids=None):
         """
         并发扫描同类活动。
         将原 DataHandler 中的复杂线程池逻辑移至此处。
         """
+        if ignore_ids is None:
+            ignore_ids = []
+            
         candidates = []
         # 1. 尝试获取快速索引
         try:
@@ -167,6 +171,7 @@ class BestdoriDataSource:
                     try:
                         eid = int(eid_s)
                         if eid >= target_event_id: continue # 只看历史
+                        if eid in ignore_ids: continue # 跳过忽略的活动
                         
                         et = meta.get('eventType') or meta.get('event_type')
                         if et and str(et).lower() == str(event_type).lower():
@@ -179,6 +184,8 @@ class BestdoriDataSource:
         # 回退策略
         if not candidates:
             candidates = list(range(target_event_id - 1, max(0, target_event_id - 100), -1))
+            # 也要过滤 ignore_ids
+            candidates = [c for c in candidates if c not in ignore_ids]
         
         scan_limit = count + 3
         
@@ -186,7 +193,7 @@ class BestdoriDataSource:
         
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_eid = {
-                executor.submit(self.fetch_event_data_pack, eid): eid 
+                executor.submit(self.fetch_event_data_pack, eid): eid
                 for eid in candidates[:scan_limit] # 限制提交任务的数量
             }
 

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import List, Optional, Tuple
 import logging
+from scipy.optimize import minimize
 from datetime import datetime, timedelta, timezone
 
 from domain_models import EventData, PredictionResult
@@ -124,6 +125,82 @@ class PredictionEngine:
         if not hist_params:
             return np.array([0.05, 0.001, 0.0, 0.5, 24.0])
         return np.mean(hist_params, axis=0)
+
+    def _refit_shape_params(self, target: EventData, initial_params: np.ndarray) -> np.ndarray:
+        """
+        使用带正则化的最小二乘法，基于当前观测对形状参数 Base, A, B 进行在线重拟合。
+        如果观测点不足则返回 initial_params 不变。
+        """
+        try:
+            if 'skeleton_speed' not in target.df.columns:
+                return initial_params
+
+            valid_mask = np.isfinite(target.df['skeleton_speed'])
+            if valid_mask.sum() < int(self.config.get('refit_min_points', 10)):
+                return initial_params
+
+            t_obs = target.df.loc[valid_mask, 'hours_elapsed'].values
+            v_obs = target.df.loc[valid_mask, 'skeleton_speed'].values
+
+            # 权重计算 (Logarithmic Weighting)
+            # 目的：降低夜间低数据量（低 norm_speed）对拟合的影响，防止噪声被放大
+            # 使用 log1p(x * scale) 确保：
+            # 1. 极低值 (0.05) -> 权重小
+            # 2. 中高值 (0.5 - 1.0) -> 权重差异不大
+            weight_scale = float(self.config.get('refit_weight_scale', 10.0))
+            raw_obs = target.df.loc[valid_mask, 'norm_speed'].values
+            raw_obs = np.maximum(raw_obs, 0.0) # 保护非负
+            
+            weights = np.log1p(raw_obs * weight_scale)
+            
+            # 归一化权重，保持均值为 1.0，以免破坏正则化项的比例
+            if len(weights) > 0 and np.sum(weights) > 0:
+                weights = weights / np.mean(weights)
+            else:
+                weights = np.ones_like(v_obs)
+
+            prior = initial_params.copy()
+            total_hours = target.meta.total_hours
+
+            # 自适应正则强度，依据观测量级和观测能量
+            lambda_reg = float(self.config.get('refit_lambda', 0.3)) * (np.mean(v_obs ** 2) + 1e-6)
+
+            def loss(x):
+                # x[0] -> Base, x[1] -> A, x[2] -> B
+                tmp = prior.copy()
+                tmp[0] = float(x[0])
+                tmp[1] = float(x[1])
+                tmp[2] = float(x[2])
+
+                v_pred = self.modeler.shape_function(t_obs, *tmp, total_hours)
+                
+                # 使用加权 MSE
+                mse = np.mean(weights * (v_obs - v_pred) ** 2)
+
+                # 相对正则化，防止量级问题
+                reg_Base = ((x[0] - prior[0]) ** 2) / (prior[0] ** 2 + 1e-9)
+                reg_A = ((x[1] - prior[1]) ** 2) / (prior[1] ** 2 + 1e-9)
+                reg_B = ((x[2] - prior[2]) ** 2) / (prior[2] ** 2 + 1e-9)
+                return mse + lambda_reg * (reg_Base + reg_A + reg_B)
+
+            # Base, A, B 均需非负
+            bounds = [(0.0, None), (0.0, None), (0.0, None)]
+            x0 = [prior[0], prior[1], prior[2]]
+            res = minimize(loss, x0=x0, bounds=bounds, method='L-BFGS-B')
+
+            if res.success:
+                new_params = prior.copy()
+                new_params[0] = float(res.x[0])
+                new_params[1] = float(res.x[1])
+                new_params[2] = float(res.x[2])
+                logger.info(f"Refit params: Base {prior[0]:.4f}->{new_params[0]:.4f}, A {prior[1]:.5f}->{new_params[1]:.5f}, B {prior[2]:.6f}->{new_params[2]:.6f}")
+                return new_params
+            else:
+                return initial_params
+
+        except Exception as e:
+            logger.warning(f"_refit_shape_params failed: {e}")
+            return initial_params
 
     def _run_kalman_filter(self, times: np.ndarray, obs_scores: np.ndarray, 
                            model_speed_func, dt_step=1.0) -> Tuple[float, float]:
@@ -263,7 +340,7 @@ class PredictionEngine:
             # 截断保护
             est_scale = np.clip(est_scale, 0.5, 3.0)
             # 限制 trend 的幅度，防止过拟合
-            est_trend = np.clip(est_trend, -0.05, 0.05) 
+            est_trend = np.clip(est_trend, -0.03, 0.05)
             
             # 构造 adjustment array
             scale_curve = np.ones_like(future_t) * est_scale
@@ -274,8 +351,8 @@ class PredictionEngine:
             # 对未来应用带阻尼的趋势
             if idx_now < len(future_t):
                 future_deltas = future_t[idx_now:] - current_max_time
-                # 阻尼系数：每过 12 小时，趋势影响力减半
-                decay_lambda = np.log(2) / 12.0 
+                # 阻尼系数：每过 2 小时，趋势影响力减半 (防止长期趋势过度外推导致 Scale 负值)
+                decay_lambda = np.log(2) / 2.0
                 
                 # 积分形式的阻尼： Trend * (1 - exp(-lambda * t)) / lambda ???
                 # 不，Scale 是速度的系数。Trend 是 Scale 的变化率。
@@ -285,6 +362,9 @@ class PredictionEngine:
                 
                 trend_impact = est_trend * (1.0 - np.exp(-decay_lambda * future_deltas)) / decay_lambda
                 scale_curve[idx_now:] += trend_impact
+            
+            # 强制非负保护 (Scale 必须 > 0.1)
+            scale_curve = np.maximum(scale_curve, 0.1)
                 
             # 对过去的部分（仅用于绘图或对齐），简单设为 est_scale
             # 实际计算积分时，过去的部分其实不重要，因为我们是基于 current_score 往后加
@@ -293,6 +373,122 @@ class PredictionEngine:
         except Exception as e:
             logger.error(f"Error in Kalman Filter: {e}")
             return 1.0, np.ones_like(future_t)
+
+    def _generate_hypothetical_path(self, target: EventData, manual_points: List[dict],
+                                    pred_params: np.ndarray) -> Tuple[pd.DataFrame, float]:
+        """
+        生成连接当前数据末尾到人工干预点的“符合节律的”虚拟路径。
+        
+        Args:
+            target: 当前真实数据
+            manual_points: 人工干预点列表 [{'hours': h, 'score': s}, ...]
+            pred_params: 基础预测参数 (用于生成形状)
+            
+        Returns:
+            synthetic_df: 包含真实数据+虚拟路径的完整 DataFrame
+            last_manual_time: 最后一个人工点的时间 (新的 "Now")
+        """
+        if not manual_points:
+            return target.df, target.df['hours_elapsed'].max()
+
+        # 1. 排序并过滤无效点
+        sorted_points = sorted(manual_points, key=lambda x: x['hours'])
+        current_max_time = target.df['hours_elapsed'].max()
+        current_max_score = target.df['value'].max()
+        
+        valid_points = [p for p in sorted_points if p['hours'] > current_max_time and p['score'] > current_max_score]
+        if not valid_points:
+            return target.df, current_max_time
+
+        # 2. 准备基础数据
+        full_df = target.df.copy()
+        last_t = current_max_time
+        last_s = current_max_score
+        
+        total_hours = target.meta.total_hours
+        
+        # 3. 逐段生成路径
+        for pt in valid_points:
+            next_t = float(pt['hours'])
+            next_s = float(pt['score'])
+            
+            if next_t <= last_t: continue
+            
+            # 生成该区间的密集时间点 (每 6 分钟一个点)
+            segment_t = np.arange(last_t, next_t, 0.1)
+            if len(segment_t) == 0: continue
+            
+            # A. 计算该区间的“理论无缩放增量” (Raw Increment)
+            # 使用传入的 pred_params 生成基础骨架
+            skeleton_segment = self.modeler.shape_function(segment_t, *pred_params, total_hours)
+            
+            # 应用节律
+            speed_norm_segment, _ = self.seasonality.apply_seasonality(
+                segment_t, skeleton_segment, target.meta.start_at,
+                total_hours=total_hours, t_panic=pred_params[4]
+            )
+            
+            # 积分得到无缩放的总增量
+            # speed_norm 是归一化的，需要乘 target.scale 才是 pt/hr
+            # 积分: sum(speed * dt)
+            dt = 0.1
+            raw_increment = np.sum(speed_norm_segment * target.scale * dt)
+            
+            # B. 计算所需的 Scale Factor
+            # 我们需要: last_s + raw_increment * required_scale = next_s
+            target_increment = next_s - last_s
+            
+            if raw_increment > 0:
+                required_scale = target_increment / raw_increment
+            else:
+                required_scale = 1.0 # 避免除零，虽然不太可能
+            
+            # C. 生成该段的虚拟数据
+            # Score(t) = last_s + cumsum(speed(t) * scale * dt)
+            # segment_speed_real 单位是 pt/hour
+            segment_speed_real = speed_norm_segment * target.scale * required_scale
+            segment_score_inc = np.cumsum(segment_speed_real * dt)
+            segment_score = last_s + segment_score_inc
+            
+            # D. 构造 DataFrame 片段并追加
+            # 注意：我们需要构造完整的列以保持一致性
+            # time = start_at + hours * 3600 * 1000
+            segment_ts = target.meta.start_at + (segment_t * 3600 * 1000)
+            
+            # 计算 norm_speed
+            # norm_speed = speed(pt/min) / scale
+            # segment_speed_real 是 pt/hour
+            # 所以 speed(pt/min) = segment_speed_real / 60.0
+            # norm_speed = (segment_speed_real / 60.0) / target.scale
+            #            = (speed_norm_segment * target.scale * required_scale / 60.0) / target.scale
+            #            = speed_norm_segment * required_scale / 60.0
+            
+            # calculate_derived_columns 里：
+            # speed = diff_val / diff_time(min)  -> pt/min
+            # norm_speed = speed / scale         -> (pt/min) / scale
+            
+            # 而这里 segment_speed_real 是 pt/hour
+            # 所以对应的 speed (pt/min) 是 segment_speed_real / 60.0
+            speed_pt_min = segment_speed_real / 60.0
+            
+            # 对应的 norm_speed
+            norm_speed_val = speed_pt_min / target.scale
+            
+            segment_df = pd.DataFrame({
+                'hours_elapsed': segment_t,
+                'value': segment_score,
+                'time': segment_ts,
+                'speed': speed_pt_min,
+                'norm_speed': norm_speed_val,
+                'is_manual': True # 标记为人工数据
+            })
+            
+            full_df = pd.concat([full_df, segment_df], ignore_index=True)
+            
+            last_t = next_t
+            last_s = next_s
+
+        return full_df, last_t
 
     def _apply_smoothing(self, speed_pred_norm: np.ndarray, scale_curve: np.ndarray) -> np.ndarray:
         """
@@ -326,19 +522,28 @@ class PredictionEngine:
 
         return np.minimum(norm_adj, HARD_CAP)
 
-    def predict(self, target: EventData, history: List[EventData], 
-                debug_hours: Optional[float] = None) -> PredictionResult:
+    def predict(self, target: EventData, history: List[EventData],
+                debug_hours: Optional[float] = None,
+                manual_points: Optional[List[dict]] = None) -> PredictionResult:
         """主预测入口。"""
+        
         # 0. 准备数据：去节律化
+        # 注意：如果已经有人工数据，这里 remove_seasonality 可能会有问题，
+        # 但目前 target.df 还是纯净的。
         target.df = self.seasonality.remove_seasonality(target.df)
         
-        # 1. 确定对比窗口
+        # 1. 确定对比窗口 (基于真实数据)
         t_start_cmp = float(self.config.get('t_start_cmp', 6.0))
         observed_hours = float(target.df['hours_elapsed'].max())
         end_source = debug_hours if debug_hours is not None else observed_hours
-        t_end_cmp = min(end_source, float(self.config.get('t_end_cap', 72.0)))
         
-        # 2. 计算 Ratio
+        # 动态调整对比上限：允许对比到活动结束前 24 小时，或者至少 72 小时
+        # 这样在活动后半段，Ratio 依然会随着新数据的进入而更新
+        dynamic_cap = max(float(self.config.get('t_end_cap', 72.0)), target.meta.total_hours - 24.0)
+        t_end_cmp = min(end_source, dynamic_cap)
+        
+        # 2. 计算 Ratio (基于真实数据)
+        # 我们希望 Ratio 反映的是“该活动目前的自然强度”，而不是被人工干预后的强度
         ratio = self._calculate_ratio(target, history, t_start_cmp, t_end_cmp)
         logger.info(f"Calculated Ratio: {ratio:.4f}")
 
@@ -374,7 +579,35 @@ class PredictionEngine:
         pred_params[1] *= ratio        # A
         pred_params[2] *= ratio        # B
         pred_params[3] *= (ratio ** 1.1) # B_end
+
+        # --- 尝试用当前观测在线重拟合形状参数 (A, B)，并按置信度融合 ---
+        try:
+            target_params = self._refit_shape_params(target, pred_params)
+            if target_params is not None:
+                conf = float(np.clip(observed_hours / float(self.config.get('refit_conf_norm_hours', 24.0)), 0.0, 0.9))
+                # 当观测足够多时，优先使用观测拟合的参数
+                if conf > 0.0:
+                    logger.info(f"Blending shape params with weight={conf:.3f}")
+                    pred_params = (1.0 - conf) * pred_params + conf * target_params
+        except Exception as e:
+            logger.warning(f"Shape refit blend failed: {e}")
         
+        # === 3.5 插入人工干预逻辑 ===
+        # 如果有人工点，我们需要先生成“虚拟历史”，然后基于这个虚拟历史来做后续的 Scale 计算
+        
+        # 标记原始数据，方便绘图区分
+        if 'is_manual' not in target.df.columns:
+            target.df['is_manual'] = False
+            
+        if manual_points:
+            logger.info(f"应用人工干预点: {len(manual_points)} 个")
+            # 使用当前的 pred_params (已应用 Ratio) 来生成符合当前趋势的虚拟路径
+            # 这样生成的路径既符合人工设定的终点，又符合当前活动的节律特征
+            target.df, new_max_time = self._generate_hypothetical_path(target, manual_points, pred_params)
+            logger.info(f"数据已扩展至: {new_max_time:.1f}h")
+            
+        # ==========================
+
         # 4. 生成基础预测曲线 (Skeleton)
         total_hours = target.meta.total_hours
         future_t = np.linspace(0, total_hours, 1000)
@@ -387,6 +620,9 @@ class PredictionEngine:
         )
         
         # 6. 计算 Scale Factor (Kalman Filter)
+        # 注意：此时 target.df 可能已经包含了人工生成的“未来数据”
+        # _calculate_scale_factor 会自动使用最新的数据（包括人工数据）来更新 KF 状态
+        # 从而让预测曲线自然地接在人工路径后面
         base_scale, scale_curve = self._calculate_scale_factor(target, future_t, speed_pred_norm)
         
         # 限制 Scale 对 Panic Term 的过度影响。
@@ -439,7 +675,6 @@ class PredictionEngine:
         full_t_score = np.concatenate([target.df['hours_elapsed'].values, future_t_clip])
         full_score = np.concatenate([target.df['value'].values, score_pred])
         start_ts = target.meta.start_at
-
         cutoffs = [
             {
                 "time": int(start_ts + t * 3600 * 1000),

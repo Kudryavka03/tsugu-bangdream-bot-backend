@@ -25,25 +25,53 @@ class Visualizer:
         deltas = pd.to_timedelta(hours_array, unit='h')
         return start_dt_local + deltas
 
-    def plot_prediction(self, target: EventData, result: PredictionResult, 
-                        debug_hours: float = None, save=True):
+    def plot_prediction(self, target: EventData, result: PredictionResult,
+                        debug_hours: float = None, manual_points: list = None, save=True):
         """绘制最终预测图 (包含真实未来对比)"""
         
         start_ts = target.meta.start_at
         
         # 1. 准备基础时间轴
-        obs_time = self._to_real_time(target.df['hours_elapsed'].values, start_ts)
+        # 区分真实观测数据和人工生成的数据
+        if 'is_manual' in target.df.columns:
+            mask_real = ~target.df['is_manual']
+            mask_manual = target.df['is_manual']
+            
+            obs_time = self._to_real_time(target.df.loc[mask_real, 'hours_elapsed'].values, start_ts)
+            obs_score = target.df.loc[mask_real, 'value'].values
+            obs_speed = target.df.loc[mask_real, 'norm_speed'].values
+            
+            manual_time = self._to_real_time(target.df.loc[mask_manual, 'hours_elapsed'].values, start_ts)
+            manual_score = target.df.loc[mask_manual, 'value'].values
+            manual_speed = target.df.loc[mask_manual, 'norm_speed'].values
+        else:
+            obs_time = self._to_real_time(target.df['hours_elapsed'].values, start_ts)
+            obs_score = target.df['value'].values
+            obs_speed = target.df['norm_speed'].values
+            manual_time, manual_score, manual_speed = [], [], []
+
         pred_time = self._to_real_time(result.future_t, start_ts)
         full_time = self._to_real_time(result.full_t_score, start_ts)
         
         # 重算骨架曲线
         skeleton_y = self.modeler.shape_function(
-            result.future_t, 
-            *result.used_params, 
+            result.future_t,
+            *result.used_params,
             target.meta.total_hours
         )
         
-        now_hours = debug_hours if debug_hours else target.df['hours_elapsed'].max()
+        # 确定 "Now" 线的位置：如果有 debug_hours，优先用它；否则用真实数据的最后时间
+        # 注意：不应该用人工数据的最后时间，因为那是“未来”
+        if debug_hours:
+            now_hours = debug_hours
+        else:
+            # 找到最后一个非人工点的时间
+            if 'is_manual' in target.df.columns:
+                real_df = target.df[~target.df['is_manual']]
+                now_hours = real_df['hours_elapsed'].max() if not real_df.empty else 0
+            else:
+                now_hours = target.df['hours_elapsed'].max()
+                
         now_dt = self._to_real_time([now_hours], start_ts)[0]
 
         # 2. 绘图设置
@@ -55,14 +83,28 @@ class Visualizer:
         # --- Subplot 1: Speed ---
         # 观测骨架
         if 'skeleton_speed' in target.df.columns:
-            ax1.scatter(obs_time, target.df['skeleton_speed'], s=10, c='gray', alpha=0.3, label='Observed Skeleton')
+            # 确保 skeleton_speed 和 obs_time 长度一致
+            # obs_time 是基于 mask_real 筛选的，所以这里也需要筛选
+            if 'is_manual' in target.df.columns:
+                mask_real = ~target.df['is_manual']
+                skel_speed = target.df.loc[mask_real, 'skeleton_speed'].values
+            else:
+                skel_speed = target.df['skeleton_speed'].values
+            
+            # 再次检查长度，防止潜在的不一致
+            if len(obs_time) == len(skel_speed):
+                ax1.scatter(obs_time, skel_speed, s=10, c='gray', alpha=0.3, label='Observed Skeleton')
         
         # 预测骨架
         ax1.plot(pred_time, skeleton_y, color='blue', linestyle='--', alpha=0.5, label='Predicted Skeleton')
 
         # 观测速度 (截断后)
-        ax1.plot(obs_time, target.df['norm_speed'], c='red', lw=2, label='Observed Speed')
+        ax1.plot(obs_time, obs_speed, c='red', lw=2, label='Observed Speed')
         
+        # 人工干预速度 (虚线)
+        if len(manual_time) > 0:
+            ax1.plot(manual_time, manual_speed, c='magenta', lw=2, ls='--', alpha=0.7, label='Hypothetical Path')
+
         # 预测速度
         ax1.plot(pred_time, result.future_speed, c='green', lw=2, alpha=0.8, label='Predicted Speed')
         
@@ -74,20 +116,30 @@ class Visualizer:
             if mask_future.any():
                 future_real_time = self._to_real_time(full_df.loc[mask_future, 'hours_elapsed'].values, start_ts)
                 future_real_speed = full_df.loc[mask_future, 'norm_speed'].values
-                ax1.plot(future_real_time, future_real_speed, 
+                ax1.plot(future_real_time, future_real_speed,
                          color='orange', linestyle='-.', linewidth=2, alpha=0.9, label='Actual Future Speed')
 
         ax1.axvline(x=now_dt, color='black', linestyle=':', label='Now')
         ax1.set_title(f"Event {target.meta.event_id} Speed Prediction")
         ax1.set_ylabel("Normalized Speed")
-        ax1.legend(loc='upper right')
+        ax1.legend(loc='upper left')
         ax1.grid(True, alpha=0.3)
         ax1.xaxis.set_major_formatter(date_fmt)
 
         # --- Subplot 2: Score ---
         # 观测分数 (截断后)
-        ax2.plot(obs_time, target.df['value'], c='red', lw=2, label='Observed Score')
+        ax2.plot(obs_time, obs_score, c='red', lw=2, label='Observed Score')
         
+        # 人工干预分数 (虚线)
+        if len(manual_time) > 0:
+            ax2.plot(manual_time, manual_score, c='magenta', lw=2, ls='--', alpha=0.7, label='Hypothetical Path')
+            # 绘制关键点 (星星)
+            if manual_points:
+                mp_hours = [p['hours'] for p in manual_points]
+                mp_scores = [p['score'] for p in manual_points]
+                mp_times = self._to_real_time(mp_hours, start_ts)
+                ax2.scatter(mp_times, mp_scores, marker='*', s=150, c='magenta', zorder=10, label='Manual Points')
+
         # 预测分数曲线
         ax2.plot(full_time, result.full_score, c='purple', ls='--', lw=2, label='Predicted Curve')
         
@@ -104,7 +156,7 @@ class Visualizer:
                 # 获取真实最终分
                 real_final_score = full_df.iloc[-1]['value']
                 # [修正语法错误] DatetimeIndex 不支持 .iloc，直接用 [-1]
-                real_final_time = full_real_time[-1] 
+                real_final_time = full_real_time[-1]
                 
                 # 绘制深红点
                 ax2.scatter(real_final_time, real_final_score, color='darkred', s=60, zorder=5, label='Actual Final')
@@ -112,13 +164,13 @@ class Visualizer:
         # --- 文字标签 (三巨头) ---
         # 1. 当前分 (Current)
         current_score = target.df['value'].max() if not target.df.empty else 0
-        ax2.text(now_dt, current_score, f" Cur: {int(current_score):,}", 
+        ax2.text(now_dt, current_score, f" Cur: {int(current_score):,}",
                  ha='left', va='top', fontsize=10, color='red', fontweight='bold')
 
         # 2. 预测最终分 (Predicted)
         final_t = full_time[-1]
         final_s = result.final_score
-        ax2.text(final_t, final_s, f"Pred: {int(final_s):,}\n", 
+        ax2.text(final_t, final_s, f"Pred: {int(final_s):,}\n",
                  ha='right', va='bottom', fontsize=11, fontweight='bold', color='purple')
 
         # 3. 真实最终分 (Actual) - 仅在回测且有值时显示
@@ -130,7 +182,7 @@ class Visualizer:
             
             # 计算真实结束时间
             real_final_t = self._to_real_time([target.meta.total_hours], start_ts)[0]
-            ax2.text(real_final_t, offset_y, f"\nAct: {int(real_final_score):,}", 
+            ax2.text(real_final_t, offset_y, f"\nAct: {int(real_final_score):,}",
                      ha='right', va='top', fontsize=11, fontweight='bold', color='darkred')
 
         ax2.axvline(x=now_dt, color='black', linestyle=':')
