@@ -171,6 +171,7 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
     for (let i = 0; i < songIdList.length; i++) {
         const tempSong = new Song(songIdList[i]);
         var isMatch = match(matches, tempSong, ['songId']);
+        /*
         //如果在所有所选服务器列表中都不存在，则不输出
         var numberOfNotReleasedServer = 0;
         for (var j = 0; j < displayedServerList.length; j++) {
@@ -179,9 +180,10 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
                 numberOfNotReleasedServer++;
             }
         }
-        if (numberOfNotReleasedServer == displayedServerList.length) {
+        if (numberOfNotReleasedServer == displayedServerList.length  {
             isMatch = false;
         }
+        */  // 全服务器输出
 
         //如果有数字关系词，则判断关系词
         if (matches._relationStr != undefined) {

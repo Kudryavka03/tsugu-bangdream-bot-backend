@@ -224,6 +224,7 @@ export function matchCardList(matches: FuzzySearchResult, displayedServerList: S
         }
         var isMatch = match(matches, tempCard, ['cardId']);
         //console.log(tempCard.cardId, 1, isMatch)
+        /*
         //如果在所有所选服务器列表中都不存在，则不输出
         var numberOfReleasedServer = 0;
         for (var j = 0; j < displayedServerList.length; j++) {
@@ -235,6 +236,7 @@ export function matchCardList(matches: FuzzySearchResult, displayedServerList: S
         if (numberOfReleasedServer == 0) {
             isMatch = false;
         }
+        */  // 全服务器输出
         //console.log(tempCard.cardId, 2, isMatch)
 
         //如果有数字关系词，则判断关系词
