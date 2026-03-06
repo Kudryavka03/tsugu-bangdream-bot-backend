@@ -1,6 +1,6 @@
 import { BestdoriapiPath, Bestdoriurl, configPath } from '@/config'
 import { callAPIAndCacheResponse } from '@/api/getApi'
-import { readJSON } from '@/types/utils'
+import { readExcelFileForOther, readJSON } from '@/types/utils'
 import { readExcelFile } from '@/types/utils'
 import { logger } from '@/logger'
 import * as path from 'path'
@@ -106,7 +106,7 @@ async function loadMainAPI(useCache: boolean = false) {
         logger('mainAPI', '读取nickname_song.xlsx失败')
     }
     try { //能够实时更新而不重启清空缓存    EventNickname Fix
-        let eventNicknameData = await readExcelFile(path.join(configPath, 'nickname_event.xlsx'))
+        let eventNicknameData = await readExcelFileForOther(path.join(configPath, 'nickname_event.xlsx'))
         if(eventNicknameData!=null) eventNickname = eventNicknameData
     }
     catch (e) {
