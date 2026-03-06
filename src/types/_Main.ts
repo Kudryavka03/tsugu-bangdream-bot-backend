@@ -25,7 +25,7 @@ if (!isMainThread && parentPort) {
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
-export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname
+export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname
 export function setMainAPI(data) {
     if (data == null){
         logger('setMainAPI','setMainAPI try to set an null value,abort.')
@@ -105,6 +105,13 @@ async function loadMainAPI(useCache: boolean = false) {
     catch (e) {
         logger('mainAPI', '读取nickname_song.xlsx失败')
     }
+    try { //能够实时更新而不重启清空缓存    EventNickname Fix
+        let eventNicknameData = await readExcelFile(path.join(configPath, 'nickname_event.xlsx'))
+        if(eventNicknameData!=null) eventNickname = eventNicknameData
+    }
+    catch (e) {
+        logger('mainAPI', '读取nickname_event.xlsx失败')
+    }
     if (useCache) {
         cardsCNfix = await readJSON(path.join(configPath, 'cardsCNfix.json'))
         skillCNfix = await readJSON(path.join(configPath, 'skillsCNfix.json'))
@@ -126,6 +133,12 @@ async function loadMainAPI(useCache: boolean = false) {
         const element = songNickname[i];
         if (mainAPI['songs'][element['Id'].toString()]) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
+        }
+    }
+    for (let i = 0; i < eventNickname.length; i++) {
+        const element = eventNickname[i];
+        if (mainAPI['events'][element['Id'].toString()]) {
+            mainAPI['events'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
     //await preCacheIcon()

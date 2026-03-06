@@ -113,7 +113,7 @@ export class Event {
     characterId: number[]
     attribute: string[]
     bandId: number[]
-
+    nickname: string[]
     isInitfull: boolean = false
     
     constructor(eventId: number) {
@@ -132,6 +132,7 @@ export class Event {
         this.attributes = eventData['attributes'];
         this.characters = eventData['characters'];
         this.rewardCards = eventData['rewardCards'];
+        this.nickname = eventData['nickname']?eventData['nickname']:[]
         //用于模糊搜索
         this.characterId = []
         for (let i = 0; i < this.characters.length; i++) {
