@@ -18,7 +18,7 @@ export async function drawSongRandom(matches: FuzzySearchResult, displayedServer
     }
 
     //在搜索结果中随机选择一首歌曲
-    const randomIndex = getRandomInt(tempSongList.length - 1)
+    const randomIndex = getRandomInt(tempSongList.length)   // 请参阅getRandomInt函数中的解释说明
     const song = tempSongList[randomIndex]
 
     var all = []
@@ -43,4 +43,6 @@ export async function drawSongRandom(matches: FuzzySearchResult, displayedServer
 //输入max数字，返回一个0-max的随机整数
 function getRandomInt(max: number): number {
     return Math.floor(Math.random() * Math.floor(max));
+    // Math.ramdom() 大于等于0 且小于1
+    // floor意味着下取整，最后一个结果永远无法被选中。
 }
