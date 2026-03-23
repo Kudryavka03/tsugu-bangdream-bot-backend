@@ -129,7 +129,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     all.push(await drawTitle(`查询  共${tempSongList.length}条结果`, `歌曲列表`))
     
     all.push(songListImage)
-    if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
+    all.push(await drawTips({text:'出分排名的Fever顺序为 有Fever / 无Fever'}))
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,
