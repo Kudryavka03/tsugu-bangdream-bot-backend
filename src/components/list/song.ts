@@ -8,6 +8,8 @@ import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNote
 import { globalDefaultServer } from "@/config"
 import { drawList } from '../list'
 import { drawDottedLine } from '@/image/dottedLine'
+import { formatSeconds } from './time'
+import mainAPI from '@/types/_Main'
 
 export async function drawSongInList(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
@@ -30,7 +32,19 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
     ctx.drawImage(IDImage, 0, 0)
 
     //曲名与乐队名
-    var fullText = `${song.musicTitle[server]}`
+    var fullText = `${song.musicTitle[server]}\n`
+
+
+    // 展示Meta
+    let HDRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['2']
+    let EXRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['3']
+    let SPRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['4']?mainAPI['metaCache'][true][server][`${song.songId}`]['4']:''
+    let HDRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['2']
+    let EXRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['3']
+    let SPRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['4']?mainAPI['metaCache'][true][server][`${song.songId}`]['4']:''
+    if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
+    if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
+
     if (!text) {
         //如果没有传入text参数，使用乐队名
         fullText += `\n${new Band(song.bandId).bandName[server]}`
@@ -39,10 +53,11 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         //如果传入了text参数，使用text参数代替乐队名
         fullText += `\n${text}`
     }
+    fullText += ` ${formatSeconds(song.length)} \n`
     var textImage = await drawText({
         text: fullText,
-        textSize: 23,
-        lineHeight: 37.5,
+        textSize: 18,
+        lineHeight: 25, //37.5
         maxWidth: 800
     })
     ctx.drawImage(textImage, 120, 0)

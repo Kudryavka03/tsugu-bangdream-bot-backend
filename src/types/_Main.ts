@@ -12,6 +12,7 @@ import { drawTopRateSpeedRank } from '@/view/cutoffEventTop'
 import { getPresentEvent } from './Event'
 import { Long } from 'mongodb'
 import { piscina } from '@/WorkerPool';
+import { genMetaRankCache } from '@/view/songMetaList'
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -141,6 +142,31 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['events'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
+    // 初始化metaCache
+    mainAPI['metaCache'] = {}
+    mainAPI['metaCache'][true] ??= {}
+    mainAPI['metaCache'][true][Server.cn] ??= {}
+    mainAPI['metaCache'][true][Server.jp]??= {}
+    mainAPI['metaCache'][true][Server.tw]??= {}
+    mainAPI['metaCache'][true][Server.en]??= {}
+    mainAPI['metaCache'][true][Server.kr]??= {}
+    mainAPI['metaCache'][false] ??= {}
+    mainAPI['metaCache'][false][Server.cn] ??= {}
+    mainAPI['metaCache'][false][Server.jp] ??= {}
+    mainAPI['metaCache'][false][Server.tw] ??= {}
+    mainAPI['metaCache'][false][Server.en]??= {}
+    mainAPI['metaCache'][false][Server.kr]??= {}
+    genMetaRankCache(true,Server.cn)
+    genMetaRankCache(false,Server.cn)
+    genMetaRankCache(true,Server.jp)
+    genMetaRankCache(false,Server.jp)
+    genMetaRankCache(true,Server.tw)
+    genMetaRankCache(false,Server.tw)
+    genMetaRankCache(true,Server.en)
+    genMetaRankCache(false,Server.en)
+    genMetaRankCache(true,Server.kr)
+    genMetaRankCache(false,Server.kr)
+    //console.log(mainAPI['metaCache'][true][Server.cn])
     //await preCacheIcon()
     if(isMainThread){
         await piscina.drawList.run({

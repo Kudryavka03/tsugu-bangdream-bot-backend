@@ -67,13 +67,14 @@ export async function queryAllRoom(): Promise<Room[]> {
                 if (!localNumberList.includes(room.number)) {   // 如果本地不存在房间列表
                     roomList.push(room)             // 如果待添加的车牌在栈中存在有车牌，并且两个车牌之间间隔大于150s，那么这辆车无法被显示在车牌列表中
                 }
-                else{   // 如果存在，则在栈中原有车牌的基础上，更新信息，确保为最新的车牌数据且source不变，不会被因为大于150s而清除掉
+                else{   // 如果存在，则在栈中原有车牌的基础上，更新信息，确保为最新的车牌数据,不会被因为大于150s而清除掉
                     const time = roomListBandoriStation[i].time
                     const rawMsg = roomListBandoriStation[i].rawMessage
                     for(var index in roomList ){
                         if(roomList[index].number == room.number && roomList[index].time < time){   // 当本地车牌时间早于车站上传时间
                             roomList[index].time = time
                             roomList[index].rawMessage = rawMsg
+                            roomList[index].source = roomListBandoriStation[i].source
                             break
                         }
                     }

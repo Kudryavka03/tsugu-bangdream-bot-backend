@@ -9,6 +9,7 @@ import { Server } from '@/types/Server';
 import { serverNameFullList } from '@/config';
 import { drawDatablock } from '@/components/dataBlock'
 import { formatSeconds } from "@/components/list/time";
+import mainAPI from "@/types/_Main";
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -27,6 +28,7 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,ban
     const feverMode = [true, false]
     const imageList = []
     var drawMetaRankListDatablockPromise = []
+
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
         drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer,bandId))
@@ -56,15 +58,20 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,band
     var drawSongInListPromise = []
     for (let i = 0; i < metaRanking.length; i++) {
         let song = new Song(metaRanking[i].songId)
-        let difficultyId = metaRanking[i].difficulty
-        let precent = metaRanking[i].meta / maxMeta * 100
-        precent = Math.round(precent * 100) / 100
         //console.log(bandId)
         if (bandId && song.bandId == bandId){
-            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}    时长：${formatSeconds(song.length)}`))
+            let difficultyId = metaRanking[i].difficulty
+            let precent = metaRanking[i].meta / maxMeta * 100
+            precent = Math.round(precent * 100) / 100
+            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
         }
         else{
-            if(!bandId) drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1}    时长：${formatSeconds(song.length)}`))
+            if(!bandId){
+                let difficultyId = metaRanking[i].difficulty
+                let precent = metaRanking[i].meta / maxMeta * 100
+                precent = Math.round(precent * 100) / 100
+                drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+            }
         }
         if(drawSongInListPromise.length >= 50) break
     }
@@ -78,3 +85,21 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,band
     return (drawDatablock({ list, topLeftText }))
 }
 
+export async function genMetaRankCache(Fever: boolean, mainServer: Server) {
+    const metaRanking = getMetaRanking(Fever, mainServer);
+    const maxMeta = metaRanking[0].meta
+    for (let i = 0; i < metaRanking.length; i++) {
+        let song = new Song(metaRanking[i].songId)
+        let difficultyId = metaRanking[i].difficulty
+        let precent = metaRanking[i].meta / maxMeta * 100
+        precent = Math.round(precent * 100) / 100
+        try{
+            mainAPI['metaCache'][Fever][mainServer][`${metaRanking[i].songId}`][difficultyId] = (metaRanking[i].rank + 1)
+        }
+        catch{
+            mainAPI['metaCache'][Fever][mainServer][`${metaRanking[i].songId}`] ??= {}
+            mainAPI['metaCache'][Fever][mainServer][`${metaRanking[i].songId}`][difficultyId] = (metaRanking[i].rank + 1)
+        }
+
+    }
+}
