@@ -5,7 +5,7 @@ import { Canvas } from 'skia-canvas'
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { drawDatablockHorizontal } from "@/components/dataBlock";
-import { drawSongInList } from '@/components/list/song';
+import { drawSongInList, drawSongInListForQuerySong } from '@/components/list/song';
 import { drawDottedLine } from '@/image/dottedLine';
 import { stackImage } from '@/components/utils';
 import { Server } from '@/types/Server';
@@ -85,14 +85,14 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     if (tempSongList.length <50){
         
        for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
+            songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
         }
     } else{   // 大于15首，并发降级，不允许全部并发
         if(isMainThread) return null
         heavyLoad = true
         logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
         for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(drawSongInList(tempSongList[i], undefined, undefined, displayedServerList));
+            songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
         }
     }
     var songImages = await Promise.all(songPromises);

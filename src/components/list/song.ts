@@ -11,7 +11,7 @@ import { drawDottedLine } from '@/image/dottedLine'
 import { formatSeconds } from './time'
 import mainAPI from '@/types/_Main'
 
-export async function drawSongInList(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
     var songImage = resizeImage({
         image: await song.getSongJacketImage(),
@@ -58,6 +58,57 @@ export async function drawSongInList(song: Song, difficulty?: number, text?: str
         text: fullText,
         textSize: 18,
         lineHeight: 25, //37.5
+        maxWidth: 800
+    })
+    ctx.drawImage(textImage, 120, 0)
+
+
+    //难度
+    if (difficulty == undefined) {
+        var difficultyImage = await drawDifficulityListInListWithNotes(song, 50, 10)
+    }
+    else {
+        var difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45, true,song.notes[difficulty])
+        //var difficultyImage = await drawDifficulityWithNotes(difficulty, song.difficulty[difficulty].playLevel, 45,true,song.notes[difficulty])
+    }
+    ctx.drawImage(difficultyImage, 800 - difficultyImage.width, 75 / 2 - difficultyImage.height / 2)
+    return canvas
+}
+
+export async function drawSongInList(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+    var server = getServerByPriority(song.publishedAt, displayedServerList)
+    var songImage = resizeImage({
+        image: await song.getSongJacketImage(),
+        widthMax: 80,
+        heightMax: 80
+    })
+
+    var canvas = new Canvas(800, 75)
+    var ctx = canvas.getContext("2d")
+    ctx.drawImage(songImage, 50, 5, 65, 65)
+    //id
+    var IDImage = await drawText({
+        text: song.songId.toString(),
+        textSize: 23,
+        lineHeight: 37.5,
+        maxWidth: 800
+    })
+    ctx.drawImage(IDImage, 0, 0)
+
+    //曲名与乐队名
+    var fullText = `${song.musicTitle[server]}`
+    if (!text) {
+        //如果没有传入text参数，使用乐队名
+        fullText += `\n${new Band(song.bandId).bandName[server]}`
+    }
+    else {
+        //如果传入了text参数，使用text参数代替乐队名
+        fullText += `\n${text}`
+    }
+    var textImage = await drawText({
+        text: fullText,
+        textSize: 23,
+        lineHeight: 37.5,
         maxWidth: 800
     })
     ctx.drawImage(textImage, 120, 0)
