@@ -24,6 +24,7 @@ if (!isMainThread && parentPort) {
   }
 
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
+
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname
@@ -75,6 +76,16 @@ export async function preCacheIcon() {
         }
     }
     preCacheIconFlags = true
+}
+export async function loadMainAPINow(){
+    try{
+        await loadMainAPI()
+        return "Local cache is up-to-date with upstream."
+    }
+    catch(e){
+        return e
+    }
+    
 }
 async function loadMainAPI(useCache: boolean = false) {
     if (!isMainThread){
@@ -169,14 +180,13 @@ async function loadMainAPI(useCache: boolean = false) {
     //console.log(mainAPI['metaCache'][true][Server.cn])
     //await preCacheIcon()
     if(isMainThread){
+            await piscina.drawList.run({
+            data: mainAPI,
+        },{name:'setMainApiToWorker'})
         await piscina.drawList.run({
-        data: mainAPI,
-    },{name:'setMainApiToWorker'})
-    await piscina.drawList.run({
-        data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname},
-    },{name:'setOtherFixToWorker'})
-
-}  
+            data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname},
+        },{name:'setOtherFixToWorker'})
+    }  
 
 
     logger('mainAPI', 'mainAPI loaded')

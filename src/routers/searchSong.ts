@@ -10,7 +10,7 @@ import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
-import mainAPI from '@/types/_Main';
+import mainAPI, { loadMainAPINow } from '@/types/_Main';
 
 const router = express.Router();
 
@@ -27,7 +27,9 @@ router.post(
     async (req: Request, res: Response) => {
 
         const { displayedServerList, fuzzySearchResult, text, compress } = req.body;
-        
+        if (text == "fetch" || text == "同步数据"|| text == "立即同步"|| text == "33824"|| text == "873283"|| text == "7963" || text == "7337374"){
+            return res.send(listToBase64([await loadMainAPINow()]));
+        }
         // 检查 text 和 fuzzySearchResult 是否同时存在
         if (text && fuzzySearchResult) {
             return res.status(422).json({ status: 'failed', data: 'text 与 fuzzySearchResult 不能同时存在' });
