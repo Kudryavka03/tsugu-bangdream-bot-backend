@@ -314,6 +314,15 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 match = true;
                 break;
               }
+              else{ // 如果仍然没有匹配到，则尝试拆分空格匹配，不考虑将其作为增量查找结果，因为有些歌名确实包含空格的，如果可以精确匹配的话就不再需要增量结果了
+                let keySplitSpace = matchValue.split(' ')
+                for (let kss of keySplitSpace){
+                  if (include(nickname, kss)) {
+                    match = true;
+                    break;
+                  }
+                }
+              }
             }
           }
           if (match) break
