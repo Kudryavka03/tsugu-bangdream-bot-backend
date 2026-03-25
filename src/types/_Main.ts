@@ -48,6 +48,7 @@ export function setOtherFix(data) {
     skillCNfix = data.skillCNfix
     eventCharacterParameterBonusFix = data.eventCharacterParameterBonusFix
     songNickname = data.songNickname
+    eventNickname = data.eventNickname
     logger('setOtherFix','Set setOtherFix to Worker Successfully.')
 }
 var preCacheIconFlags = false
@@ -147,6 +148,7 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
+    console.log(songNickname)
     for (let i = 0; i < eventNickname.length; i++) {
         const element = eventNickname[i];
         if (mainAPI['events'][element['Id'].toString()]) {
@@ -184,7 +186,7 @@ async function loadMainAPI(useCache: boolean = false) {
             data: mainAPI,
         },{name:'setMainApiToWorker'})
         await piscina.drawList.run({
-            data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname},
+            data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname,eventNickname},
         },{name:'setOtherFixToWorker'})
     }  
 
