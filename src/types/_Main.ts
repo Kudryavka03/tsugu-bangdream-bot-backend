@@ -148,7 +148,7 @@ async function loadMainAPI(useCache: boolean = false) {
             mainAPI['songs'][element['Id'].toString()]['nickname'] = element['Nickname']
         }
     }
-    console.log(songNickname)
+    //console.log(songNickname)
     for (let i = 0; i < eventNickname.length; i++) {
         const element = eventNickname[i];
         if (mainAPI['events'][element['Id'].toString()]) {

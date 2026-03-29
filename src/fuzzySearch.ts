@@ -323,6 +323,13 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                   }
                 }
               }
+              if (!match){  // 如果仍然无结果，则合并空格进行查找
+                if (include(nickname.replace(' ',''), matchValue.replace(' ',''))) {
+                  console.log(nickname.replace(' ',''),matchValue.replace(' ',''))
+                  match = true;
+                  break;
+                }
+              }
             }
           }
           if (match) break
@@ -330,6 +337,15 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
             match = true;
             break;
           }
+        }
+        if (!match && key == 'musicTitle'){
+          for (var mt of target[key]){
+            if (mt!= null && include(mt.replace(' ',''), matchValue.replace(' ',''))){
+              match = true;
+              break;
+            }
+          }
+
         }
         if (Array.isArray(target[key])) {
           for (let j = 0; j < target[key].length; j++) {
