@@ -324,8 +324,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 }
               }
               if (!match){  // 如果仍然无结果，则合并空格进行查找
-                if (include(nickname.replace(' ',''), matchValue.replace(' ',''))) {
-                  console.log(nickname.replace(' ',''),matchValue.replace(' ',''))
+                if (include(nickname.replace(/ /g, ''), matchValue.replace(/ /g, ''))) {
                   match = true;
                   break;
                 }
@@ -340,7 +339,9 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
         }
         if (!match && key == 'musicTitle'){
           for (var mt of target[key]){
-            if (mt!= null && include(mt.replace(' ',''), matchValue.replace(' ',''))){
+            //console.log(mt,matchValue)
+            //@ts-ignore
+            if (mt!= null && include(mt.replace(/ /g, ''), matchValue.replace(/ /g, ''))){
               match = true;
               break;
             }

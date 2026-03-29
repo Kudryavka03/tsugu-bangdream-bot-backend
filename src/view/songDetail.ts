@@ -42,7 +42,8 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
 
     const initData = await Promise.all([
         Promise.all(drawEventDatablockPromise),
-        song.initFull()
+        song.initFull(),
+        drawSongDataBlock(song)
     ])
     const drawEventDatablockResult = initData[0]
     
@@ -102,14 +103,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     var drawSongDataBlockPromise:Promise<Canvas>[] = []
     //顶部歌曲信息框
     drawSongDataBlockPromise.push(drawSongDataBlock(song))  // 理论不存在IO等待时间问题
-    const results = await Promise.all([
-        Promise.all(drawSongDataBlockPromise),
-        Promise.all(drawSongMetaListDataBlockPromise),
-    ]);
-    const [
-        drawSongDataBlockResult,
-        drawSongMetaListDataBlockResult,
-    ] = results
+    const drawSongMetaListDataBlockL = await Promise.all(drawSongMetaListDataBlockPromise);
 
 
     list.push(await drawListByServerList(song.musicTitle, '歌曲名称'))
@@ -161,7 +155,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
 
     var all = []
     all.push(await drawTitle('查询', '歌曲'))
-    all.push(drawSongDataBlockResult[0])
+    all.push(initData[2])
     var listImage = await drawDatablock({ list })
     //console.log(listImage)
     all.push(listImage)
@@ -169,7 +163,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     //创建最终输出数组
   
 
-    for(var r of drawSongMetaListDataBlockResult)
+    for(var r of drawSongMetaListDataBlockL)
     {
         all.push(r)
     }
