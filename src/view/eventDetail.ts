@@ -350,10 +350,10 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
     if(mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']){
         var totalPlayerDataCN = await drawList({
-            text:  mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']?'参与数:' +mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']+'人':'暂无数据'
+            text:  mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']?'参与数 ' +mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']+'人':'暂无数据'
         })
         var bannedPlayerDataCN = await drawList({
-            text: mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']?'违规数:' + mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']+'人':'暂无数据'
+            text: mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']?'违规数 ' + mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']+'人':'暂无数据'
         })
         //list.push(line)
         list.push(
