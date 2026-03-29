@@ -27,7 +27,7 @@ let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于
 
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
-export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname
+export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname,playerNumber
 export function setMainAPI(data) {
     if (data == null){
         logger('setMainAPI','setMainAPI try to set an null value,abort.')
@@ -125,6 +125,13 @@ async function loadMainAPI(useCache: boolean = false) {
     catch (e) {
         logger('mainAPI', '读取nickname_event.xlsx失败')
     }
+    try { //能够实时更新而不重启清空缓存    EventNickname Fix
+        let playerNumberData = await readExcelFileForOther(path.join(configPath, 'playernumber.xlsx'))
+        if(playerNumberData!=null) playerNumber = playerNumberData
+    }
+    catch (e) {
+        logger('mainAPI', '读取playernumber.xlsx失败')
+    }
     if (useCache) {
         cardsCNfix = await readJSON(path.join(configPath, 'cardsCNfix.json'))
         skillCNfix = await readJSON(path.join(configPath, 'skillsCNfix.json'))
@@ -153,6 +160,14 @@ async function loadMainAPI(useCache: boolean = false) {
         const element = eventNickname[i];
         if (mainAPI['events'][element['Id'].toString()]) {
             mainAPI['events'][element['Id'].toString()]['nickname'] = element['Nickname']
+        }
+    }
+    for (let i = 0; i < playerNumber.length; i++) {
+        const element = playerNumber[i];
+        if (mainAPI['events'][element['活动编号'].toString()]) {
+            //console.log(`当期活动编号：${element['活动编号'].toString()}  当期人数：${element['当期人数']}   封挂人数：${element['封挂数']}`)
+            mainAPI['events'][element['活动编号'].toString()]['totalPlayerDataCN'] = element['当期人数']
+            mainAPI['events'][element['活动编号'].toString()]['bannedPlayerDataCN'] = element['封挂数']
         }
     }
     // 初始化metaCache

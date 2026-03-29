@@ -20,6 +20,7 @@ import { drawSongListDataBlock } from '@/components/dataBlock/songList';
 import { globalDefaultServer, serverNameFullList } from '@/config';
 import { drawSongInList, drawSongListInList } from '@/components/list/song';
 import { resizeImage } from '@/components/utils';
+import mainAPI from '@/types/_Main';
 
 export async function drawEventDetail(eventId: number, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean, compress: boolean): Promise<Array<Buffer | string>> {
     const event = new Event(eventId)
@@ -205,7 +206,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             }
         
     }
-
+    //if (gachaCardIdList.length >0) drawCardListInListPromise.push(line)
     drawCardListInListPromise.push(drawCardListInList({    // 这个是不需要等待IO的
         key: '活动期间卡池卡牌',
         cardList: gachaCardList,
@@ -335,12 +336,37 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         list.push(line)
     }
     for(const i of drawCardListInListResult){
+        
         list.push(i)
+        list.push(line)
     }
+    
     for(const i of drawGachaDatablockResult){
         gachaImageList.push(i)
     }
-    list.push(line)
+    
+
+
+
+    if(mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']){
+        var totalPlayerDataCN = await drawList({
+            text:  mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']?'参与数:' +mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']+'人':'暂无数据'
+        })
+        var bannedPlayerDataCN = await drawList({
+            text: mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']?'违规数:' + mainAPI['events'][event.eventId.toString()]['bannedPlayerDataCN']+'人':'暂无数据'
+        })
+        //list.push(line)
+        list.push(
+            await drawList({
+                key: '国服 参与人数 Beta.',
+                //content: [totalPlayerDataCN,bannedPlayerDataCN],
+                textSize: 30
+                //lineHeight: 40*1.5
+            })
+        )
+        list.push(drawListMerge([totalPlayerDataCN, bannedPlayerDataCN]))
+    }
+
 
     var listImage = await drawDatablock({ list })
     //创建最终输出数组
