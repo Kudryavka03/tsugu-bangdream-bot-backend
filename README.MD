@@ -15,7 +15,7 @@
 
 ## 🚪 注意
 
-> 注意：config文件夹（昵称相关）已移动到仓库 https://github.com/Kudryavka03/tsugu-bangdream-nickname 进行单独更新，以后当本仓库有代码变动时才会同步新的昵称（config）。
+> config文件夹（昵称相关）已移动到仓库 https://github.com/Kudryavka03/tsugu-bangdream-nickname 进行单独更新，以后当本仓库有代码变动时才会同步新的昵称（config）。
 
 > 本项目合并了部分来自 https://github.com/yyf-0404/tsugu-bangdream-bot (Saaya) 的优化或特性。
 
