@@ -11,13 +11,17 @@
 
 *此 Backend 为群 邦烤休闲小屋☆山吹町 Bot 所运行的版本。*
 
+
+
 ## 🚪 注意
+
+> 注意：config文件夹（昵称相关）已移动到仓库 https://github.com/Kudryavka03/tsugu-bangdream-nickname 进行单独更新，以后当本仓库有代码变动时才会同步新的昵称（config）。
 
 > 本项目合并了部分来自 https://github.com/yyf-0404/tsugu-bangdream-bot (Saaya) 的优化或特性。
 
-> 本项目参考了部分来自 https://github.com/StarFreedomX/tsugu-bangdream-bot/tree/starfx-main (闪耀香澄汁) 的功能
+> 本项目参考了部分来自 https://github.com/StarFreedomX/tsugu-bangdream-bot/tree/starfx-main (闪耀香澄汁) 的功能。
 
-> 本项目预测线2的实现直接来源于 https://github.com/byydzh/MYCX_1000 (邦多利国服千线预测姬)
+> 本项目预测线2的实现直接来源于 https://github.com/byydzh/MYCX_1000 (邦多利国服千线预测姬)。
 
 > 本项目做了非常多关于可能可以缩短网络IO等待上的优化，旨在为了更快的出图速度。在部分情况下可能会因为Bestdori API接口限流导致无法出图，同时因为较为激进的缓存策略，对硬盘空间有一定需求，且可能会导致部分数据需要在第二次查询才会同步最新。
 
