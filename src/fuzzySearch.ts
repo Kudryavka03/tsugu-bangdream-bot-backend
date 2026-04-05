@@ -25,6 +25,10 @@ function loadConfig(): FuzzySearchConfig {
   return JSON.parse(fileContent);
 }
 
+export function manualLoadFuzzyConfig() {
+  if (config!=undefined) config = loadConfig()
+}
+
 function extractLvNumber(str: string): number | null {
   const regex = /^lv(\d+)$/i;
   const match = str.match(regex);

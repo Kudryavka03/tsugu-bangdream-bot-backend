@@ -13,6 +13,7 @@ import { getPresentEvent } from './Event'
 import { Long } from 'mongodb'
 import { piscina } from '@/WorkerPool';
 import { genMetaRankCache } from '@/view/songMetaList'
+import { manualLoadFuzzyConfig } from '@/fuzzySearch'
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -36,6 +37,7 @@ export function setMainAPI(data) {
     for (const key in data) {
         mainAPI[key] = data[key];
     }
+    manualLoadFuzzyConfig()
     logger('setMainAPI','Set apiData to Worker Successfully.')
 }
 export function setOtherFix(data) {
@@ -110,7 +112,7 @@ async function loadMainAPI(useCache: boolean = false) {
     await Promise.all(promiseAll);
 
 
-
+    
     try { //能够实时更新而不重启清空缓存
         let songNicknameData = await readExcelFile(path.join(configPath, 'nickname_song.xlsx'))
         if(songNicknameData!=null) songNickname = songNicknameData  // 尽量避免定时更新api的时候无法查询到任何歌曲，
@@ -204,7 +206,7 @@ async function loadMainAPI(useCache: boolean = false) {
             data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname,eventNickname},
         },{name:'setOtherFixToWorker'})
     }  
-
+    manualLoadFuzzyConfig()
 
     logger('mainAPI', 'mainAPI loaded')
 
