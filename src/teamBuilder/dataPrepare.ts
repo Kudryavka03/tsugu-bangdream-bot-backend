@@ -48,8 +48,14 @@ export async function workerDataInit(playerId:number, server: Server,currentEven
     let player = await playerDB.updCurrentEvent(playerId, server, currentEvent) // 
     //console.log(playerId,server,currentEvent,player)
     //console.log('dataPrepare')
-    let res =  await dataPrepare(player,server)
-    res.print()
+    let res = null
+    try{
+        res =  await dataPrepare(player,server)
+        res.print()
+    }
+    catch(e){
+        return [e.message]
+    }
     const output = []
     if (save) {
         res.description = desc

@@ -198,6 +198,7 @@ async function loadMainAPI(useCache: boolean = false) {
     genMetaRankCache(false,Server.kr)
     //console.log(mainAPI['metaCache'][true][Server.cn])
     //await preCacheIcon()
+    manualLoadFuzzyConfig()
     if(isMainThread){
             await piscina.drawList.run({
             data: mainAPI,
@@ -206,7 +207,7 @@ async function loadMainAPI(useCache: boolean = false) {
             data: {cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix, songNickname,eventNickname},
         },{name:'setOtherFixToWorker'})
     }  
-    manualLoadFuzzyConfig()
+    
 
     logger('mainAPI', 'mainAPI loaded')
 
