@@ -3,15 +3,21 @@ import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { difficultyColorList, Song } from '@/types/Song';
 import { eventTypeList, playerDetail } from '@/teamBuilder/types';
+import { logger } from '@/logger';
 
 export class PlayerDB {
   private client: MongoClient;
   private db: any;
+  private uri: string;
+  private dbName: string;
 
 
   constructor(uri: string, dbName: string) {
-    this.client = new MongoClient(uri);
-    this.db = this.client.db(dbName);
+    //赋值方便断线重连
+    this.uri = uri
+    this.dbName = dbName
+    this.client = new MongoClient(this.uri);
+    this.db = this.client.db(this.dbName);
     //尝试连接数据库，如果连接失败则抛出错误
     this.connect().catch((err) => {
       console.log(`连接数据库失败 Error: ${err.message}`);
@@ -22,8 +28,22 @@ export class PlayerDB {
     return this.db.collection('players');
   }
 
+
   async connect(): Promise<void> {
+    var rebuildFlags = false
+    if (this.client && this.db) {
+      try {
+        await this.client.connect();
+        return;
+      } catch (e) {
+        rebuildFlags = true
+        logger('playerDB.ts','MongoDB Connection is lose,start to rebuild MongoDB Instance......');
+      }
+    }
+    this.client = new MongoClient(this.uri);
     await this.client.connect();
+    this.db = this.client.db(this.dbName);
+    if (rebuildFlags) logger('playerDB.ts','MongoDB Instance rebuild Successful.');
   }
 
   async init(playerId: number) {
