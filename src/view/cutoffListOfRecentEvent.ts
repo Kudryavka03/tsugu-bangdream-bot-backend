@@ -108,12 +108,13 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                 cutoffContent.push(`当前预测线: ${cutoff.predictEP.toString()}\n`)
             }
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}\n`)
-            cutoffContent.push(`日增: ${cutoff.dailyIncrement}\n`)
+            cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}\n`)
         }
         else if (cutoff.status == 'ended') {
             //console.log(cutoff)
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
-            cutoffContent.push(`日增: ${cutoff.dailyIncrement}\n`)
+            cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}\n`)
+            
         }
 
         list.push(await drawList({
@@ -131,11 +132,12 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
     var listImage = await drawDatablock({ list })
     all.push(await bannerImageBox)
     all.push(listImage)
-    
+    /*
     all.push(await drawTips({
         text: '想给我们提供数据?\n可以在B站 @Tsugu_Official 的置顶动态留言\n或者在群238052000中提供数据\n也可以扫描右侧二维码进行上传\n手机可以长按图片扫描二维码\n我们会尽快将数据上传至服务器',
         image: await loadImageFromPath(path.join(assetsRootPath, 'shimowendang.png'))
     }))
+    */
     
     var buffer = await outputFinalBuffer({
         imageList: all,

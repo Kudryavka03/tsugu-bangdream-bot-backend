@@ -245,7 +245,7 @@ export class Cutoff {
             for (var zpc = 0;zpc < Math.floor(ratio);zpc++){
                 dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)/ratio))
             }
-            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)* ( ratio - Math.ceil(ratio))))
+            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)* ( Math.ceil(ratio) - ratio )))
         }else{
             dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)))
         }

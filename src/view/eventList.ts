@@ -4,7 +4,7 @@ import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
 import { App, Canvas } from 'skia-canvas'
 import { drawDatablock, drawDatablockHorizontal } from '@/components/dataBlock';
 import { line } from '@/components/list';
-import { stackImage, stackImageHorizontal, resizeImage } from '@/components/utils'
+import { stackImage, stackImageHorizontal, resizeImage, getOptHeight } from '@/components/utils'
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { Server, getIcon, getServerByName } from '@/types/Server'
@@ -22,7 +22,7 @@ import { logger } from "@/logger";
 import { LagTimes } from "@/app";
 import { drawTips } from "@/components/tips";
 const limit = pLimit(10000);
-const maxHeight = 7000
+let maxHeight = 7000
 const maxColumns = 7
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { loadImageOnce } from "@/components/card";
@@ -40,17 +40,8 @@ if (!isMainThread && parentPort) {
 
 
 //表格用默认虚线
-export const line2: Canvas = drawDottedLine({
-    width: 30,
-    height: 7000,
-    startX: 5,
-    startY: 0,
-    endX: 15,
-    endY: 6995,
-    radius: 2,
-    gap: 10,
-    color: "#a8a8a8"
-})
+
+
 export async function initForWorker() {
     await loadImageOnce()
     await preCacheIcon()
@@ -128,10 +119,23 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
 
     var tempEventImageList: Canvas[] = [];
     var eventImageListHorizontal: Canvas[] = [];
-
+    // 预判活动Height，设置合理的maxHeight
+    maxHeight = getOptHeight(eventResults.length,1000,300,10,30)
+    const line2: Canvas = drawDottedLine({
+        width: 30,
+        height: maxHeight*1.1,
+        startX: 5,
+        startY: 0,
+        endX: 15,
+        endY: 6995,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    })
     for (var i = 0; i < eventResults.length; i++) {
         var tempImage = eventResults[i].image;
         tempH += tempImage.height;
+        
         if (tempH > maxHeight) {
             if (tempEventImageList.length > 0) {
                 eventImageListHorizontal.push(stackImage(tempEventImageList));

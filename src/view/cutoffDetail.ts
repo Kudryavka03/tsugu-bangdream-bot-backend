@@ -73,7 +73,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             }),
             await drawList({
                 key: '线性外推',
-                text: (Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((new Date().getTime() - cutoff.latestCutoff.time) / 3600)) + cutoff.latestCutoff.ep).toString()
+                text: Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((event.endAt[mainServer] - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString()
             }),
             await drawList({
                 key: '预测线2',
@@ -114,7 +114,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const tempList = []
         tempList.push((await drawList({
             key: '日增速 Beta.',
-            text: `${cutoff.dailyIncrement}`
+            text: `${cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
         list.push(line)
@@ -136,7 +136,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const tempList = []
         tempList.push((await drawList({
             key: '日增速 Beta.',
-            text: `${cutoff.dailyIncrement}`
+            text: `${cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
         list.push(line)
@@ -153,7 +153,8 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     all.push(listImage)
     
     all.push(await drawTips({
-        text: '预测线1为Tsugu原版预测线\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000',
+        text: '预测线1为Tsugu原版预测线\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000\n若Bestdori关键节点(凌晨3:45)无数据，日增将根据时间差均匀补偿',
+        
         //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
     

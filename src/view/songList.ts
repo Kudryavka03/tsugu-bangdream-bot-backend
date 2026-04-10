@@ -7,7 +7,7 @@ import { outputFinalBuffer } from '@/image/output'
 import { drawDatablockHorizontal } from "@/components/dataBlock";
 import { drawSongInList, drawSongInListForQuerySong } from '@/components/list/song';
 import { drawDottedLine } from '@/image/dottedLine';
-import { stackImage } from '@/components/utils';
+import { getOptHeight, stackImage } from '@/components/utils';
 import { Server } from '@/types/Server';
 import { globalDefaultServer } from '@/config';
 import { drawSongDetail } from "./songDetail";
@@ -44,18 +44,8 @@ const line = drawDottedLine({
     color: "#a8a8a8"
 })
 
-//表格用默认竖向虚线
-const line2: Canvas = drawDottedLine({
-    width: 30,
-    height: 6000,
-    startX: 10,
-    startY: 0,
-    endX: 15,
-    endY: 5990,
-    radius: 2,
-    gap: 10,
-    color: "#a8a8a8"
-})
+
+
 export async function initForWorker() {
     await loadImageOnce()
     await preCacheIcon()
@@ -75,8 +65,19 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         return await drawSongDetail(tempSongList[0], displayedServerList, compress)
     }
 
-    const maxHeight = 6000
-
+    const maxHeight = getOptHeight(tempSongList.length,1000,100,10,30)
+    //表格用默认竖向虚线
+    const line2: Canvas = drawDottedLine({
+        width: 30,
+        height: maxHeight*1.1 ,
+        startX: 10,
+        startY: 0,
+        endX: 15,
+        endY: 5990,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    })
     var tempSongImageList: Canvas[] = [];
     var songImageListHorizontal: Canvas[] = [];
     var tempH = 0;
