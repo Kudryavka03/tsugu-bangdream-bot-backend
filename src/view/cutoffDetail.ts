@@ -133,6 +133,13 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             text: cutoff.latestCutoff.ep.toString()
         }))
         list.push(line)
+        const tempList = []
+        tempList.push((await drawList({
+            key: '日增速 Beta.',
+            text: `${cutoff.dailyIncrement}`
+        })))
+        list.push(drawListMerge(tempList))
+        list.push(line)
     }
     list.pop()
     list.push(new Canvas(800, 50))

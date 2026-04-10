@@ -98,19 +98,22 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
             let predictText: string
             if (cutoff.predictEP == null || cutoff.predictEP == 0) {
                 predictText = '?'
+                cutoffContent.push(`当前预测线: 数据不足\n`)
             }
             else {
-                const pEP1 = cutoff.predictEP.toString()
-                const pEP2 = cutoff.predictEP.toString()
-                predictText = pEP1==pEP2?cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString():cutoff.predictEP.toString() + ' | ' + '不预测'
+                if (cutoff.predictEP.toString()!=cutoff.predictEP2.toString()){
+                    cutoffContent.push(`第一预测线: ${cutoff.predictEP.toString()}\n`)
+                    cutoffContent.push(`第二预测线: ${cutoff.predictEP2.toString()}\n`)
+                }
+                cutoffContent.push(`当前预测线: ${cutoff.predictEP.toString()}\n`)
             }
-            cutoffContent.push(`当前预测线: ${predictText}\n`)
-            cutoffContent.push(`最新分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
-            cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}`)
+            cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}\n`)
+            cutoffContent.push(`日增: ${cutoff.dailyIncrement}\n`)
         }
         else if (cutoff.status == 'ended') {
             //console.log(cutoff)
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
+            cutoffContent.push(`日增: ${cutoff.dailyIncrement}\n`)
         }
 
         list.push(await drawList({
