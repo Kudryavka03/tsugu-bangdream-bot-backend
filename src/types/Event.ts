@@ -358,6 +358,9 @@ export class Event {
         
         //const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)
         const allDeco = mainAPI['deco']
+        if(!this.rankingRewards[server]){   // Undefined处理
+            return undefined
+        }
         const rewards = this.rankingRewards[server].filter(Boolean)
         let rewardId = -1
         for(let i = 0; i < rewards?.length; i++){
