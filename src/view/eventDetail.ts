@@ -139,7 +139,9 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     const getRewardStampPromise: Promise<Image | Canvas>[] = []; 
     getRewardStampPromise.push(event.getRewardStamp(displayedServerList[0]))
     // const stampImage = await event.getRewardStamp(displayedServerList[0])
-
+    // 活动装饰
+    const getRewardDecoPromise: Promise<Image | Canvas>[] = []; 
+    getRewardDecoPromise.push(event.getRewardDeco(displayedServerList[0]))
     //奖励卡牌
     var rewardCardList: Card[] = []
     for (let i = 0; i < event.rewardCards.length; i++) {
@@ -232,7 +234,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         Promise.all(drawCardListInListPromise),
         Promise.all(drawGachaDatablockPromise),
         Promise.all(BGImagePromise),
-        Promise.all(drawSongListInListMorePromise)
+        Promise.all(drawSongListInListMorePromise),
+        Promise.all(getRewardDecoPromise)
     ]);
     const [
         bannerImageResult,
@@ -243,7 +246,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         drawCardListInListResult,
         drawGachaDatablockResult,
         BGImageResult,
-        drawSongListInListMoreResult
+        drawSongListInListMoreResult,
+        getRewardDecoResult
     ] = results;
 
     var eventBannerImage = bannerImageResult[0]
@@ -315,6 +319,17 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         }))
         list.push(line)
     }
+    if (getRewardDecoResult[0]){
+        list.push(
+            await drawList({
+                key: '活动装饰',
+                content: [getRewardDecoResult[0]],
+                textSize: 64,
+                lineHeight: 64
+            })
+        )
+        list.push(line)
+    }
     for(const i of drawDegreeListOfEventResult){
         list.push(i)
         list.push(line)
@@ -323,7 +338,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         list.push(i)
         list.push(line)
     }
-    
+
     if (getRewardStampResult[0]){
         list.push(
             await drawList({
@@ -335,6 +350,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         )
         list.push(line)
     }
+
     for(const i of drawCardListInListResult){
         
         list.push(i)
