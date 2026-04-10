@@ -72,6 +72,10 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
                 text: predictText
             }),
             await drawList({
+                key: '线性外推',
+                text: (Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((new Date().getTime() - cutoff.latestCutoff.time) / 3600)) + cutoff.latestCutoff.ep).toString()
+            }),
+            await drawList({
                 key: '预测线2',
                 text: predictText2
             }),
@@ -106,8 +110,13 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             text: `${changeTimePeriodFormat((new Date().getTime()) - cutoff.latestCutoff.time)}前`
         }))
         list.push(drawListMerge(tempTimeList))
-
-
+        list.push(line)
+        const tempList = []
+        tempList.push((await drawList({
+            key: '日增速 Beta.',
+            text: `${cutoff.dailyIncrement}`
+        })))
+        list.push(drawListMerge(tempList))
         list.push(line)
 
     }

@@ -20,19 +20,25 @@ export class Cutoff {
     predictEP: number;
     predictEP2: number;
     startAt: number;
+    startAtAll: number[];
     endAt: number;
+    endAtAll: number[];
     status: 'not_start' | 'in_progress' | 'ended';
     isInitfull: boolean = false;
+    event:Event;
+    dailyIncrement = []
+    currentGetDataTime
     constructor(eventId: number, server: Server, tier: number) {
-        const event = new Event(eventId)
+        const tempEventData = new Event(eventId)
         //如果活动不存在，直接返回
-        if (!event.isExist) {
+        if (!tempEventData.isExist) {
             this.isExist = false;
             return
         }
-        this.eventType = event.eventType
+        this.eventType = tempEventData.eventType
         this.eventId = eventId
         this.server = server
+        this.event = tempEventData
         //如果该档线不在该服的档线列表中，直接返回
         if (!tierListOfServer[Server[server]].includes(tier)) {
             this.isExist = false;
@@ -40,16 +46,18 @@ export class Cutoff {
         }
         this.tier = tier
         this.isExist = true;
-        this.startAt = event.startAt[server]
-        this.endAt = event.endAt[server]
-        const tempEvent = new Event(this.eventId)
-
+        this.startAtAll = this.event.startAt
+        this.endAtAll = this.event.endAt
+        this.startAt = this.event.startAt[server]
+        this.endAt = this.event.endAt[server]
+        //const tempEvent = new Event(this.eventId)
+        this.currentGetDataTime = new Date().getTime()
         //状态
-        var time = new Date().getTime()
-        if (time < tempEvent.startAt[this.server]) {
+        var time = this.currentGetDataTime
+        if (time < this.startAtAll[this.server]) {
             this.status = 'not_start'
         }
-        else if (time > tempEvent.endAt[this.server]) {
+        else if (time > this.endAtAll[this.server]) {
             this.status = 'ended'
         }
         else {
@@ -125,6 +133,7 @@ export class Cutoff {
         else {
             this.rate = rateData.rate
         }
+        this.getDailyIncrement()
         if (this.status == 'in_progress') {
             this.predict()
             this.predict2()
@@ -171,6 +180,72 @@ export class Cutoff {
                 }
             });
         });
+    }
+    getDailyIncrement(){
+        let eventStartAtTime = this.startAt
+        let eventEndAtTime = this.endAt
+        let score:number[] = []
+        let time:number[] = []
+
+        for (var c of this.cutoffs){
+            let timeStampStr = c.time
+            var date = new Date(timeStampStr)
+            if (date.getHours() == 3 && date.getMinutes() == 45){
+                score.push(c.ep)
+                time.push(timeStampStr)
+            }
+        }
+
+        let dailyIncrement:number[] = []
+        if (score.length < 2) {
+            if ((time[0] - eventStartAtTime) < (86400000 * 0.7)){
+                dailyIncrement.push(Math.round((this.cutoffs[this.cutoffs.length-1].ep)/10000))
+            }
+            else{
+                dailyIncrement.push(0)
+            }
+            return  
+        }
+        if ((time[0] - eventStartAtTime) < (86400000 * 0.7)){
+            dailyIncrement.push(Math.round(score[0] / 10000))
+
+        }else{
+            // 假设第一天为45%
+            let t = time[0] - eventStartAtTime 
+            let total_days =  t / 86400000
+            dailyIncrement.push(Math.round(score[0] / total_days * 0.5) / 10000)
+            for(var i = 0;i< Math.floor(total_days - 1);i++){   // 假如第一天没数据，第二天没数据，第三天有数据，这里只算第二天
+                dailyIncrement.push(Math.round(score[0] / total_days) / 10000)
+            }
+        }
+        for(let i = 0;i<score.length-1;i++){
+            if (time[i+1] - time[i+1] > 86520000){
+                let zeroPaddingCount = Math.round((time[i+1] - time[i+1]) / 86280000)   // 两分钟误差，用于计算中间究竟空了多少天。最终结果返回两天，那么中间就空了两天，那么就计算平均值
+                for(var zpc = 0;zpc<zeroPaddingCount;zpc++){
+                    let avgIncrementValue = Math.round(((score[i+1] - score[i])/10000)/zeroPaddingCount)
+                    dailyIncrement.push(avgIncrementValue)
+                }
+            }   // 两分钟容错,如果大于两分钟，就表明数据不可信
+            else{
+                dailyIncrement.push(Math.round((score[i+1] - score[i])/10000))
+            }
+        }
+        // 最后再加入最后一刻的增速，这里同样要计算是否大于一天
+        // 假如3/14有数据，3/15没数据，3/16没数据，3/17有数据，并且是最后一天
+        // 3/14 3:45 ~ 3/17 7:15    此时ratio将会是3.2~3.3左右。
+        let ratio = (this.currentGetDataTime - time[time.length-1]) / 86400000
+        if (ratio > 1.8){
+            let totalLostDays = Math.floor(ratio)    // 向下取整
+            if (ratio - totalLostDays > 0.8) totalLostDays++
+            let zeroPaddingCount = Math.round(ratio)
+            for (var zpc = 0;zpc < Math.floor(ratio);zpc++){
+                dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)/ratio))
+            }
+            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)* ( ratio - Math.ceil(ratio))))
+        }else{
+            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)))
+        }
+        this.dailyIncrement = dailyIncrement
     }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
