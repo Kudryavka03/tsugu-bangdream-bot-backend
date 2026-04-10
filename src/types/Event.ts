@@ -372,6 +372,7 @@ export class Event {
                 decoAssentName = allDeco[i]['assetBundleName']
             }
         }
+        if (rewardId == -1) return undefined
         if(decoAssentName == ''){
             return undefined
         }
