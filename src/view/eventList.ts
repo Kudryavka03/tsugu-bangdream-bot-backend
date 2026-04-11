@@ -91,7 +91,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     if (tempEventList.length == 1) {
         return await drawEventDetail(tempEventList[0].eventId,displayedServerList,true,compress)
     }
-
+    let offsetN:number = 0  // 定义列表Offset
     // 按照开始时间排序
     sortEventList(tempEventList,displayedServerList)
 
@@ -101,6 +101,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     await Promise.all(tempEventList.map(e => e.initFull(false)));
     if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
         for (var i = 0; i < tempEventList.length; i++) {
+            if (Math.ceil(tempEventList[i].characters.length / 7) > 1 ) offsetN += 110
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
     }
@@ -109,6 +110,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
         heavyLoad = true
         for (var i = 0; i < tempEventList.length; i++) {
+            if (Math.ceil(tempEventList[i].characters.length / 7) > 1 ) offsetN += 110
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
     }
@@ -120,7 +122,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var tempEventImageList: Canvas[] = [];
     var eventImageListHorizontal: Canvas[] = [];
     // 预判活动Height，设置合理的maxHeight
-    maxHeight = getOptHeight(eventResults.length,1000,300,10,30)
+    maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
     const line2: Canvas = drawDottedLine({
         width: 30,
         height: maxHeight*1.1,
