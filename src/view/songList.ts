@@ -91,7 +91,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     //表格用默认竖向虚线
     const line2: Canvas = drawDottedLine({
         width: 30,
-        height: ((maxCount-2) * 85) ,
+        height: ((maxCount) * 85) ,
         startX: 10,
         startY: 0,
         endX: 15,
