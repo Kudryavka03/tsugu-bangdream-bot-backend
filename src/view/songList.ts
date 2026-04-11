@@ -91,7 +91,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     //表格用默认竖向虚线
     const line2: Canvas = drawDottedLine({
         width: 30,
-        height: ((maxCount) * 85) ,
+        height: ((maxCount-1) * 85) ,
         startX: 10,
         startY: 0,
         endX: 15,
@@ -103,7 +103,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     for (let i = 0; i < songImages.length; i++) {
         var tempImage = songImages[i];
         tempH += tempImage.height
-        if (i % maxCount == 0) {
+        if (i % maxCount == 0 && i!=0) {
             tempSongImageList.pop()
             songImageListHorizontal.push(stackImage(tempSongImageList))
             songImageListHorizontal.push(line2)

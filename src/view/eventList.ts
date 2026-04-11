@@ -139,7 +139,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         var tempImage = eventResults[i].image;
         tempH += tempImage.height;  // tempH > maxHeight
         
-        if (i % maxCount == 0) {
+        if (i % maxCount == 0 && i!=0) {
             if (tempEventImageList.length > 0) {
                 eventImageListHorizontal.push(stackImage(tempEventImageList));
                 eventImageListHorizontal.push(line2);
