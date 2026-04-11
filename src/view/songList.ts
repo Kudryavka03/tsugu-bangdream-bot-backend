@@ -7,7 +7,7 @@ import { outputFinalBuffer } from '@/image/output'
 import { drawDatablockHorizontal } from "@/components/dataBlock";
 import { drawSongInList, drawSongInListForQuerySong } from '@/components/list/song';
 import { drawDottedLine } from '@/image/dottedLine';
-import { getOptHeight, stackImage } from '@/components/utils';
+import { getOptDrawCount, getOptHeight, stackImage } from '@/components/utils';
 import { Server } from '@/types/Server';
 import { globalDefaultServer } from '@/config';
 import { drawSongDetail } from "./songDetail";
@@ -65,19 +65,6 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         return await drawSongDetail(tempSongList[0], displayedServerList, compress)
     }
 
-    const maxHeight = getOptHeight(tempSongList.length,1000,100,10,30)
-    //表格用默认竖向虚线
-    const line2: Canvas = drawDottedLine({
-        width: 30,
-        height: maxHeight*1.1 ,
-        startX: 10,
-        startY: 0,
-        endX: 15,
-        endY: 5990,
-        radius: 2,
-        gap: 10,
-        color: "#a8a8a8"
-    })
     var tempSongImageList: Canvas[] = [];
     var songImageListHorizontal: Canvas[] = [];
     var tempH = 0;
@@ -99,11 +86,24 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     var songImages = await Promise.all(songPromises);
     //var t2 = Date.now()
     //console.log(t2-t1)
-
+    let maxCount = getOptDrawCount(tempSongList.length,1000,85,10,30)  // 1000为一首歌长度，85为高度
+    //const maxHeight = getOptHeight(tempSongList.length,1000,100,10,30)
+    //表格用默认竖向虚线
+    const line2: Canvas = drawDottedLine({
+        width: 30,
+        height: ((maxCount-2) * 85) ,
+        startX: 10,
+        startY: 0,
+        endX: 15,
+        endY: 5990,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    })
     for (let i = 0; i < songImages.length; i++) {
         var tempImage = songImages[i];
         tempH += tempImage.height
-        if (tempH > maxHeight) {
+        if (i % maxCount == 0) {
             tempSongImageList.pop()
             songImageListHorizontal.push(stackImage(tempSongImageList))
             songImageListHorizontal.push(line2)

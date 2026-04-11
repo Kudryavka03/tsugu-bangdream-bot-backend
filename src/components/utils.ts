@@ -95,3 +95,36 @@ export function getOptHeight(n:number,x:number,y:number,line:number,line2:number
     console.log((y1 ))
     return (y1 )
 }
+
+// 取得每行最高绘制数量，节省空间
+export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:number,offsetN:number = 0){
+    // n：多少个框
+    // x：框长度比例
+    // y：框高度比例
+    // line：行高度
+    // line2：列高度
+    // offsetN：为了解决部分活动角色显示过多而设置的
+    //n=n+2
+    n = n + offsetN
+    let size = 999999999999999
+    let x1 = 0
+    let y1 = 0
+    let c = 0
+    let maxHeightLimit = 7000
+    for(var i = 1;i<7;i++){ // 长度，最高7个长度
+        let h = Math.ceil(n/i)  // 当每行有i个的时候，h预计要多少个
+        let s = ((h*y + line*(h-1))*(x*i + line2*(i-1)))
+        console.log(`列${i} h=${h} 面积为${s} 高度${h*y}`)
+        if (s <= size && ((h*y + y)  < maxHeightLimit)){
+            size = s
+            x1 = i
+            y1 = (h * y) - 1000
+            c = h
+            //console.log(`更新配置：列${i} h=${h} 面积为${s} 最终返回高度${y1}`)
+        }
+    }
+    // 获取最佳的面积
+    if ((y1 )  >= maxHeightLimit) return  c
+    //console.log(c)
+    return c
+}

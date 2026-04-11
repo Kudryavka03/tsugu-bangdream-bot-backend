@@ -4,7 +4,7 @@ import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
 import { App, Canvas } from 'skia-canvas'
 import { drawDatablock, drawDatablockHorizontal } from '@/components/dataBlock';
 import { line } from '@/components/list';
-import { stackImage, stackImageHorizontal, resizeImage, getOptHeight } from '@/components/utils'
+import { stackImage, stackImageHorizontal, resizeImage, getOptHeight, getOptDrawCount } from '@/components/utils'
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { Server, getIcon, getServerByName } from '@/types/Server'
@@ -122,10 +122,11 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     var tempEventImageList: Canvas[] = [];
     var eventImageListHorizontal: Canvas[] = [];
     // 预判活动Height，设置合理的maxHeight
-    maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
+    //maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
+    let maxCount = getOptDrawCount(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
     const line2: Canvas = drawDottedLine({
         width: 30,
-        height: maxHeight*1.1,
+        height: ((maxCount-2) * 300),
         startX: 5,
         startY: 0,
         endX: 15,
@@ -136,9 +137,9 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     })
     for (var i = 0; i < eventResults.length; i++) {
         var tempImage = eventResults[i].image;
-        tempH += tempImage.height;
+        tempH += tempImage.height;  // tempH > maxHeight
         
-        if (tempH > maxHeight) {
+        if (i % maxCount == 0) {
             if (tempEventImageList.length > 0) {
                 eventImageListHorizontal.push(stackImage(tempEventImageList));
                 eventImageListHorizontal.push(line2);
