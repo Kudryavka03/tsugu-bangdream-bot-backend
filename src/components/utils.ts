@@ -105,7 +105,8 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
     // line2：列高度
     // offsetN：为了解决部分活动角色显示过多而设置的
     //n=n+2
-    n = n + offsetN
+    if (n  < 7) return n
+    n = n +offsetN
     let size = 999999999999999
     let x1 = 0
     let y1 = 0
@@ -124,7 +125,8 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
         }
     }
     // 获取最佳的面积
-    if ((y1 )  >= maxHeightLimit) return  c
+    // if ((y1 )  >= maxHeightLimit) return  c
     //console.log(c)
-    return c
+    //console.log(Math.ceil(offsetN))
+    return c + Math.ceil(offsetN)
 }

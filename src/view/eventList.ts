@@ -101,7 +101,6 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     await Promise.all(tempEventList.map(e => e.initFull(false)));
     if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
         for (var i = 0; i < tempEventList.length; i++) {
-            if (Math.ceil(tempEventList[i].characters.length / 7) > 1 ) offsetN += 110
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
     }
@@ -110,7 +109,6 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
         heavyLoad = true
         for (var i = 0; i < tempEventList.length; i++) {
-            if (Math.ceil(tempEventList[i].characters.length / 7) > 1 ) offsetN += 110
             eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
         }
     }
@@ -121,12 +119,13 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
 
     var tempEventImageList: Canvas[] = [];
     var eventImageListHorizontal: Canvas[] = [];
+    //console.log(offsetN)
     // 预判活动Height，设置合理的maxHeight
     //maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
-    let maxCount = getOptDrawCount(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
+    let maxCount = getOptDrawCount(eventResults.length,1000,290,10,30,Math.ceil(offsetN / 300)) 
     const line2: Canvas = drawDottedLine({
         width: 30,
-        height: ((maxCount-2) * 300),
+        height: ((maxCount -3) * 280),
         startX: 5,
         startY: 0,
         endX: 15,
@@ -139,7 +138,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         var tempImage = eventResults[i].image;
         tempH += tempImage.height;  // tempH > maxHeight
         
-        if (i % maxCount == 0 && i!=0) {
+        if (i % (maxCount) == 0 && i!=0) {
             if (tempEventImageList.length > 0) {
                 eventImageListHorizontal.push(stackImage(tempEventImageList));
                 eventImageListHorizontal.push(line2);
@@ -284,12 +283,20 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     var cardList: Card[] = []
     var cardIdList: number[] = []//用于去重
     var getEventGachaAndCardListPromise = []
+    
+    
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
         // var EventGachaAndCardList = await getEventGachaAndCardList(event, server, true)
         getEventGachaAndCardListPromise.push(getEventGachaAndCardList(event, server, true))
     }
-
+    
+    
+   // 这里只展示活动Up的那五张卡牌
+   /*
+    var server = Server.jp
+    getEventGachaAndCardListPromise.push(getEventGachaAndCardList(event, server, true))
+    */
 
     const results = await Promise.all([
         Promise.all(getIconPromise),
@@ -361,7 +368,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     }
     var imageDown = await drawCardListInList({
         cardList: cardList,
-        lineHeight: 120,
+        lineHeight: 110,
         trainingStatus: false,
         cardIdVisible: true,
     })
