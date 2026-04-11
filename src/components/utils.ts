@@ -112,7 +112,8 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
     let y1 = 0
     let c = 0
     let maxHeightLimit = 7000
-    for(var i = 1;i<7;i++){ // 长度，最高7个长度
+    let iMax = 5
+    for(var i = 1;i<iMax;i++){ // 长度，最高5个长度
         let h = Math.ceil(n/i)  // 当每行有i个的时候，h预计要多少个
         let s = ((h*y + line*(h-1))*(x*i + line2*(i-1)))
         //console.log(`列${i} h=${h} 面积为${s} 高度${h*y}`)
@@ -124,9 +125,24 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
             //console.log(`更新配置：列${i} h=${h} 面积为${s} 最终返回高度${y1}`)
         }
     }
+    if (c == 0){
+        for(var i = 4;i<9;i++){ // 长度，最高7个长度
+            let h = Math.ceil(n/i)  // 当每行有i个的时候，h预计要多少个
+            let s = ((h*y + line*(h-1))*(x*i + line2*(i-1)))
+            //console.log(`列${i} h=${h} 面积为${s} 高度${h*y}`)
+            if (s <= size ){
+                size = s
+                x1 = i
+                y1 = (h * y) - 1000
+                c = h
+                //console.log(`更新配置：列${i} h=${h} 面积为${s} 最终返回高度${y1}`)
+            }
+        }
+    }
     // 获取最佳的面积
     // if ((y1 )  >= maxHeightLimit) return  c
-    //console.log(c)
+    //console.log(c + Math.ceil(offsetN))
     //console.log(Math.ceil(offsetN))
+    //if ((c + Math.ceil(offsetN)) > 31) return 31
     return c + Math.ceil(offsetN)
 }

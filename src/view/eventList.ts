@@ -123,6 +123,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     // 预判活动Height，设置合理的maxHeight
     //maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
     let maxCount = getOptDrawCount(eventResults.length,1000,290,10,30,Math.ceil(offsetN / 300)) 
+    if (maxCount > 31)maxCount=31
     const line2: Canvas = drawDottedLine({
         width: 30,
         height: ((maxCount -3) * 280),
