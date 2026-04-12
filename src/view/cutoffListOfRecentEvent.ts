@@ -105,7 +105,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                     cutoffContent.push(`第一预测线: ${cutoff.predictEP.toString()}\n`)
                     cutoffContent.push(`第二预测线: ${cutoff.predictEP2.toString()}\n`)
                 }
-                cutoffContent.push(`当前预测线: ${cutoff.predictEP.toString()}\n`)
+                cutoffContent.push(`当前分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
             }
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}\n`)
