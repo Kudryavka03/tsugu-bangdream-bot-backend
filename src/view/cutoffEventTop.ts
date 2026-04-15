@@ -86,7 +86,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     if (!cutoffEventTop.isExist) {
         return [`错误: ${serverNameFullList[mainServer]} 活动不存在或数据不足`];
     }
-    if (cutoffEventTop.status != "in_progress") {
+    if (cutoffEventTop.status != "in_progress" && false) {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
     }
 
