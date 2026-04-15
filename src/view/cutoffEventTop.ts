@@ -168,7 +168,11 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             if (playerRating[i].value != playerRating[i + 1].value) {
                 count += 1
                 const mid = new Date((playerRating[i + 1].time + playerRating[i].time) / 2), score = playerRating[i].value - playerRating[i + 1].value
-                imageList.push(drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${score}`})], widthMax / 2))
+                const timeChangeImage = drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${score}`})], widthMax / 2)
+                const ctx = timeChangeImage.getContext('2d')
+                ctx.font = "18px old,Microsoft Yahei"
+                ctx.fillText(`${mid.getMonth()+1}.${mid.getDate()}`, 45, 13)
+                imageList.push(timeChangeImage)
                 // list.push(line)
             }
         }
@@ -194,7 +198,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
         // CP Traces
-    if (mainAPI["events"][eventId.toString()]["eventType"]=="challenge"){
+    if (mainAPI["events"][eventId.toString()]["eventType"]=="challenge" &&  playerRating.length > 70){
 
     
     // 根据t10的习惯，一般是先清火再计算CP。以3火一把的协力为基准，作为CP200的值（通常情况下）。
