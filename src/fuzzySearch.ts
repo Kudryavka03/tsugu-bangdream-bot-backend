@@ -215,8 +215,10 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
     return false;
   }
   let match;
+  let haveAttrFlags = false;
   //if(isWorker) loadConfig()
   for (var key in matches) {
+    if (key === 'attribute') haveAttrFlags = true
     if (key === '_number' || key === '_all') {
       continue;
     }
@@ -314,6 +316,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
           if (key == 'nickname') {
             let nicknames = target[key].split(',')
             for (let nickname of nicknames) {
+              if (haveAttrFlags && target['eventId']) break; // 对于活动而言，如果拥有属性，则不再查询nickname
               if (include(nickname, matchValue)) {
                 match = true;
                 break;

@@ -120,12 +120,13 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
         if (s <= size && ((h*y + y)  < maxHeightLimit)){
             size = s
             x1 = i
-            y1 = (h * y) - 1000
+            //y1 = (h * y) - 1000
             c = h
+            if ((h*y) < maxHeightLimit) return c
             //console.log(`更新配置：列${i} h=${h} 面积为${s} 最终返回高度${y1}`)
         }
     }
-    if (c == 0){
+    if (c == 0){    // 防止畸形面积出现
         for(var i = 4;i<9;i++){ // 长度，最高7个长度
             let h = Math.ceil(n/i)  // 当每行有i个的时候，h预计要多少个
             let s = ((h*y + line*(h-1))*(x*i + line2*(i-1)))
@@ -133,7 +134,7 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
             if (s <= size ){
                 size = s
                 x1 = i
-                y1 = (h * y) - 1000
+                //y1 = (h * y) - 1000
                 c = h
                 //console.log(`更新配置：列${i} h=${h} 面积为${s} 最终返回高度${y1}`)
             }
