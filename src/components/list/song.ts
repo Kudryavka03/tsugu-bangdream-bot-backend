@@ -161,7 +161,41 @@ export async function drawSongListInList(songs: Song[], difficulty?: number, tex
         spacing: 0
     })
 }
-
+export async function drawSongListInListWithMoreDetail(songs: Song[], difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+    let height: number = 75 * songs.length + 10 * (songs.length - 1)
+    let canvas = new Canvas(760, height)
+    let ctx = canvas.getContext("2d")
+    let x = 0
+    let y = 0
+    let views: Canvas[] = []
+    const line = drawDottedLine({
+        width: 800,
+        height: 10,
+        startX: 5,
+        startY: 5,
+        endX: 795,
+        endY: 5,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    })
+    for (let i = 0; i < songs.length; i++) {
+        views.push(resizeImage({ image: await drawSongInListForQuerySong(songs[i], difficulty, text, displayedServerList), widthMax: 760 }))
+        views.push(line)
+    }
+    views.pop()
+    for (let i = 0; i < views.length; i++) {
+        ctx.drawImage(views[i], x, y)
+        y += views[i].height
+    }
+    return await drawList({
+        key: '歌榜歌曲',
+        content: [canvas],
+        textSize: canvas.height,
+        lineHeight: canvas.height + 20,
+        spacing: 0
+    })
+}
 export async function drawSongInListBig(song: Song, difficulty?: number, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
     const width = 400, spacing = 20, jacketSize = 250

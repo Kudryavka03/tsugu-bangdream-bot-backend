@@ -18,7 +18,7 @@ import { drawDegreeListOfEvent } from '@/components/list/degreeList';
 import { Song, getPresentSongList } from '@/types/Song'
 import { drawSongListDataBlock } from '@/components/dataBlock/songList';
 import { globalDefaultServer, serverNameFullList } from '@/config';
-import { drawSongInList, drawSongListInList } from '@/components/list/song';
+import { drawSongInList, drawSongInListForQuerySong, drawSongListInList, drawSongListInListWithMoreDetail } from '@/components/list/song';
 import { resizeImage } from '@/components/utils';
 import mainAPI from '@/types/_Main';
 
@@ -111,7 +111,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         for (let i = 0; i < event.musics[defaultServer].length; i++) {
             degreeSongs.push(new Song(event.musics[defaultServer][i].musicId))
         }
-        drawSongListInListPromise.push(drawSongListInList(degreeSongs))
+        drawSongListInListPromise.push(drawSongListInListWithMoreDetail(degreeSongs))
     }
 
     const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 

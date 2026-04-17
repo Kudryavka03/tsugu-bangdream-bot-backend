@@ -135,7 +135,12 @@ export var outputFinalBuffer = async function ({
        // const timestamp = Date.now();
         //tempBuffer = await tempcanv.toBuffer('raw' )
         //tempBuffer = await tempcanv.raw
-        tempBuffer = await tempcanv.toBuffer('jpeg', { density:1,quality:0.6 })
+        var size = (tempcanv.height * tempcanv.width)
+        var qualityValue = 0.7
+        console.log(size)
+        if (size >=6000000) qualityValue = 0.6
+        if (size >=10000000) qualityValue = 0.5
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue })
         //const timestamp2 = Date.now();
         //tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
         //const timestamp3 = Date.now();
