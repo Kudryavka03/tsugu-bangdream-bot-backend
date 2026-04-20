@@ -113,7 +113,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         }
         else if (cutoff.status == 'ended') {
             //console.log(cutoff)
-            const playerNumberTips = mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']?` | 共${mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']}人`:''
+            const playerNumberTips = mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']?` | 总${mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']}人`:''
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}${playerNumberTips}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}\n`)
             
