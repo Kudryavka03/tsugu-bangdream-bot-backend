@@ -43,7 +43,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     const initData = await Promise.all([
         Promise.all(drawEventDatablockPromise),
         song.initFull(),
-        drawSongDataBlock(song)
+        song.getSongJacketImage([Server.jp, Server.cn],true)    // 只缓存图片，到时候就可以直接使用缓存图片了，不用担心因CPU处理速度导致song无数据的问题
     ])
     const drawEventDatablockResult = initData[0]
     
@@ -155,7 +155,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
 
     var all = []
     all.push(await drawTitle('查询', '歌曲'))
-    all.push(initData[2])
+    all.push(await drawSongDataBlock(song))
     var listImage = await drawDatablock({ list })
     //console.log(listImage)
     all.push(listImage)

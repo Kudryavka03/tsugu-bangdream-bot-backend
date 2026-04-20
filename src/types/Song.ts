@@ -180,7 +180,6 @@ export class Song {
             arranger: songData['arranger'],
         }
         this.howToGet = songData['howToGet']
-
         this.isInitfull = true
     }
     async getData() {
@@ -190,7 +189,7 @@ export class Song {
     getSongRip(): number {
         return Math.ceil(this.songId / 10) * 10
     }
-    async getSongJacketImage(displayedServerList: Server[] = [Server.jp, Server.cn]): Promise<Image> {
+    async getSongJacketImage(displayedServerList: Server[] = [Server.jp, Server.cn],cacheOnly=false): Promise<Image> {
         const jacketImageUrl = this.getSongJacketImageURL(displayedServerList)
         var jacketImageBuffer = await downloadFile(jacketImageUrl)
         //下载失败自动尝试切换服务器下载
@@ -204,7 +203,7 @@ export class Song {
             if (!jacketImageBuffer.equals(assetErrorImageBuffer)) break;
           }
         }
-        return await loadImage(jacketImageBuffer)
+        return cacheOnly?null:await loadImage(jacketImageBuffer)
     }
     getSongJacketImageURL(displayedServerList?: Server[]): string {
         var server = getServerByPriority(this.publishedAt, displayedServerList)
