@@ -15,6 +15,7 @@ import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
 import path from 'path';
 import { logger } from '@/logger';
+import mainAPI from '@/types/_Main';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoff = new Cutoff(eventId, mainServer, tier)
@@ -128,10 +129,16 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
 
         //最新分数线
-        list.push(await drawList({
+        const Line2List = []
+        Line2List.push(await drawList({
             key: '最终分数线',
             text: cutoff.latestCutoff.ep.toString()
         }))
+        if (mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']) Line2List.push(await drawList({
+            key: '国服 总参与人数',
+            text:  `${mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']}`
+        }))
+        list.push(drawListMerge(Line2List))
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
@@ -140,6 +147,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         })))
         list.push(drawListMerge(tempList))
         list.push(line)
+
     }
     list.pop()
     list.push(new Canvas(800, 50))
