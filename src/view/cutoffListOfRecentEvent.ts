@@ -16,6 +16,7 @@ import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
 import path from 'path';
 import { logger } from '@/logger';
+import mainAPI from '@/types/_Main';
 
 export async function drawCutoffListOfRecentEvent(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     //检查
@@ -112,7 +113,8 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         }
         else if (cutoff.status == 'ended') {
             //console.log(cutoff)
-            cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
+            const playerNumberTips = mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']?` | 共${mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']}人`:''
+            cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}${playerNumberTips}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}\n`)
             
         }
