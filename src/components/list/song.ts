@@ -34,14 +34,14 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
     //曲名与乐队名
     var fullText = `${song.musicTitle[server]}\n`
 
-
+    var serverMeta = displayedServerList[0]
     // 展示Meta
-    let HDRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['2']
-    let EXRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['3']
-    let SPRankT=mainAPI['metaCache'][true][server][`${song.songId}`]['4']?mainAPI['metaCache'][true][server][`${song.songId}`]['4']:''
-    let HDRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['2']
-    let EXRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['3']
-    let SPRankF=mainAPI['metaCache'][false][server][`${song.songId}`]['4']?mainAPI['metaCache'][true][server][`${song.songId}`]['4']:''
+    let HDRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['2']
+    let EXRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['3']
+    let SPRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']:''
+    let HDRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['2']
+    let EXRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['3']
+    let SPRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']:''
     if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
     if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
 
