@@ -164,7 +164,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     all.push(listImage)
     
     all.push(await drawTips({
-        text: '预测线1为Tsugu原版预测线\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000\n若Bestdori关键节点(凌晨3:45)无数据，日增将根据时间差均匀补偿',
+        text: '预测线1为Tsugu原版预测线 / 数据源切换：查曲 8734499\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000\n若Bestdori关键节点(凌晨3:45)无数据，日增将根据时间差均匀补偿\n',
         
         //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))

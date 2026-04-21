@@ -66,7 +66,7 @@ export class Cutoff {
         }
     }
     getFinalApiUrl (reverse:boolean){
-        return !reverse?this.useHHWX?HHWX_Url:Bestdoriurl:this.useHHWX?Bestdoriurl:HHWX_Url
+        return !reverse?(this.useHHWX?HHWX_Url:Bestdoriurl):(this.useHHWX?Bestdoriurl:HHWX_Url)
     }
     async getFinalCutoffsData (forceReadCache:boolean = false ){
         if (!forceReadCache){
@@ -80,13 +80,12 @@ export class Cutoff {
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
         }else{
+            this.useHHWX = false    // 对于历史档线数据可以直接使用Bestdori而不是hhwx
             try{
-                this.useHHWX = USE_HHWX_SOURCE_PREFER?true:false
-                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0)
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
             catch{
-                this.useHHWX = USE_HHWX_SOURCE_PREFER?false:true
-                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0)
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
         }
     }
@@ -103,7 +102,6 @@ export class Cutoff {
         //如果cutoff的活动已经结束，则使用缓存
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 1) {
-            var cutoffPromise = []
             var dateNow = Date.now()
             cutoffData = await this.getFinalCutoffsData()
             if (dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
@@ -115,11 +113,11 @@ export class Cutoff {
             pCutoffData = pCutoffDataTmps==null?null:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
         }
         else {
-            cutoffData = await this.getFinalCutoffsData()
+            cutoffData = await this.getFinalCutoffsData(true)
             //console.log(cutoffData["cutoffs"].length)
             // 检查缓存是否合法
             if (cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000 ){
-                cutoffData = await this.getFinalCutoffsData(forceUseCache)
+                cutoffData = await this.getFinalCutoffsData()
             } //如果最后一个记录的时间减去endAt，校验如果差距太大就要更新
             //cutoffData = await callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
             pCutoffData = cutoffData
