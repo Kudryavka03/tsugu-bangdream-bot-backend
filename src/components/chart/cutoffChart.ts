@@ -62,7 +62,7 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
                 fill: false,
                 pointRadius: 0,
                 pointHoverRadius: 0,
-                borderDash: [20, 10],
+                borderDash: [10, 10],
             })
 
             if (cutoff.predictEP != null && cutoff.predictEP != 0) {
