@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
-import { Bestdoriurl, extraUrl, tierListOfServer } from '@/config';
+import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, extraUrl, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
@@ -28,6 +28,7 @@ export class Cutoff {
     event:Event;
     dailyIncrement = []
     currentGetDataTime
+    useHHWX = USE_HHWX_SOURCE_PREFER
     constructor(eventId: number, server: Server, tier: number) {
         const tempEventData = new Event(eventId)
         //如果活动不存在，直接返回
@@ -64,6 +65,31 @@ export class Cutoff {
             this.status = 'in_progress'
         }
     }
+    getFinalApiUrl (reverse:boolean){
+        return !reverse?this.useHHWX?HHWX_Url:Bestdoriurl:this.useHHWX?Bestdoriurl:HHWX_Url
+    }
+    async getFinalCutoffsData (forceReadCache:boolean = false ){
+        if (!forceReadCache){
+            try{
+                this.useHHWX = USE_HHWX_SOURCE_PREFER?true:false
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+
+            }
+            catch{
+                this.useHHWX = USE_HHWX_SOURCE_PREFER?false:true
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+            }
+        }else{
+            try{
+                this.useHHWX = USE_HHWX_SOURCE_PREFER?true:false
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0)
+            }
+            catch{
+                this.useHHWX = USE_HHWX_SOURCE_PREFER?false:true
+                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0)
+            }
+        }
+    }
     async initFull() {
         if (this.isInitfull) {
             return
@@ -73,32 +99,28 @@ export class Cutoff {
         }
         let cutoffData
         let pCutoffData
+        var forceUseCache = true
         //如果cutoff的活动已经结束，则使用缓存
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 1) {
             var cutoffPromise = []
-            /*
-            console.log(time)
-            console.log(this.endAt)
-            console.log(this.endAt + 1000 * 60 * 60 * 1)    // 一个小时后就结束，够了
-            */
-            cutoffPromise.push(callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
-            //cutoffPromise.push(callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false))
-            cutoffPromise.push(this.readPredict2Data(this.tier).then(JSON.parse));
-            var cutoffResult = await Promise.all(cutoffPromise)
-            cutoffData = cutoffResult[0]
+            var dateNow = Date.now()
+            cutoffData = await this.getFinalCutoffsData()
+            if (dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
+                this.useHHWX = !this.useHHWX
+                cutoffData = await this.getFinalCutoffsData()
+            }
+            var pCutoffDataTmps = await this.readPredict2Data(this.tier)
             //console.log(cutoffResult)
-            pCutoffData = cutoffResult[1]==null?cutoffData:cutoffResult[1]    // 只针对千线进行预测
+            pCutoffData = pCutoffDataTmps==null?null:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
         }
         else {
-            cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0)
+            cutoffData = await this.getFinalCutoffsData()
             //console.log(cutoffData["cutoffs"].length)
             // 检查缓存是否合法
             if (cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000 ){
-                cutoffData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+                cutoffData = await this.getFinalCutoffsData(forceUseCache)
             } //如果最后一个记录的时间减去endAt，校验如果差距太大就要更新
-
-            
             //cutoffData = await callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
             pCutoffData = cutoffData
         }
@@ -167,19 +189,13 @@ export class Cutoff {
         return this.predictEP2
     }
     readPredict2Data(tier) {
-        return new Promise((resolve) => {
+        try{
             let filePathPredict = path.resolve(process.cwd(), `MYCX_1000/ycx${tier}-${this.server}.json`);
-            //console.log(filePathPredict)
-            fs.readFile(filePathPredict, 'utf-8', (err, data) => {
-                if (err) {
-                    //console.log('null');
-                    resolve(null);
-                } else {
-                    //console.log(data);
-                    resolve(data);
-                }
-            });
-        });
+            return fs.readFileSync(filePathPredict, 'utf-8')
+        }
+        catch{
+            return null;
+        }
     }
     getPredictionHistory(): { time: number, ep: number }[] {
         if (this.isExist == false || !this.cutoffs) {

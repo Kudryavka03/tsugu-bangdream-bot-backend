@@ -11,6 +11,7 @@ import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import mainAPI, { loadMainAPINow } from '@/types/_Main';
+import { switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
 
 const router = express.Router();
 
@@ -29,6 +30,9 @@ router.post(
         const { displayedServerList, fuzzySearchResult, text, compress } = req.body;
         if (text == "fetch" || text == "同步数据"|| text == "立即同步"|| text == "33824"|| text == "873283"|| text == "7963" || text == "7337374"){
             return res.send(listToBase64([await loadMainAPINow()]));
+        }
+        if (text == "8734499"){
+            return res.send(listToBase64([await switchDataSource()]));
         }
         // 检查 text 和 fuzzySearchResult 是否同时存在
         if (text && fuzzySearchResult) {

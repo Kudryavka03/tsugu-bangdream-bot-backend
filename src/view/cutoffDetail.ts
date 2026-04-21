@@ -91,7 +91,10 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             text: cutoff.latestCutoff.ep.toString()
         })
         tempImageList.push(finalCutoffImage)
-        
+        tempImageList.push(await drawList({
+            key: '数据来源',
+            text: `${cutoff.useHHWX?"HHWX":"Bestdori"}`
+        }))
         tempImageList.push(await drawList({
             key: '当前时速',
             text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
