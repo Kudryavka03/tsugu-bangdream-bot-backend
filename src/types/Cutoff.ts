@@ -110,7 +110,7 @@ export class Cutoff {
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
             //console.log(cutoffResult)
-            pCutoffData = pCutoffDataTmps==null?null:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
+            pCutoffData = pCutoffDataTmps==null?cutoffData:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
         }
         else {
             cutoffData = await this.getFinalCutoffsData(true)
