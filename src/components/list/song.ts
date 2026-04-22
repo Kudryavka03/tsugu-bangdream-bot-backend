@@ -5,7 +5,7 @@ import { Song } from "@/types/Song"
 import { drawText, releaseCanvas, setFontStyle } from "@/image/text"
 import { resizeImage } from "@/components/utils"
 import { drawDifficulityList, drawDifficulity, drawDifficulityListInListWithNotes, drawDifficulityListWithDiff, drawDifficulityWithNotes } from "@/components/list/difficulty"
-import { globalDefaultServer } from "@/config"
+import { globalDefaultServer, serverNameFullList } from "@/config"
 import { drawList } from '../list'
 import { drawDottedLine } from '@/image/dottedLine'
 import { formatSeconds } from './time'
@@ -36,15 +36,18 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
 
     var serverMeta = displayedServerList[0]
     // 展示Meta
-    let HDRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['2']
-    let EXRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['3']
-    let SPRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']:''
-    let HDRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['2']
-    let EXRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['3']
-    let SPRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']:''
-    if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
-    if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
+    if (mainAPI['metaCache'][true][serverMeta]){
+        let HDRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['2']
+        let EXRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['3']
+        let SPRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']:''
+        let HDRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['2']
+        let EXRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['3']
+        let SPRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']:''
+        if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
+        if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
+    
 
+    }else fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
     if (!text) {
         //如果没有传入text参数，使用乐队名
         fullText += `\n${new Band(song.bandId).bandName[server]}`
