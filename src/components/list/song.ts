@@ -36,7 +36,7 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
 
     var serverMeta = displayedServerList[0]
     // 展示Meta
-    if (mainAPI['metaCache'][true][serverMeta]){
+    if (mainAPI['metaCache'][true][serverMeta][`${song.songId}`]){
         let HDRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['2']
         let EXRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['3']
         let SPRankT=mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][true][serverMeta][`${song.songId}`]['4']:''
