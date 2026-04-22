@@ -145,7 +145,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
-            key: '日增速 Beta.',
+            key: '日增速',
             text: `${cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
