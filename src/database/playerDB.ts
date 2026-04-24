@@ -33,7 +33,7 @@ export class PlayerDB {
     var rebuildFlags = false
     if (this.client && this.db) {
       try {
-        await this.client.connect();
+        await this.client.db(this.dbName).command({ ping: 1 });
         return;
       } catch (e) {
         rebuildFlags = true
@@ -54,6 +54,7 @@ export class PlayerDB {
     return data;
   }
   async updCurrentEvent(playerId: number, server: Server, eventId: number) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     data.currentEvent = eventId
     if (!data.eventSongs[eventId]) {
@@ -87,12 +88,14 @@ export class PlayerDB {
     return data
   }
   async resetSong(playerId: number, server: Server, eventId: number) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     delete data.eventSongs[eventId]
     await this.getCollection().updateOne({ _id: playerId }, { $set: data })
     return this.updCurrentEvent(playerId, server, eventId)
   }
   async updateSong(playerId: number, eventId: number, id: number, songId: number, difficulty: number) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     for (let i = 0; i < data.eventSongs[eventId].length; i += 1) {
       if (id >> i & 1) data.eventSongs[eventId][i] = { songId, difficulty }
@@ -101,6 +104,7 @@ export class PlayerDB {
     return data
   }
   async addCard(playerId: number, list) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     for (const { id, illustTrainingStatus, limitBreakRank, skillLevel} of list) {
       data.cardList[id] = { illustTrainingStatus, limitBreakRank, skillLevel }
@@ -109,6 +113,7 @@ export class PlayerDB {
     return data
   }
   async delCard(playerId: number, list) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     for (const id of list) {
       delete data.cardList[id]
@@ -118,6 +123,7 @@ export class PlayerDB {
   }
   
   async updateCharacterBouns(playerId: number, list) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     for (const { characterId, potential, characterTask} of list) {
       data.characterBouns[characterId] = { potential, characterTask}
@@ -127,6 +133,7 @@ export class PlayerDB {
   }
 
   async updateAreaItem(playerId: number, list) {
+    await this.connect();
     var data: playerDetail = await this.getPlayer(playerId)
     for (const { id, level} of list) {
       data.areaItem[id] = { level }
@@ -136,6 +143,7 @@ export class PlayerDB {
   }
 
   async getPlayer(playerId: number): Promise<playerDetail | null> {
+    await this.connect();
     var data: playerDetail
     const res = await this.getCollection().findOne({ _id: playerId })
     if (res == null) {
