@@ -362,5 +362,3 @@ export var setFontStyle = function (ctx: CanvasRenderingContext2D, textSize: num
 export function setFontStyleArgs (textSize: number, font: string):string {//设置字体参数
     return  textSize + 'px ' + font + ",Microsoft Yahei"
 }
-
-

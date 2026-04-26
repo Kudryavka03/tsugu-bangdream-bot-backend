@@ -66,6 +66,10 @@ export class Cutoff {
         }
     }
     getFinalApiUrl (reverse:boolean){
+        if (this.server != Server.cn){  // 非国服不使用hhwx
+            this.useHHWX = false
+            return Bestdoriurl
+        }
         return !reverse?(this.useHHWX?HHWX_Url:Bestdoriurl):(this.useHHWX?Bestdoriurl:HHWX_Url)
     }
     async getFinalCutoffsData (forceReadCache:boolean = false ){
@@ -104,7 +108,7 @@ export class Cutoff {
         if (time < this.endAt + 1000 * 60 * 60 * 1) {
             var dateNow = Date.now()
             cutoffData = await this.getFinalCutoffsData()
-            if (dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
+            if (this.server == Server.cn && dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
                 this.useHHWX = !this.useHHWX
                 cutoffData = await this.getFinalCutoffsData()
             }

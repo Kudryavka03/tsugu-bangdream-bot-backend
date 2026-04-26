@@ -34,7 +34,7 @@ var prod = false
 export const Bestdoriurl: string = prod?'https://bestdori.com':'https://bestdori.com'; //Bestdori网站的url，BD跟车站应该都是在香港的，部署在香港访问更快。原URL https://bestdori.com
 export const BandoriStationurl: string = 'https://api.bandoristation.com/'; //BandoriStation网站的url
 export const HHWX_Url: string = 'https://hhwx.org'; //HHWX网站的url
-export var USE_HHWX_SOURCE_PREFER = true
+export var USE_HHWX_SOURCE_PREFER = false
 export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
 
 export const globalDefaultServer: Array<Server> = [Server.cn,Server.jp]//默认服务器列表
