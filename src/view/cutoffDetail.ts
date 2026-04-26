@@ -11,7 +11,6 @@ import { drawCutoffChart } from '@/components/chart/cutoffChart'
 import { assetsRootPath, serverNameFullList } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { statusName } from '@/config';
-import { loadImageFromPath } from '@/image/utils';
 import { drawTips } from '@/components/tips';
 import path from 'path';
 import { logger } from '@/logger';
