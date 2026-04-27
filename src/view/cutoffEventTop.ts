@@ -79,7 +79,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     if (!maxCount) {
         maxCount = 20
     }
-    if (maxCount >100) return [`错误: 查岗次数过多，请适当缩减查岗的次数。次数过多会占用大量Bot硬件资源且图片可能会无法被正常送出。如需查T10时速表请回复查岗 0`];
+    if (maxCount >400) return [`错误: 查岗次数过多，请适当缩减查岗的次数。次数过多会占用大量Bot硬件资源且图片可能会无法被正常送出。如需查T10时速表请回复查岗 0`];
     // 因为没用上所以凭感觉优化了一下，不知道能不能用
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
@@ -492,9 +492,11 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
 
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
+    /*
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
     }
+    */
     if (playerId < 1 ){    // 如果不等于114514就返回缓存。缓存每隔5分钟刷新一次
         if (TopRateSpeed) return TopRateSpeed   // 如果缓存不存在就走正常获取流程
     }
@@ -648,10 +650,11 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 
 export async function drawTopRateSleep(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
-    
+    /*
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
     }
+    */
 
 
     var event = new Event(eventId);
@@ -802,10 +805,11 @@ all.push(await drawDatablock({ list}))
 export async function drawTopRateChanged(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
 
-    
+    /*
     if (cutoffEventTop.status != "in_progress") {
         return [`当前主服务器: ${serverNameFullList[mainServer]}没有进行中的活动`]
     }
+    */
     var event = new Event(eventId);
     const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);

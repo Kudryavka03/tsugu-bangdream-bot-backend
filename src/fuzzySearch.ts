@@ -309,6 +309,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
   if (!match && matches['_all']) {
     for (let i = 0; i < matches['_all'].length; i++) {
       let matchValue = (matches['_all'][i] as string).toLowerCase();
+      let matchValueReplaceSpace = matchValue.replace(/ /g, '');
       for (let key in target) {
         if (key != 'musicTitle' && key != 'nickname' && key != 'prefix' && !key.endsWith('Name'))
           continue
@@ -321,7 +322,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 match = true;
                 break;
               }
-              else{ // 如果仍然没有匹配到，则尝试拆分空格匹配，不考虑将其作为增量查找结果，因为有些歌名确实包含空格的，如果可以精确匹配的话就不再需要增量结果了
+              else{ // 如果仍然没有匹配到，则尝试拆分空格匹配，不考虑将其作为增量查找结果，因为有些昵称确实包含空格的，如果可以精确匹配的话就不再需要增量结果了
                 let keySplitSpace = matchValue.split(' ')
                 for (let kss of keySplitSpace){
                   if (include(nickname, kss)) {
@@ -330,8 +331,9 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                   }
                 }
               }
+              var nicknameReplaceSpace = nickname.replace(/ /g, '')
               if (!match){  // 如果仍然无结果，则合并空格进行查找
-                if (include(nickname.replace(/ /g, ''), matchValue.replace(/ /g, ''))) {
+                if (include(nicknameReplaceSpace, matchValueReplaceSpace)) {
                   match = true;
                   break;
                 }
@@ -348,9 +350,27 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
           for (var mt of target[key]){
             //console.log(mt,matchValue)
             //@ts-ignore
-            if (mt!= null && include(mt.replace(/ /g, ''), matchValue.replace(/ /g, ''))){
+            var musicTitleReplaceSpace = mt?mt.replace(/ /g, ''):null
+            if (mt!= null && musicTitleReplaceSpace && include(musicTitleReplaceSpace, matchValueReplaceSpace)){
               match = true;
               break;
+            }
+            if (!match&& mt){  // 如果仍然无结果，则尝试空格拆分，使用歌曲的第一个字进行搜索
+              var cmpstr =  splitSpaceAndConcatFirstLetter(mt)
+              if (cmpstr && include(cmpstr, matchValueReplaceSpace)) {
+                match = true;
+                break;
+              }
+            }
+            // TODO：如果仍然没有结果，则拆分match value逐词匹配
+            if (!match && musicTitleReplaceSpace &&  mt){  // 如果仍然无结果，则尝试空格拆分搜索词
+              for (var s of matchValue.split(' ')){
+                //console.log(nicknameReplaceSpace,s)
+                if (include(musicTitleReplaceSpace, s.toLowerCase())) {
+                  match = true;
+                  break;
+                }
+              }
             }
           }
 
@@ -374,7 +394,17 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
   return match;
 }
 
-
+function splitSpaceAndConcatFirstLetter(str:string){
+  if (!str) return null
+  var arr = str.split(' ')
+  if (arr.length <= 1) return null
+  var result = ''
+  for (var s of arr){
+    result+=s.slice(0,1)
+  }
+  //console.log(result)
+  return result
+}
 
 
 // 以下为数字与范围函数

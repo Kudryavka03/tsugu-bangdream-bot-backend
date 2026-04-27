@@ -20,14 +20,15 @@ router.post(
         body('count').optional().isInt(),
         body('compress').optional().isBoolean(),
         body('mode').optional().isInt(),    // 1：实时查岗  3：查停摆   2：查变动
+        body('eventId').optional().isInt(),
     ],
     middleware,
     async (req: Request, res: Response) => {
 
-        const { mainServer, playerId, tier, count, compress,mode } = req.body;
+        const { mainServer, playerId, tier, count, compress,mode,eventId } = req.body;
 
         try {
-            const result = await commandTopRateDetail(getServerByServerId(mainServer), playerId, tier, compress, count,mode);
+            const result = await commandTopRateDetail(getServerByServerId(mainServer), playerId, tier, compress, count,mode,eventId);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -36,12 +37,14 @@ router.post(
     }
 );
 
-export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number,mode:number = 0): Promise<Array<Buffer | string>> {
+export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number,mode:number = 0,eventId:number = 0): Promise<Array<Buffer | string>> {
     if ((mode !=1)&&!playerId && !tier) {
         // 这里查前十车速总表
         return ['请输入玩家id或排名']
     }
-    const eventId = getPresentEvent(mainServer).eventId
+    if (eventId == null ) eventId = getPresentEvent(mainServer).eventId
+    if (eventId == undefined ) eventId = getPresentEvent(mainServer).eventId
+    if (eventId == 0 ) eventId = getPresentEvent(mainServer).eventId
     if(mode == 1 )return await drawTopRateSpeedRank(eventId, playerId, tier, maxCount, mainServer, compress)
     if(mode == 3 )return await drawTopRateSleep(eventId, playerId, tier, maxCount, mainServer, compress)
     if(mode == 2 )return await drawTopRateChanged(eventId, playerId, tier, maxCount, mainServer, compress)
