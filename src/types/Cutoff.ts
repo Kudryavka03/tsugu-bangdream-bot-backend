@@ -243,12 +243,15 @@ export class Cutoff {
 
         let dailyIncrement:number[] = []
         if (score.length < 2) {
-            if (score.length < 1 && (time[0] - eventStartAtTime) < (86400000 * 0.7)){
+            if (score.length == 0 && (time[0] - eventStartAtTime) < (86400000 * 0.7)){
                 dailyIncrement.push(Math.round((this.cutoffs[this.cutoffs.length-1].ep)/10000))
             }
-            else{
+            else if (score.length == 1 && (time[0] - eventStartAtTime) <(86400000 + (86400000 * 0.7))){
                 dailyIncrement.push(Math.round((score[0])/10000))
                 dailyIncrement.push(Math.round((this.cutoffs[this.cutoffs.length-1].ep - score[0])/10000) )
+            }
+            else{
+                dailyIncrement.push(0)
             }
             this.dailyIncrement = dailyIncrement
             return  
