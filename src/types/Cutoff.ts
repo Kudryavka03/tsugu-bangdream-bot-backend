@@ -158,7 +158,7 @@ export class Cutoff {
             this.rate = rateData.rate
         }
         this.getDailyIncrement()
-        console.log(this.dailyIncrement)
+        //console.log(this.dailyIncrement)
         if (this.status == 'in_progress') {
             this.predict()
             this.predict2()
