@@ -2,7 +2,7 @@ import { Event } from '@/types/Event';
 import { drawList, line, drawListMerge } from '@/components/list';
 import { drawDatablock } from '@/components/dataBlock'
 import { Image, Canvas } from 'skia-canvas'
-import { changeTimePeriodFormat } from '@/components/list/time';
+import { changeTimePeriodFormat, changeTimefomant } from '@/components/list/time';
 import { Server } from '@/types/Server';
 import { drawTitle } from '@/components/title'
 import { outputFinalBuffer } from '@/image/output'
@@ -37,7 +37,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     }
     */
     var all = []
-    all.push(await drawTitle('预测线', `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
+    all.push(await drawTitle(`预测线`, `${serverNameFullList[mainServer]} ${cutoff.tier}档线`))
     var list: Array<Image | Canvas> = []
 
 
@@ -116,7 +116,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
-            key: '日增速 Beta.',
+            key: `日增速 / ${changeTimefomant(Date.now())}`,
             text: `${cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
