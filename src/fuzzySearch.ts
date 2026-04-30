@@ -306,7 +306,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
 
 
   //如果在config中所有类型都不符合的情况下，检查 _all
-  if (!match && matches['_all']) {
+  if (!match && matches['_all'] && !matches['bandId']) {  // 如果matches不存在bandId，则继续检查_all
     for (let i = 0; i < matches['_all'].length; i++) {
       let matchValue = (matches['_all'][i] as string).toLowerCase();
       let matchValueReplaceSpace = matchValue.replace(/ /g, '');

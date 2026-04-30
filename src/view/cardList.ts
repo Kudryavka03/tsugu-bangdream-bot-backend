@@ -72,7 +72,6 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
     })
     //如果角色数量大于5，则颜色作为X轴，角色作为Y轴
     if (characterIdList.length > 5) {
-        let promise = []
         let drawCardListLinePromise = []
         let drawCharacterIconImageListPromise = []
         var tempAttributeImageList: Canvas[] = []//每一个颜色的所有角色的列
@@ -217,11 +216,13 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
 export function matchCardList(matches: FuzzySearchResult, displayedServerList: Server[]) {
     var tempCardList: Array<Card> = [];//最终输出的卡牌列表
     var cardIdList: Array<number> = Object.keys(mainAPI['cards']).map(Number);//所有卡牌ID列表
+    console.log(matches)
     for (let i = 0; i < cardIdList.length; i++) {
         const tempCard = new Card(cardIdList[i]);
         if (tempCard.type == 'others') {
             continue;
         }
+        
         var isMatch = match(matches, tempCard, ['cardId']);
         //console.log(tempCard.cardId, 1, isMatch)
         /*
