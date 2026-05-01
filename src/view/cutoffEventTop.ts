@@ -521,7 +521,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     
     const now = new Date();
 
-    var calcTimestamp = new Date(now);
+    //var calcTimestamp = new Date(now);
 
     /*
     else {
@@ -531,9 +531,10 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         calcTimestamp.setMilliseconds(0);
     }
     */
-    var thisHour = calcTimestamp.getTime();
-    //console.log(thisHour)
 
+     // thisHour = calcTimestamp.getTime();
+    //console.log(thisHour)
+    var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
     var LastHour = thisHour - 3600000;
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
