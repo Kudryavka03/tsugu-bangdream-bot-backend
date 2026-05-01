@@ -552,7 +552,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         let lastScore = 0
         let nowScore = 0
         var isFirst = true
-        const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照时间段排的分数，最高返回最近100次的变化分数，从最近到最远。
+        const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照时间段排的分数，最高返回最近400次的变化分数，从最近到最远。
         //console.log( playerRating.length)
 
         for (let j = 0; j  < playerRating.length; j += 1) {
@@ -601,17 +601,90 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         }
         rankForBetween.push(rank);
     }
+
+    // 判断是否在同一房间内
+    // 基本思路：抽取出同一时间value的人，数据越多越纯。
+    // [[1,2,3,4,5,6,8],[7,9]],[[1,2,3,4,5],[6,8],[7,9]]
+    // 就可以判断得出，[1,2,3,4,5]在同一辆车上,[6,8]在同一辆车上,[7,9]在同一辆车上
+    let possibleAtSameRoom = []
+    try{
+        var pureData = []
+        for(let pd of cutoffEventTop.points){
+            if (pd.time >= LastHour && pd.time <=thisHour){
+                pureData.push(pd)
+            } 
+        }
+        var timeList = [];  // 一共有多少个time（采集点）
+        for (let pd of pureData){
+            if (!timeList.includes(pd.time)) timeList.push(pd.time)
+        }
+        // 获取uid
+        var uidList = []
+        for (let pd of pureData){
+            if (!uidList.includes(pd.uid)) uidList.push(pd.uid)
+        }
+        // 获取到采集点之后，开始对比采集点之间的不同
+        var timeListIndex = 0;
+        type RecordItem = {
+            time: number
+            uid: number
+            value: number
+        }
+        var valueChangeData = []
+        for (let t = 0;t<timeList.length;t++){  // 便利timeList 。 t为timeList的Index
+            let tempData1 = []
+            let tempData2 = []
+            for(let pd of pureData){
+                if (pd.time == timeList[t]) tempData1.push(pd)
+                if (pd.time == timeList[t+1]) tempData2.push(pd)
+            }
+            let valueChangeUid = []
+            for(let tIndex1 = 0;tIndex1<tempData1.length;tIndex1++){
+                for(let tIndex2 = 0;tIndex2<tempData2.length;tIndex2++){
+                    if (tempData1[tIndex1].uid == tempData2[tIndex2].uid  && tempData1[tIndex1].value != tempData2[tIndex2].value) {
+                        valueChangeUid.push(tempData1[tIndex1].uid)
+                    }
+                }
+            }
+            valueChangeData.push(valueChangeUid)
+        }
+        //console.log(valueChangeData)
+        // 搜寻当前uid的出现的最小变动数组
+        
+        let readUid = []
+        for(let uIndex = 0;uIndex<uidList.length;uIndex++){
+            let uSize = 11;
+            let vIndexFlag = 0;
+            if (readUid.includes(uidList[uIndex])) continue
+            for(let vIndex = 0;vIndex<valueChangeData.length;vIndex++){
+                if (valueChangeData[vIndex].includes(uidList[uIndex])){
+                    if (valueChangeData[vIndex].length <= uSize){
+                        uSize = valueChangeData[vIndex].length
+                        vIndexFlag = vIndex
+                    }
+                }
+            }
+            possibleAtSameRoom.push(valueChangeData[vIndexFlag])
+            for(let vcd of valueChangeData[vIndexFlag]){
+                if (!readUid.includes(vcd))readUid.push(vcd)
+            }
+        }
+        //console.log(possibleAtSameRoom)
+    }
+    catch{
+
+    }
     var all = [];
     
     all.push(await drawTitle('T10时速排名', `${serverNameFullList[mainServer]} ${subTimeTips}`));
     var list = [], imageList = []
-    const widthMax = 200+300+420+250+275+300+300+300+200
+    const widthMax = 200+300+420+250+275+300+300+300+200 + 200
     var timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`
     
     list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: pId==2?'统计时分数':'分数',maxWidth:275 })
 
     ,await drawList({ key: '上下分差',maxWidth:250 }),await drawList({ key: '1小时内分差',maxWidth:300 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
-    await drawList({ key: '把均PT' ,maxWidth:200})]))
+    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
     const FullLine: Canvas = drawDottedLine({
         width: widthMax,
         height: 30,
@@ -636,6 +709,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
             await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
             await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
+            await drawList({key:`${getPossibleRoom(possibleAtSameRoom,userInRankings[k].uid)}`,maxWidth:200})
         ]))
         imageList.push(FullLine)
     }
@@ -1064,4 +1138,18 @@ export function getAverageTime(timestamps: Array<number>) {
     for (let i = timestamps.length + 1 >> 1; i < timestamps.length; i += 1)
         res -= timestamps[i]
     return res / (timestamps.length >> 1) / (timestamps.length + 1 >> 1)
+}
+
+function getPossibleRoom (data,uid){
+    if (!data) return '无数据'
+    try{
+        for(let i = 0;i<data.length;i++){
+            if (data[i].includes(uid)) return '房间' + String.fromCharCode(65 +i)
+        }
+        return '无数据'
+    }
+    catch{
+        return '无数据'
+    }
+
 }
