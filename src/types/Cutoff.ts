@@ -75,12 +75,12 @@ export class Cutoff {
     async getFinalCutoffsData (forceReadCache:boolean = false ){
         if (!forceReadCache){
             try{
-                this.useHHWX = USE_HHWX_SOURCE_PREFER?true:false
+               // this.useHHWX = this.useHHWX?true:false
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
 
             }
             catch{
-                this.useHHWX = USE_HHWX_SOURCE_PREFER?false:true
+                //this.useHHWX = this.useHHWX?false:true
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
         }else{
@@ -110,6 +110,8 @@ export class Cutoff {
             cutoffData = await this.getFinalCutoffsData()
             if (this.server == Server.cn && dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
                 this.useHHWX = !this.useHHWX
+
+                console.log('数据实时性校验不通过，切换数据源至',this.useHHWX?"HHWX":"Bestdori" )
                 cutoffData = await this.getFinalCutoffsData()
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
