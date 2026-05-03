@@ -38,7 +38,7 @@ router.post(
         }
         if (text == "6364636"){
             const m = process.memoryUsage();
-            var str = '[Tsugu Runtime Memory Infomation]'
+            var str = '[Tsugu Runtime Memory Infomation]\n'
             console.log(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
             str+=(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
             try {

@@ -1,4 +1,4 @@
-import { isInteger } from '@/routers/utils';
+import { isInteger, parseSearchDate } from '@/routers/utils';
 import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
 import { drawEventDetail } from '@/view/eventDetail';
 import { drawEventList } from '@/view/eventList';
@@ -12,6 +12,7 @@ import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import mainAPI from '@/types/_Main';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { getEventListByTimeRange } from '@/types/Event';
 
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
@@ -64,6 +65,25 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
+        const dateRange = parseSearchDate(input);
+        if (dateRange) {
+            const tempEventList = getEventListByTimeRange(dateRange.rangeStart, dateRange.rangeEnd, displayedServerList);
+            if (tempEventList.length == 0) {
+                return ['没有搜索到符合条件的活动'];
+            }
+            var result = await drawEventList({ eventId: tempEventList.map((event) => event.eventId) }, displayedServerList, compress);
+            if (result == null){    // 意味着查询数量过大要使用worker来进行处理，否则阻塞主线程
+                result = (await piscina.drawList.run({
+                    matches: { eventId: tempEventList.map((event) => event.eventId) },
+                    displayedServerList,
+                    compress,
+                    mainAPI:{}
+                },{name:'drawEventList'})).map(toBuffer)
+                return result
+            }else{
+                return result
+            }
+        }
         if (isInteger(input)) {
             return await drawEventDetail(parseInt(input), displayedServerList, useEasyBG, compress)
         }
