@@ -4,6 +4,7 @@ FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
 import * as path from 'path';
 import { getFontCanvasCtxFromPool } from './utils';
+import { logger } from '@/logger';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 
 interface warpTextOptions {
@@ -187,6 +188,25 @@ function cachedMeasureText(ctx, text,textSize, font) {                          
     const w = ctx.measureText(text).width;
     measureCache.set(key, w);
     return w;
+}
+export function clearMeasureCache(){
+    // 当内存压力大的时候，清空缓存
+    var mc = measureCache.size
+    var wtc = wrapTextCache.size
+    logger('clearMeasureCache','Size of measure cache:' + mc)
+    logger('clearMeasureCache','Size of warp text cache:' + wtc)
+    if (mc > 5000){
+        logger('clearMeasureCache','内存压力过大，清空MeasureCache')
+        measureCache.clear()
+    }
+    if (wtc > 5000){
+        logger('clearMeasureCache','内存压力过大，清空WarpTextCache')
+        wrapTextCache.clear()
+    }
+    var str = ''
+    str += ('Size of measure cache:' + mc + '\n')
+    str += ('Size of warp text cache:' + wtc)
+    return str
 }
 // 画文字包含图片
 export function drawTextWithImages({

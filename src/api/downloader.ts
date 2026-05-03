@@ -7,7 +7,9 @@ const errUrl: string[] = [];
 const resDebug = false
 const apiDebug = false
 export const showDownloadLog = false
-
+export function getPD_Size(){
+  return 'pendingDownloads Size: '+ `${pendingDownloads.size}`
+}
 export async function download(   // GPT写的
   url: string,
   directory?: string,

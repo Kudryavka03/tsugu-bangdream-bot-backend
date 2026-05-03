@@ -14,6 +14,8 @@ import { Long } from 'mongodb'
 import { piscina } from '@/WorkerPool';
 import { genMetaRankCache } from '@/view/songMetaList'
 import { manualLoadFuzzyConfig } from '@/fuzzySearch'
+import { clearMeasureCache } from '@/image/text'
+import { getPD_Size } from '@/api/downloader'
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -39,6 +41,8 @@ export function setMainAPI(data) {
     }
     manualLoadFuzzyConfig()
     logger('setMainAPI','Set apiData to Worker Successfully.')
+    clearMeasureCache()
+    logger('getPD_Size',getPD_Size())
 }
 export function setOtherFix(data) {
     //console.log(data)
@@ -199,6 +203,8 @@ async function loadMainAPI(useCache: boolean = false) {
     //console.log(mainAPI['metaCache'][true][Server.cn])
     //await preCacheIcon()
     manualLoadFuzzyConfig()
+    clearMeasureCache()
+    logger('getPD_Size',getPD_Size())
     if(isMainThread){
             await piscina.drawList.run({
             data: mainAPI,

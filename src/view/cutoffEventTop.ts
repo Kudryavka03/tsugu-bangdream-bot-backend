@@ -672,7 +672,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         //console.log(possibleAtSameRoom)
     }
     catch{
-
+        // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。
     }
     var all = [];
     
@@ -715,7 +715,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     }
     list.push(...imageList)
     all.push(await drawDatablock({ list}))
-    all.push(await drawTips({text:timeTips,maxWidth:widthMax}))
+    all.push(await drawTips({text:timeTips + '\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度',maxWidth:widthMax}))
     //all.push(...list)
     all.push(await drawEventDatablockPromise)
     var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })

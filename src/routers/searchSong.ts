@@ -12,6 +12,8 @@ import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import mainAPI, { loadMainAPINow } from '@/types/_Main';
 import { switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
+import { clearMeasureCache } from '@/image/text';
+import { getPD_Size } from '@/api/downloader';
 
 const router = express.Router();
 
@@ -33,6 +35,31 @@ router.post(
         }
         if (text == "8734499"){
             return res.send(listToBase64([await switchDataSource()]));
+        }
+        if (text == "6364636"){
+            const m = process.memoryUsage();
+            var str = '[Tsugu Runtime Memory Infomation]'
+            console.log(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
+            str+=(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
+            try {
+                // @ts-ignore
+                const handles = process._getActiveHandles();
+                // @ts-ignore
+                const requests = process._getActiveRequests();
+                str +='\n'
+                console.log(`[MEM] handles=${handles.length}, requests=${requests.length}`);
+                str+=(`[MEM] handles=${handles.length}, requests=${requests.length}`);
+                var cache = clearMeasureCache()
+                var pd = getPD_Size()
+                console.log(cache);
+                console.log(pd);
+                str +='\n'
+                str += cache
+                str +='\n'
+                str += pd
+              } catch {}
+
+            return res.send(listToBase64([str]));
         }
         // 检查 text 和 fuzzySearchResult 是否同时存在
         if (text && fuzzySearchResult) {
