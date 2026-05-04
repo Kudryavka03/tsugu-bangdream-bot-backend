@@ -17,6 +17,7 @@ import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+    if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
     var cutoff = new Cutoff(eventId, mainServer, tier)
     if (cutoff.isExist == false) {
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]

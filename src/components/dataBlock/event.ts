@@ -15,7 +15,7 @@ export async function drawEventDatablock(
     topLeftText?: string
 ) {
     // 初始化事件（加载基本信息）
-    await event.initFull();
+    //await event.initFull();
 
     // -------------------------------
     // Step 1. 并发区准备
