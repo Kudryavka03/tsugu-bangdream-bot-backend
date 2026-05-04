@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
-import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, extraUrl, reportDataSourceProblem, tierListOfServer } from '@/config';
+import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, clearDataSourceProblem, extraUrl, reportDataSourceProblem, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
@@ -76,7 +76,9 @@ export class Cutoff {
         if (!forceReadCache){
             try{
                // this.useHHWX = this.useHHWX?true:false
-                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+                var data = await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+
+                return data
 
             }
             catch{
@@ -114,7 +116,13 @@ export class Cutoff {
                 this.useHHWX = !this.useHHWX
                 reportDataSourceProblem()
                 console.log('数据实时性校验不通过，切换数据源至',this.useHHWX?"HHWX":"Bestdori" )
-                cutoffData = await this.getFinalCutoffsData()
+                var cutoffData2 = await this.getFinalCutoffsData()
+                if (cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time < cutoffData2["cutoffs"][cutoffData2["cutoffs"].length-1].time){ // 对比两个数据源的数据哪个更加实时
+                    cutoffData = cutoffData2
+                }
+
+            }else if(this.server == Server.cn){ // 数据源数据已经无问题，清空计数器
+                clearDataSourceProblem()
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
             //console.log(cutoffResult)
