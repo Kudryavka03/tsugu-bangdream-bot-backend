@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
-import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, extraUrl, tierListOfServer } from '@/config';
+import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, extraUrl, reportDataSourceProblem, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
 import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
@@ -80,6 +80,7 @@ export class Cutoff {
 
             }
             catch{
+                reportDataSourceProblem()
                 //this.useHHWX = this.useHHWX?false:true
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
@@ -89,6 +90,7 @@ export class Cutoff {
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
             catch{
+                reportDataSourceProblem()
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
         }
@@ -110,7 +112,7 @@ export class Cutoff {
             cutoffData = await this.getFinalCutoffsData()
             if (this.server == Server.cn && dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
                 this.useHHWX = !this.useHHWX
-
+                reportDataSourceProblem()
                 console.log('数据实时性校验不通过，切换数据源至',this.useHHWX?"HHWX":"Bestdori" )
                 cutoffData = await this.getFinalCutoffsData()
             }
