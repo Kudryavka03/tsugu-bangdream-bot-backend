@@ -80,7 +80,7 @@ export class Cutoff {
 
             }
             catch{
-                reportDataSourceProblem()
+                if (this.server ==  Server.cn)reportDataSourceProblem()
                 //this.useHHWX = this.useHHWX?false:true
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
@@ -90,7 +90,7 @@ export class Cutoff {
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
             catch{
-                reportDataSourceProblem()
+                if (this.server ==  Server.cn)reportDataSourceProblem()
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
         }
