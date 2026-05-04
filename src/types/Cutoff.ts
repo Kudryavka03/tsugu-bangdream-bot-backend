@@ -87,7 +87,7 @@ export class Cutoff {
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
         }else{
-            this.useHHWX = false    // 对于历史档线数据可以直接使用Bestdori而不是hhwx
+            //this.useHHWX = false    // 对于历史档线数据可以直接使用Bestdori而不是hhwx
             try{
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
