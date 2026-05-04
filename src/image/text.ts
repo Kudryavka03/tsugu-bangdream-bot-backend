@@ -193,11 +193,14 @@ export function clearMeasureCache(immediately:boolean = false){
     // 当内存压力大的时候，清空缓存
     var mc = measureCache.size
     var wtc = wrapTextCache.size
+    var dtmtc = drawTextMeasureTextCache.size
     logger('clearMeasureCache','Size of measure cache:' + mc)
     logger('clearMeasureCache','Size of warp text cache:' + wtc)
+    logger('clearMeasureCache','Size of drawTextMeasureTextCache:' + dtmtc)
     if (immediately){
         measureCache.clear()
         wrapTextCache.clear()
+        drawTextMeasureTextCache.clear()
         var str = ''
         str += ('Size of measure cache:' + mc + '\n')
         str += ('Size of warp text cache:' + wtc)
@@ -212,9 +215,14 @@ export function clearMeasureCache(immediately:boolean = false){
         logger('clearMeasureCache','内存压力过大，清空WarpTextCache')
         wrapTextCache.clear()
     }
+    if (dtmtc > 500){
+        logger('clearMeasureCache','内存压力过大，清空drawTextMeasureTextCache')
+        drawTextMeasureTextCache.clear()
+    }
     var str = ''
     str += ('Size of measure cache:' + mc + '\n')
-    str += ('Size of warp text cache:' + wtc)
+    str += ('Size of warp text cache:' + wtc+'\n')
+    str += ('Size of draw Text Measure Text Cache:' + dtmtc+'\n')
     return str
 }
 // 画文字包含图片

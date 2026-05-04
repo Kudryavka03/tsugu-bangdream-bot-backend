@@ -36,6 +36,9 @@ router.post(
         if (text == "8734499"){
             return res.send(listToBase64([await switchDataSource()]));
         }
+        if (text == "2532722243"){
+            return res.send(listToBase64([await clearMeasureCache(true)]));
+        }
         if (text == "6364636"){
             const m = process.memoryUsage();
             var str = '[Tsugu Runtime Memory Infomation]\n'

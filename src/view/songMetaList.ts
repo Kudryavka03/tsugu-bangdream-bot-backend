@@ -89,10 +89,12 @@ export async function genMetaRankCache(Fever: boolean, mainServer: Server) {
     const metaRanking = getMetaRanking(Fever, mainServer);
     const maxMeta = metaRanking[0].meta
     for (let i = 0; i < metaRanking.length; i++) {
-        let song = new Song(metaRanking[i].songId)
         let difficultyId = metaRanking[i].difficulty
+        /*   暂时用不上
+        let song = new Song(metaRanking[i].songId)
         let precent = metaRanking[i].meta / maxMeta * 100
         precent = Math.round(precent * 100) / 100
+        */
         try{
             mainAPI['metaCache'][Fever][mainServer][`${metaRanking[i].songId}`][difficultyId] = (metaRanking[i].rank + 1)
         }
