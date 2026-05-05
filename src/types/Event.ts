@@ -11,7 +11,11 @@ import { logger } from '@/logger';
 import { Card } from './Card';
 import { GetProbablyTimeDifference } from '@/components/list/time';
 
-var eventDataCache = {}
+//var eventDataCache = {}
+const MAX_CACHE_SIZE = 50;  // 设置Event最大缓存量
+const ENABLE_CACHE = true; // 是否启用缓存
+//var cardDataCache = {}
+const eventDataCache: Map<number, any> = new Map();
 
 const typeName = {
     "story": "一般活动 (协力)",
@@ -169,12 +173,22 @@ export class Event {
         if (this.isExist == false) {
             return
         }
-        if (eventDataCache[this.eventId.toString()] != undefined && !useCache) {
-            var eventData = eventDataCache[this.eventId.toString()]
+        if (eventDataCache.has(this.eventId) && !useCache) {
+            var eventData = eventDataCache.get(this.eventId)
         }
         else {
             var eventData = await this.getData(useCache)
-            eventDataCache[this.eventId.toString()] = eventData
+            if (ENABLE_CACHE && eventDataCache.size < MAX_CACHE_SIZE) {
+                eventDataCache.set(this.eventId, eventData)
+            }else
+            {
+                // 如果缓存已满，删除最旧的缓存项
+                if (eventDataCache.size >= MAX_CACHE_SIZE) {
+                    const firstKey = eventDataCache.keys().next().value;
+                    eventDataCache.delete(firstKey);
+                }
+                eventDataCache.set(this.eventId, eventData)
+            }
         }
         this.isInitFull = true;
         this.eventType = eventData['eventType'];

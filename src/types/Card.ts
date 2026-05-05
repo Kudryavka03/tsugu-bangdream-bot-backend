@@ -11,8 +11,10 @@ import mainAPI from '@/types/_Main'
 import { globalDefaultServer } from '@/config'
 import { stringToNumberArray, formatNumber } from '@/types/utils'
 import { Bestdoriurl } from "@/config"
-
-var cardDataCache = {}
+const MAX_CACHE_SIZE = 100;  // 设置Card最大缓存量
+const ENABLE_CACHE = true; // 是否启用缓存
+//var cardDataCache = {}
+const cardDataCache: Map<number, object> = new Map();
 
 export interface Stat {//综合力
     performance: number,
@@ -133,12 +135,22 @@ export class Card {
             return
         }
         this.isExist = true;
-        if (cardDataCache[this.cardId.toString()] != undefined && !useCache) {
-            var cardData = cardDataCache[this.cardId.toString()]
+        if (cardDataCache.has(this.cardId) && !useCache) {
+            var cardData = cardDataCache.get(this.cardId)
         }
         else {
             var cardData = await this.getData(useCache)
-            cardDataCache[this.cardId.toString()] = cardData
+            if (ENABLE_CACHE && cardDataCache.size < MAX_CACHE_SIZE) {
+                cardDataCache.set(this.cardId, cardData)
+            }else
+            {
+                // 如果缓存已满，删除最旧的缓存项
+                if (cardDataCache.size >= MAX_CACHE_SIZE) {
+                    const firstKey = cardDataCache.keys().next().value;
+                    cardDataCache.delete(firstKey);
+                }
+                cardDataCache.set(this.cardId, cardData)
+            }
         }
         this.isInitFull = true;
         this.data = cardData
@@ -174,8 +186,8 @@ export class Card {
 
 
         //缓存数据
-        if (cardDataCache[this.cardId.toString()] == undefined) {
-            cardDataCache[this.cardId.toString()] = cardData
+        if (!cardDataCache.has(this.cardId)) {
+            cardDataCache.set(this.cardId, cardData)
         }
         this.isInitFull = true;
     }

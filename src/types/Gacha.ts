@@ -6,7 +6,11 @@ import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
 import { globalDefaultServer, Bestdoriurl } from '@/config';
 
-let gachaDataCache = {}
+//let gachaDataCache = {}
+const MAX_CACHE_SIZE = 50;  // 设置Event最大缓存量
+const ENABLE_CACHE = true; // 是否启用缓存
+//var cardDataCache = {}
+const gachaDataCache: Map<number, any> = new Map();
 
 const typeName = {
     "permanent": "常驻",
@@ -98,12 +102,22 @@ export class Gacha {
             return
         }
         let gachaData: object;
-        if (gachaDataCache[this.gachaId.toString()] != undefined && !useCache) {
-            gachaData = gachaDataCache[this.gachaId.toString()]
+        if (gachaDataCache.has(this.gachaId) && !useCache) {
+            gachaData = gachaDataCache.get(this.gachaId)
         }
         else {
             gachaData = await this.getData(useCache)
-            gachaDataCache[this.gachaId.toString()] = gachaData
+            if (ENABLE_CACHE && gachaDataCache.size < MAX_CACHE_SIZE) {
+                gachaDataCache.set(this.gachaId, gachaData)
+            }else
+            {
+                // 如果缓存已满，删除最旧的缓存项
+                if (gachaDataCache.size >= MAX_CACHE_SIZE) {
+                    const firstKey = gachaDataCache.keys().next().value;
+                    gachaDataCache.delete(firstKey);
+                }
+                gachaDataCache.set(this.gachaId, gachaData)
+            }
         }
 
         this.isExist = true;
