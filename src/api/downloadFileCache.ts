@@ -2,7 +2,7 @@ import { downloadFile } from '@/api/downloadFile'
 import { assetErrorImageBuffer } from "@/image/utils";
 const cache: Map<string, Buffer> = new Map();
 const MAX_CACHE_SIZE = 15;  // 设置最大缓存量
-const ENABLE_CACHE = true; // 是否启用缓存
+const ENABLE_CACHE = false; // 是否启用缓存，启用后可以加快访问速度，但会占用更多内存。建议在服务器性能较好的情况下启用，在性能较差的情况下禁用。
 
 async function downloadFileCache(url: string,IgnoreErr = true): Promise<Buffer> {
     if (cache.has(url)) {

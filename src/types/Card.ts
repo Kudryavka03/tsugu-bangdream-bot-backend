@@ -11,7 +11,7 @@ import mainAPI from '@/types/_Main'
 import { globalDefaultServer } from '@/config'
 import { stringToNumberArray, formatNumber } from '@/types/utils'
 import { Bestdoriurl } from "@/config"
-const MAX_CACHE_SIZE = 100;  // 设置Card最大缓存量
+const MAX_CACHE_SIZE = 250;  // 设置Card最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
 const cardDataCache: Map<number, object> = new Map();
