@@ -26,7 +26,9 @@ const typeName = {
     "festival": "团队LIVE FES (5v5)",
     "medley": "组曲LIVE (3组曲)"
 }
-
+export function getEventDataCacheSize(){
+    return eventDataCache.size
+}
 export class Event {
     eventId: number;
     isExist: boolean = false;

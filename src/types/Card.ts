@@ -15,7 +15,9 @@ const MAX_CACHE_SIZE = 250;  // 设置Card最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
 const cardDataCache: Map<number, object> = new Map();
-
+export function getCardDataCacheSize(){
+    return cardDataCache.size
+}
 export interface Stat {//综合力
     performance: number,
     technique: number,

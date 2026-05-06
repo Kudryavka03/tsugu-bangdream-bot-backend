@@ -4,7 +4,7 @@ import { Image, loadImage } from 'skia-canvas'
 import { downloadFileCache } from '@/api/downloadFileCache'
 import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
-import { globalDefaultServer, Bestdoriurl } from '@/config';
+import { globalDefaultServer, Bestdoriurl  } from '@/config';
 
 //let gachaDataCache = {}
 const MAX_CACHE_SIZE = 100;  // 设置Event最大缓存量
@@ -22,7 +22,9 @@ const typeName = {
     "limited": "期间限定",
     "miracle": "奇迹兑换券"
 }
-
+export function getGachaDataCacheSize(){
+    return gachaDataCache.size
+}
 export class Gacha {
     gachaId: number;
     isExist = false

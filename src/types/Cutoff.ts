@@ -255,7 +255,7 @@ export class Cutoff {
 
         let dailyIncrement = []
         if (score.length < 2) {
-            if (score.length == 0){
+            if (score.length == 0 ){   // 如果第一条数据距离活动开始已经超过17小时，那么就认为第一天没有数据，直接把第一天增量设为0
                 dailyIncrement.push(Math.round((this.cutoffs[this.cutoffs.length-1].ep)/10000))
             }
             else if (score.length == 1 && (time[0] - eventStartAtTime) <(86400000 + (86400000 * 0.7))){
@@ -277,7 +277,7 @@ export class Cutoff {
             let total_days =  t / 86400000
             let first_days_ratio =  (13/24)
             let first_day_ep = Math.round((score[0] / total_days * first_days_ratio) / 10000)
-            dailyIncrement.push(first_day_ep)
+            dailyIncrement.push(first_day_ep + '!')
             for(var i = 0;i< Math.floor(total_days - first_days_ratio);i++){   // 假如第一天没数据，第二天没数据，第三天有数据，这里只算第二天
                 dailyIncrement.push(Math.round(((score[0] - first_day_ep) / total_days) / 10000) + '!')
             }
@@ -307,7 +307,7 @@ export class Cutoff {
                 var data = Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)/ratio)
                 dailyIncrement.push(data + '!')
             }
-            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000) / ratio * ( Math.ceil(ratio) - ratio )) + '!')
+            dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000) / ratio * ( ratio - Math.floor(ratio) )) + '!')
         }else{
             dailyIncrement.push(Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length - 1])/10000)))
         }

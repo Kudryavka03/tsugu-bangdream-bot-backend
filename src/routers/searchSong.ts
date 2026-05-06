@@ -14,6 +14,10 @@ import mainAPI, { loadMainAPINow } from '@/types/_Main';
 import { switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
 import { clearMeasureCache } from '@/image/text';
 import { getPD_Size } from '@/api/downloader';
+import { getCardDataCacheSize } from '@/types/Card';
+import { getEventDataCacheSize } from '@/types/Event';
+import { getGachaDataCacheSize } from '@/types/Gacha';
+import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
 
 const router = express.Router();
 
@@ -58,8 +62,17 @@ router.post(
                 console.log(pd);
                 str +='\n'
                 str += cache
-                str +='\n'
+                //str +='\n'
                 str += pd
+                console.log('eventDataCache size:', getEventDataCacheSize());
+                console.log('cardDataCache size:', getCardDataCacheSize());
+                console.log('gachaDataCache size:', getGachaDataCacheSize());
+                console.log('downloadFileCacheSize:', getDownloadFileCacheSize());
+                str +='\n'
+                str += `eventDataCache size:${getEventDataCacheSize()}\n`
+                str += `cardDataCache size:${getCardDataCacheSize()}\n`
+                str += `gachaDataCache size:${getGachaDataCacheSize()}\n`
+                str += `downloadFileCache size:${getDownloadFileCacheSize()}\n`
               } catch {}
 
             return res.send(listToBase64([str]));
