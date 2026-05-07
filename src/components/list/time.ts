@@ -212,3 +212,30 @@ export function formatSeconds(value: number) {
     }
     return result;
 }
+
+export function normalizeTimestamp(time: number | string): number {
+    const t = Number(time)
+    return t < 1e12 ? t * 1000 : t
+}
+
+export function getServerUtcOffset(server: Server): number {
+    switch (server) {
+        case Server.cn:
+        case Server.tw:
+            return 8
+
+        case Server.jp:
+        case Server.kr:
+            return 9
+
+        case Server.en:
+        default:
+            return 0
+    }
+}
+
+export function getDateByServerTimezone(time: number | string, server: Server): Date {
+    const timestamp = normalizeTimestamp(time)
+    const offset = getServerUtcOffset(server)
+    return new Date(timestamp + offset * 60 * 60 * 1000)
+}
