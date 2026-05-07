@@ -13,7 +13,7 @@ import { GetProbablyTimeDifference } from '@/components/list/time';
 import { LRUCache } from '@/LRUCache'
 
 //var eventDataCache = {}
-const MAX_CACHE_SIZE = 100;  // 设置Event最大缓存量
+const MAX_CACHE_SIZE = 200;  // 设置Event最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
 const eventDataCache= new LRUCache(MAX_CACHE_SIZE);

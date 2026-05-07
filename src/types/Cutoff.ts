@@ -6,7 +6,7 @@ import { Event } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
 import * as fs from 'fs';
 import path from 'path'
-import { getDateByServerTimezone, normalizeTimestamp } from '@/components/list/time';
+import { getDateByServerTimezone, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 
 export class Cutoff {
     eventId: number;
@@ -239,16 +239,35 @@ export class Cutoff {
         }
         return history
     }
-    getDaysOfEvent(ts: number){
-        let eventStartAtTime = this.startAt
-        var startDate = new Date(eventStartAtTime)
-        var firstDayEndTime = eventStartAtTime + ((86400000 + 1000*60*60*4) - startDate.getHours() * 3600000 - startDate.getMinutes() * 60000 - startDate.getSeconds() * 1000)
-        // 以凌晨四点作为一天的分界线。
-        if (ts < firstDayEndTime){
+    getDaysOfEvent(ts: number) {
+        const offsetMs = getServerUtcOffset(this.server) * 60 * 60 * 1000
+
+        const eventStartAtTime = normalizeTimestamp(this.startAt)
+        const timestamp = normalizeTimestamp(ts)
+
+        const serverStartTime = eventStartAtTime + offsetMs
+
+        const startDate = new Date(serverStartTime)
+
+        const hour = startDate.getUTCHours()
+        const minute = startDate.getUTCMinutes()
+        const second = startDate.getUTCSeconds()
+        const millisecond = startDate.getUTCMilliseconds()
+
+        let firstDayEndServerTime =
+            serverStartTime +
+            ((86400000 + 4 * 60 * 60 * 1000)
+                - hour * 60 * 60 * 1000
+                - minute * 60 * 1000
+                - second * 1000
+                - millisecond)
+
+        const firstDayEndTime = firstDayEndServerTime - offsetMs
+
+        if (timestamp < firstDayEndTime) {
             return 0
-        }
-        else{
-            return Math.ceil((ts - firstDayEndTime) / 86400000)
+        } else {
+            return Math.ceil((timestamp - firstDayEndTime) / 86400000)
         }
     }
     getDailyIncrement(){
