@@ -112,7 +112,7 @@ export class Cutoff {
         if (time < this.endAt + 1000 * 60 * 60 * 1) {
             var dateNow = Date.now()
             cutoffData = await this.getFinalCutoffsData()
-            if (this.server == Server.cn && dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
+            if (this.server == Server.cn && cutoffData["cutoffs"]&& cutoffData["cutoffs"].length!=0 &&  dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
                 this.useHHWX = !this.useHHWX
                 reportDataSourceProblem()
                 console.log('数据实时性校验不通过，切换数据源至',this.useHHWX?"HHWX":"Bestdori" )
@@ -121,7 +121,7 @@ export class Cutoff {
                     cutoffData = cutoffData2
                 }
 
-            }else if(this.server == Server.cn){ // 数据源数据已经无问题，清空计数器
+            }else if(this.server == Server.cn && cutoffData["cutoffs"] && cutoffData["cutoffs"].length!=0){ // 数据源数据已经无问题，清空计数器
                 clearDataSourceProblem()
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
