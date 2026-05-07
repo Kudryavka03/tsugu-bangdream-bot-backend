@@ -5,6 +5,7 @@ FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.t
 import * as path from 'path';
 import { getFontCanvasCtxFromPool } from './utils';
 import { logger } from '@/logger';
+import { LRUCache, LRUCacheAny, LRUCacheNumber } from '@/LRUCache';
 const workerPath = path.resolve(__dirname, "../wrapTextWorker.js");
 
 interface warpTextOptions {
@@ -73,7 +74,7 @@ export async function drawTextInWorker({
     return canvas;
 } 
 */
-const drawTextMeasureTextCache= new Map<string, number>();
+const drawTextMeasureTextCache= new LRUCacheNumber(750);
 export function drawTextMeasureText(text:string,textSize:number,font?: "FangZhengHeiTi" | "old" | "default") {
     var MeasureTextFlags = `${text}-${textSize}-${font}`
     if(drawTextMeasureTextCache.has(MeasureTextFlags))return drawTextMeasureTextCache.get(MeasureTextFlags)
@@ -129,7 +130,7 @@ export  function drawText({
 
 
 
-const wrapTextCache  = new Map<string, { numberOfLines: number; wrappedText: string[]; }>();
+const wrapTextCache  = new LRUCacheAny(750);
 export function wrapText({
     text,
     textSize,
@@ -181,7 +182,7 @@ interface TextWithImagesOptions {
     color?: string;
     font?: "default" | "old"
 }
-const measureCache  = new Map<string, number>();
+const measureCache  = new LRUCacheNumber(750);
 function cachedMeasureText(ctx, text,textSize, font) {                             // 缓存Measure+
     const key = `${textSize}:${font}:${text}`;
     if (measureCache.has(key)) return measureCache.get(key);
@@ -191,12 +192,13 @@ function cachedMeasureText(ctx, text,textSize, font) {                          
 }
 export function clearMeasureCache(immediately:boolean = false){
     // 当内存压力大的时候，清空缓存
-    var mc = measureCache.size
-    var wtc = wrapTextCache.size
-    var dtmtc = drawTextMeasureTextCache.size
+    var mc = measureCache.getCacheSize()
+    var wtc = wrapTextCache.getCacheSize()
+    var dtmtc = drawTextMeasureTextCache.getCacheSize()
     logger('clearMeasureCache','Size of measure cache:' + mc)
     logger('clearMeasureCache','Size of warp text cache:' + wtc)
     logger('clearMeasureCache','Size of drawTextMeasureTextCache:' + dtmtc)
+    /*
     if (immediately){
         measureCache.clear()
         wrapTextCache.clear()
@@ -219,6 +221,7 @@ export function clearMeasureCache(immediately:boolean = false){
         logger('clearMeasureCache','内存压力过大，清空drawTextMeasureTextCache')
         drawTextMeasureTextCache.clear()
     }
+        */
     var str = ''
     str += ('Size of measure cache:' + mc + '\n')
     str += ('Size of warp text cache:' + wtc+'\n')

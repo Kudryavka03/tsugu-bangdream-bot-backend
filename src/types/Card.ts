@@ -11,12 +11,12 @@ import mainAPI from '@/types/_Main'
 import { globalDefaultServer } from '@/config'
 import { stringToNumberArray, formatNumber } from '@/types/utils'
 import { Bestdoriurl } from "@/config"
-const MAX_CACHE_SIZE = 250;  // 设置Card最大缓存量
+import { LRUCache } from '@/LRUCache'
+const MAX_CACHE_SIZE = 300;  // 设置Card最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
-//var cardDataCache = {}
-const cardDataCache: Map<number, object> = new Map();
+const cardDataCache = new LRUCache(MAX_CACHE_SIZE);
 export function getCardDataCacheSize(){
-    return cardDataCache.size
+    return cardDataCache.getCacheSize()
 }
 export interface Stat {//综合力
     performance: number,
@@ -142,15 +142,7 @@ export class Card {
         }
         else {
             var cardData = await this.getData(useCache)
-            if (ENABLE_CACHE && cardDataCache.size < MAX_CACHE_SIZE) {
-                cardDataCache.set(this.cardId, cardData)
-            }else
-            {
-                // 如果缓存已满，删除最旧的缓存项
-                if (cardDataCache.size >= MAX_CACHE_SIZE) {
-                    const firstKey = cardDataCache.keys().next().value;
-                    cardDataCache.delete(firstKey);
-                }
+            if (ENABLE_CACHE) {
                 cardDataCache.set(this.cardId, cardData)
             }
         }
@@ -188,9 +180,11 @@ export class Card {
 
 
         //缓存数据
+        /*
         if (!cardDataCache.has(this.cardId)) {
             cardDataCache.set(this.cardId, cardData)
         }
+            */
         this.isInitFull = true;
     }
     async getData(update: boolean = true) {

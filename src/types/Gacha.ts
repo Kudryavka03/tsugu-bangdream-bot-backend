@@ -5,12 +5,13 @@ import { downloadFileCache } from '@/api/downloadFileCache'
 import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
 import { globalDefaultServer, Bestdoriurl  } from '@/config';
+import { LRUCache } from '@/LRUCache'
 
 //let gachaDataCache = {}
-const MAX_CACHE_SIZE = 100;  // 设置Event最大缓存量
+const MAX_CACHE_SIZE = 300;  // 设置Event最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
-const gachaDataCache: Map<number, any> = new Map();
+const gachaDataCache=new LRUCache(MAX_CACHE_SIZE);
 
 const typeName = {
     "permanent": "常驻",
@@ -23,7 +24,7 @@ const typeName = {
     "miracle": "奇迹兑换券"
 }
 export function getGachaDataCacheSize(){
-    return gachaDataCache.size
+    return gachaDataCache.getCacheSize()
 }
 export class Gacha {
     gachaId: number;
@@ -109,15 +110,7 @@ export class Gacha {
         }
         else {
             gachaData = await this.getData(useCache)
-            if (ENABLE_CACHE && gachaDataCache.size < MAX_CACHE_SIZE) {
-                gachaDataCache.set(this.gachaId, gachaData)
-            }else
-            {
-                // 如果缓存已满，删除最旧的缓存项
-                if (gachaDataCache.size >= MAX_CACHE_SIZE) {
-                    const firstKey = gachaDataCache.keys().next().value;
-                    gachaDataCache.delete(firstKey);
-                }
+            if (ENABLE_CACHE) {
                 gachaDataCache.set(this.gachaId, gachaData)
             }
         }

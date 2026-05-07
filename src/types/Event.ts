@@ -10,12 +10,13 @@ import { stringToNumberArray } from '@/types/utils'
 import { logger } from '@/logger';
 import { Card } from './Card';
 import { GetProbablyTimeDifference } from '@/components/list/time';
+import { LRUCache } from '@/LRUCache'
 
 //var eventDataCache = {}
 const MAX_CACHE_SIZE = 100;  // 设置Event最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
-const eventDataCache: Map<number, any> = new Map();
+const eventDataCache= new LRUCache(MAX_CACHE_SIZE);
 
 const typeName = {
     "story": "一般活动 (协力)",
@@ -27,7 +28,7 @@ const typeName = {
     "medley": "组曲LIVE (3组曲)"
 }
 export function getEventDataCacheSize(){
-    return eventDataCache.size
+    return eventDataCache.getCacheSize()
 }
 export class Event {
     eventId: number;
@@ -180,15 +181,7 @@ export class Event {
         }
         else {
             var eventData = await this.getData(useCache)
-            if (ENABLE_CACHE && eventDataCache.size < MAX_CACHE_SIZE) {
-                eventDataCache.set(this.eventId, eventData)
-            }else
-            {
-                // 如果缓存已满，删除最旧的缓存项
-                if (eventDataCache.size >= MAX_CACHE_SIZE) {
-                    const firstKey = eventDataCache.keys().next().value;
-                    eventDataCache.delete(firstKey);
-                }
+            if (ENABLE_CACHE) {
                 eventDataCache.set(this.eventId, eventData)
             }
         }
@@ -229,7 +222,7 @@ export class Event {
         
         this.isInitfull = true
     }
-    async getData(update: boolean = true) {
+    async getData(update: boolean = true): Promise<object> {
         if(this.data!= null) return this.data   // 如果存在了则直接返回this.data,不再访问callAPIAndCacheResponse
         var time = update ? 0 : 1 / 0
         var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,!update,0);

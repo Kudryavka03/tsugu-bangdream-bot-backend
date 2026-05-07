@@ -43,6 +43,10 @@ router.post(
         if (text == "2532722243"){
             return res.send(listToBase64([await clearMeasureCache(true)]));
         }
+        if (text == "45622542"){
+            global.gc?.()
+            return res.send(listToBase64(['已尝试触发GC']));
+        }
         if (text == "6364636"){
             const m = process.memoryUsage();
             var str = '[Tsugu Runtime Memory Infomation]\n'
