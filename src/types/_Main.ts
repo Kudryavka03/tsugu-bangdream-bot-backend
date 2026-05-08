@@ -24,7 +24,7 @@ if (!isMainThread && parentPort) {
   }
 
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
-const fuzzySearchDebug = true
+const fuzzySearchDebug = false
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname,playerNumber
@@ -115,7 +115,7 @@ async function loadMainAPI(useCache: boolean = false) {
 
     
     try { //能够实时更新而不重启清空缓存
-        let songNicknameData = await readExcelFile(path.join(configPath, fuzzySearchDebug?'nickname_song_test.xlsx':'nickname_song_test.xlsx'))
+        let songNicknameData = await readExcelFile(path.join(configPath, fuzzySearchDebug?'nickname_song_test.xlsx':'nickname_song.xlsx'))
         if(songNicknameData!=null) songNickname = songNicknameData  // 尽量避免定时更新api的时候无法查询到任何歌曲，
     }
     catch (e) {
