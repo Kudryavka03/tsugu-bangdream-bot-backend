@@ -8,9 +8,6 @@ import { getBandIcon } from './Band'
 import { Server, getIcon, getServerByServerId } from './Server'
 import { Attribute, attributeIconCache } from './Attribute'
 import { parentPort, threadId,isMainThread  } from'worker_threads';
-import { drawTopRateSpeedRank } from '@/view/cutoffEventTop'
-import { getPresentEvent } from './Event'
-import { Long } from 'mongodb'
 import { piscina } from '@/WorkerPool';
 import { genMetaRankCache } from '@/view/songMetaList'
 import { manualLoadFuzzyConfig } from '@/fuzzySearch'
@@ -27,7 +24,7 @@ if (!isMainThread && parentPort) {
   }
 
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
-
+const fuzzySearchDebug = true
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname,playerNumber
@@ -118,7 +115,7 @@ async function loadMainAPI(useCache: boolean = false) {
 
     
     try { //能够实时更新而不重启清空缓存
-        let songNicknameData = await readExcelFile(path.join(configPath, 'nickname_song.xlsx'))
+        let songNicknameData = await readExcelFile(path.join(configPath, fuzzySearchDebug?'nickname_song_test.xlsx':'nickname_song_test.xlsx'))
         if(songNicknameData!=null) songNickname = songNicknameData  // 尽量避免定时更新api的时候无法查询到任何歌曲，
     }
     catch (e) {

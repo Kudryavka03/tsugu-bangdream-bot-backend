@@ -2,7 +2,7 @@ import { callAPIAndCacheResponse } from '@/api/getApi';
 import { Image, loadImage } from 'skia-canvas'
 import { downloadFileCache } from '@/api/downloadFileCache'
 import { Server, getServerByPriority } from '@/types/Server'
-import mainAPI, { eventCharacterParameterBonusFix } from '@/types/_Main';
+import mainAPI from '@/types/_Main';
 import { Attribute } from '@/types/Attribute';
 import { Character } from '@/types/Character';
 import { globalDefaultServer, Bestdoriurl } from '@/config';

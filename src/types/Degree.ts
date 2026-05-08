@@ -5,8 +5,6 @@ import { Canvas, Image, loadImage } from 'skia-canvas';
 import mainAPI from '@/types/_Main';
 import { Bestdoriurl } from '@/config';
 import { readJSONFromBuffer } from './utils';
-import { assetsRootPath } from '@/config';
-import { assetErrorImageBuffer } from '@/image/utils';
 
 export class Degree {
     degreeId: number;

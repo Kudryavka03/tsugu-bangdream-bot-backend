@@ -207,7 +207,10 @@ function isValidRelationStr(_relationStr: string): boolean {
 
 export function include(source: string, target: string) {
   source = source.toLowerCase()
-  return source.includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 3) || source.split(' ').includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 1) || source == target
+  return source.includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 3)
+  || source.split(' ').includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 1)
+  || source.split('-').includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 1)
+  || source == target
 }
 
 export function match(matches: FuzzySearchResult, target: any, numberTypeKey: string[]): boolean {
@@ -322,6 +325,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 match = true;
                 break;
               }
+              /*
               else{ // 如果仍然没有匹配到，则尝试拆分空格匹配，不考虑将其作为增量查找结果，因为有些昵称确实包含空格的，如果可以精确匹配的话就不再需要增量结果了
                 let keySplitSpace = matchValue.split(' ')
                 for (let kss of keySplitSpace){
@@ -331,6 +335,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                   }
                 }
               }
+                */
               var nicknameReplaceSpace = nickname.replace(/ /g, '')
               if (!match){  // 如果仍然无结果，则合并空格进行查找
                 if (include(nicknameReplaceSpace, matchValueReplaceSpace)) {
@@ -362,7 +367,9 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 break;
               }
             }
+            /*
             // TODO：如果仍然没有结果，则拆分match value逐词匹配
+            // include中已经包含了该段逻辑了，所以不需要再进行一次拆分匹配了
             if (!match && musicTitleReplaceSpace &&  mt){  // 如果仍然无结果，则尝试空格拆分搜索词
               for (var s of matchValue.split(' ')){
                 //console.log(nicknameReplaceSpace,s)
@@ -372,6 +379,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 }
               }
             }
+              */
           }
 
         }

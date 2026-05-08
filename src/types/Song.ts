@@ -1,7 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi'
 import { Image, loadImage } from 'skia-canvas'
 import { downloadFile } from '@/api/downloadFile'
-import { downloadFileCache } from '@/api/downloadFileCache'
 import { getServerByPriority, Server } from '@/types/Server'
 import mainAPI from '@/types/_Main'
 import { Bestdoriurl } from '@/config'

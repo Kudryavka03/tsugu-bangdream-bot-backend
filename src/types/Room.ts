@@ -2,7 +2,6 @@ import { BandoriStationurl } from "@/config";
 import { Player } from "@/types/Player";
 import { unescape } from "querystring";
 import { Server, getServerByName } from "@/types/Server";
-import { getJsonAndSave } from "@/api/downloader";
 import { tsuguUser, userPlayerInList } from '@/database/userDB'
 import { Stack } from '@/types/utils'
 import { logger } from "@/logger";
