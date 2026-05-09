@@ -607,6 +607,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     // [[1,2,3,4,5,6,8],[7,9]],[[1,2,3,4,5],[6,8],[7,9]]
     // 就可以判断得出，[1,2,3,4,5]在同一辆车上,[6,8]在同一辆车上,[7,9]在同一辆车上
     let possibleAtSameRoom = []
+    let tempArr1 = []
+    let tempArr2 = []
     try{
         var pureData = []
         for(let pd of cutoffEventTop.points){
@@ -631,6 +633,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             value: number
         }
         var valueChangeData = []
+        // 将每一次采集点之间的变动情况进行记录
         for (let t = 0;t<timeList.length;t++){  // 便利timeList 。 t为timeList的Index
             let tempData1 = []
             let tempData2 = []
@@ -648,14 +651,17 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
             valueChangeData.push(valueChangeUid)
         }
-        //console.log(valueChangeData)
+        //console.log(valueChangeData )
+        // 经过上述处理后，uid格式就变成：
+        // [[1,2],[1,2,3,4],[5,6,7,8,9,10]]这样的格式
         // 搜寻当前uid的出现的最小变动数组
         
         let readUid = []
         for(let uIndex = 0;uIndex<uidList.length;uIndex++){
             let uSize = 11;
             let vIndexFlag = 0;
-            if (readUid.includes(uidList[uIndex])) continue
+            //if (readUid.includes(uidList[uIndex])) continue
+            // 找出包含当前uid的变动数组中，数组长度最小的一个
             for(let vIndex = 0;vIndex<valueChangeData.length;vIndex++){
                 if (valueChangeData[vIndex].includes(uidList[uIndex])){
                     if (valueChangeData[vIndex].length <= uSize){
@@ -664,12 +670,42 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                     }
                 }
             }
-            possibleAtSameRoom.push(valueChangeData[vIndexFlag])
+            // 此时uSize是最小的
+            let tempArr = []
+            for(var a of valueChangeData){
+                // 遍历valueChangeData，找出所有包含当前uid的，并且长度等于最小长度的数组。
+                if (a.length == uSize && a.includes(uidList[uIndex]))
+                {
+                    tempArr.push(a)
+                }
+            }
+                        // 这样就得到了这些uid所有最小相同的数组
+            // 接下来开始对tempArr进行查重，保留相同的部分
+            //console.log('留重前',tempArr)
+            tempArr = removeNonSameDataArray(tempArr)
+            //console.log('留重后',tempArr)
+            for(let ta of tempArr){
+                tempArr1.push(ta)
+            }
             for(let vcd of valueChangeData[vIndexFlag]){
                 if (!readUid.includes(vcd))readUid.push(vcd)
             }
         }
+        tempArr2 = removeNonSameDataArray(tempArr1)
+        //console.log('tempArr2',tempArr2)
+        for(let uid of uidList){
+            var tData = findUidSameDataInDifferentArray(tempArr2,uid)
+            var isSame = false
+            for(let par of possibleAtSameRoom){
+                if (compareSameDataArray(par,tData)){
+                    isSame = true
+                    break
+                }
+            }
+            if (!isSame) possibleAtSameRoom.push(tData)
+        }
         //console.log(possibleAtSameRoom)
+
     }
     catch{
         // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。
@@ -1141,15 +1177,88 @@ export function getAverageTime(timestamps: Array<number>) {
 }
 
 function getPossibleRoom (data,uid){
-    if (!data) return '无数据'
+    //return '无数据'
+    if (!data) return '猜不透'
     try{
         for(let i = 0;i<data.length;i++){
             if (data[i].includes(uid)) return '房间' + String.fromCharCode(65 +i)
         }
-        return '无数据'
+        return '猜不透'
     }
     catch{
-        return '无数据'
+        return '猜不透'
     }
 
+}
+function compareSameDataArray(arr1,arr2){       // 判断两个数组是否包含相同的数据
+    var dataSameFlag = true
+    if (arr1.length != arr2.length) return false
+    for (let i = 0;i<arr1.length;i++){
+        if (dataSameFlag == false) return false
+        for(let j = 0;j<arr2.length;j++){
+            if (arr1[i] == arr2[j]) {
+                dataSameFlag = true
+                break
+            }
+            else dataSameFlag =  false
+        }
+    }
+    return dataSameFlag
+}
+
+function removeNonSameDataArray(array){   // 去除数组中不重复的数据，并且只保留第一份
+    // reverse参数是为了判断是保留相同的数据还是保留不相同的数据，默认为false即保留相同的数据
+    var arr = [...array]
+    //console.log('留重前',arr    )
+    if (arr.length == 1){
+        //console.log('留重后',[arr[0]])
+        return [arr[0]]
+    }
+    var res = []
+    for(let i = 0;i<arr.length;i++){
+        if (arr[i] === null) continue;
+        for(let j = i+1;j<arr.length;j++){
+            if (arr[j] === null) continue
+            if (compareSameDataArray(arr[i],arr[j])){
+                arr[j] = null
+            }
+        }
+    }
+    //console.log('留重后',arr    )
+    for(let i = 0;i<arr.length;i++){
+        if (arr[i] !== null) res.push(arr[i])
+    }
+    //console.log('留重后',res    )
+    return res
+}
+
+function findUidSameDataInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
+    //console.log('PreFind UID:',uid)
+    //console.log('original array',array)
+    var res = []
+    //res.push(uid)
+    var tempArr = []
+    var uidList = []
+    for(let i = 0;i<array.length;i++){
+        if (array[i].includes(uid)){
+            tempArr.push(array[i])
+        }
+    }
+    if (tempArr.length == 0) return []
+    if (tempArr.length == 1) return tempArr[0]
+    // 把所有uid放进uidList中
+    for(let i of tempArr){
+        for(let j of i){
+            if (!uidList.includes(j)) uidList.push(j)
+        }
+    }
+    for(let i of uidList){
+        var uidCount = 0
+        for(let j of tempArr){
+            if (j.includes(i)) uidCount++
+        }
+        if (uidCount == tempArr.length) res.push(i)
+    }
+    //console.log('after findUidSameDataInDifferentArray',res)
+    return res
 }
