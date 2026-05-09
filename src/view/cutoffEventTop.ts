@@ -1256,10 +1256,14 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
     }
     for(let i of uidList){
         var uidCount = 0
-        for(let j of array){
+        var uidCountT2 = 0   // 查外层数量
+        for(let j of tempArr){
             if (j.includes(i)) uidCount++
         }
-        if (uidCount == tempArr.length) res.push(i)
+        for(let j of array){
+            if (j.includes(i)) uidCountT2++
+        }
+        if ((uidCount == uidCountT2) && (uidCount == tempArr.length)) res.push(i)   // 外层数量对不上=不纯
     }
     //console.log('after findUidSameDataInDifferentArray',res)
     return res
