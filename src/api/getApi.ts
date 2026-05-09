@@ -44,7 +44,7 @@ const debugFlags = false
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   // 仅对Tracker等需要实时更新的API作限制
     if (url.includes('hhwx.org/api/tracker/data')) {
-    //url = url.replace('hhwx.org/api/tracker/data', 'hhwx.org/api/bandori/tracker/data');  // HHWX数据源修复
+    url = url.replace('hhwx.org/api/tracker/data', 'hhwx.org/api/bandori/tracker/data');  // HHWX数据源修复
   }
   if (url.includes('api/tracker/data') || url.includes('mode=')) return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
   if (debugFlags && url.includes('/api/events/all.6.json')){
@@ -97,7 +97,8 @@ async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retr
       
       //console.log(e.response.status )
       if (e && e.response.status === 404){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404
-        throw new Error(`Failed to get JSON from "${url}" Server returned 404 err code`);
+        logger(`API`, `Failed to get JSON from "${url}". Server returned 404 err code. No more retries will be made.`);
+        throw new Error(`Failed to get JSON from "${url}" Server returned 404 err code. No more retries will be made.`);
       }
       logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);
       if (attempt === retryCount - 1) {
