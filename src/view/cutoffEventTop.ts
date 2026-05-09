@@ -681,6 +681,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
                         // 这样就得到了这些uid所有最小相同的数组
             // 接下来开始对tempArr进行查重，保留相同的部分
+            // 例如tempArr是[[1,2,3,4],[1,2,3,4],[1,2,7,8],[1,2,7,8]]，那么就保留[1,2,3,4],[1,2,7,8]，去掉重复的部分。
             //console.log('留重前',tempArr)
             tempArr = removeNonSameDataArray(tempArr)
             //console.log('留重后',tempArr)
@@ -691,24 +692,25 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 if (!readUid.includes(vcd))readUid.push(vcd)
             }
         }
+        // 再次去重
         tempArr2 = removeNonSameDataArray(tempArr1)
         //console.log('tempArr2',tempArr2)
         for(let uid of uidList){
-            var tData = findUidSameDataInDifferentArray(tempArr2,uid)
+            var tData = findUidIntersectionInDifferentArray(tempArr2,uid)  // 找出跟着当前uid一起出现的集合交集
             var isSame = false
             for(let par of possibleAtSameRoom){
                 if (compareSameDataArray(par,tData)){
-                    isSame = true
+                    isSame = true   // 如果完全相同就不push了
                     break
                 }
             }
-            if (!isSame) possibleAtSameRoom.push(tData)
+            if (!isSame) possibleAtSameRoom.push(tData) // 如果没有完全相同的就push进去
         }
         //console.log(possibleAtSameRoom)
 
     }
     catch{
-        // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。
+        // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。（已完成）
     }
     var all = [];
     
@@ -1232,7 +1234,7 @@ function removeNonSameDataArray(array){   // 去除数组中不重复的数据�
     return res
 }
 
-function findUidSameDataInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
+function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
     //console.log('PreFind UID:',uid)
     //console.log('original array',array)
     var res = []
