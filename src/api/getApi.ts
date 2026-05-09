@@ -44,7 +44,7 @@ const debugFlags = false
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   // 仅对Tracker等需要实时更新的API作限制
     if (url.includes('hhwx.org/api/tracker/data')) {
-    url = url.replace('hhwx.org/api/tracker/data', 'hhwx.org/api/bandori/tracker/data');  // HHWX数据源修复
+    //url = url.replace('hhwx.org/api/tracker/data', 'hhwx.org/api/bandori/tracker/data');  // HHWX数据源修复
   }
   if (url.includes('api/tracker/data') || url.includes('mode=')) return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
   if (debugFlags && url.includes('/api/events/all.6.json')){
@@ -94,10 +94,12 @@ async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retr
       const data = await getJsonAndSave(url, cacheDir, fileName, cacheTime,isForceUseCache);  // 如果不强制读取缓存但又没有规定实时性。虽然不太可能发生，但是保底。
       return data;
     } catch (e) {
-      logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);
-      if (e.message.includes('404')){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404
+      
+      //console.log(e.response.status )
+      if (e && e.response.status === 404){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404
         throw new Error(`Failed to get JSON from "${url}" Server returned 404 err code`);
       }
+      logger(`API`, `Failed to get JSON from "${url}" on attempt ${attempt + 1}. Error: ${e.message}`);
       if (attempt === retryCount - 1) {
         throw new Error(`Failed to get JSON from "${url}" after ${retryCount} attempts`);
         //throw e; // Rethrow the error if all retries fail

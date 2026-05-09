@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from '@/logger';
+import { LRUCacheAny } from '@/LRUCache';
 const pendingDownloads = new Map<string, Promise<Buffer>>();
 const errUrl: string[] = [];
 const resDebug = false
@@ -10,6 +11,10 @@ export const showDownloadLog = false
 export function getPD_Size(){
   return 'pendingDownloads Size: '+ `${pendingDownloads.size}`
 }
+export function getApiDataCacheSize(){
+    return memoryCache.getCacheSize()
+}
+
 export async function download(   // GPT写的
   url: string,
   directory?: string,
@@ -181,7 +186,7 @@ return task;
 }
 
 
-const memoryCache = new Map<string, any>();
+const memoryCache = new LRUCacheAny(300);
 
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存

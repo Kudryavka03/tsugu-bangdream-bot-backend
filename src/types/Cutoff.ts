@@ -108,6 +108,7 @@ export class Cutoff {
         //如果cutoff的活动已经结束，则使用缓存
         const time = new Date().getTime()
         if (time < this.endAt + 1000 * 60 * 60 * 1) {
+            var oldDataSourceFlags = this.useHHWX
             var dateNow = Date.now()
             cutoffData = await this.getFinalCutoffsData()
             if (this.server == Server.cn && cutoffData["cutoffs"]&& cutoffData["cutoffs"].length!=0 &&  dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
@@ -119,7 +120,7 @@ export class Cutoff {
                     cutoffData = cutoffData2
                 }
 
-            }else if(this.server == Server.cn && cutoffData["cutoffs"] && cutoffData["cutoffs"].length!=0){ // 数据源数据已经无问题，清空计数器
+            }else if(this.server == Server.cn && cutoffData["cutoffs"] && cutoffData["cutoffs"].length!=0 && oldDataSourceFlags == this.useHHWX){ // 数据源数据已经无问题，清空计数器
                 clearDataSourceProblem()
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
