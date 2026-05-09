@@ -1235,9 +1235,8 @@ function removeNonSameDataArray(array){   // 去除数组中不重复的数据�
 }
 
 function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
-    console.log('PreFind UID:',uid)
-    
-    var res = []
+    //console.log('PreFind UID:',uid)
+        var res = []
     //res.push(uid)
     var tempArr = []
     var uidList = []
@@ -1246,7 +1245,7 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
             tempArr.push(array[i])
         }
     }
-    console.log('original array',tempArr)
+    //console.log('original array',tempArr)
     if (tempArr.length == 0) return []
     if (tempArr.length == 1) return tempArr[0]
     // 把所有uid放进uidList中
@@ -1262,6 +1261,6 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
         }
         if (uidCount == tempArr.length) res.push(i)
     }
-    console.log('after findUidSameDataInDifferentArray',res)
+    //console.log('after findUidSameDataInDifferentArray',res)
     return res
 }
