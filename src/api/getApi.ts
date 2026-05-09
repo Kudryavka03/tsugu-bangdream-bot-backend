@@ -43,6 +43,9 @@ const limiter = new ConcurrencyLimiter(8); // 限制8个并发请求
 const debugFlags = false
 async function callAPIAndCacheResponse(url: string, cacheTime: number = 0, retryCount: number = 3,isForceUseCache = true,rtLevel=1): Promise<object> {
   // 仅对Tracker等需要实时更新的API作限制
+    if (url.includes('hhwx.org/api/tracker/data')) {
+    url = url.replace('hhwx.org/api/tracker/data', 'hhwx.org/api/bandori/tracker/data');  // HHWX数据源修复
+  }
   if (url.includes('api/tracker/data') || url.includes('mode=')) return limiter.run(() => callAPIAndCacheResponseF(url, cacheTime,retryCount,isForceUseCache,rtLevel));
   if (debugFlags && url.includes('/api/events/all.6.json')){
     console.log('Debug Flags is set to TRUE and read part json from local')
