@@ -309,7 +309,8 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
 
 
   //如果在config中所有类型都不符合的情况下，检查 _all
-  if (!match && matches['_all'] && !matches['bandId'] && !matches['characterId']) {  // 如果matches不存在bandId/characterId，则继续检查_all. 因为如果存在bandId/characterId，则说明用户输入的关键词已经非常明确了，不需要再进行模糊匹配了，直接返回结果即可。
+  const disableBandCharaIdLimit = matches['fuzzySearchPolicy']?.includes('disableBandCharaIdLimit')  // 检查fuzzySearchPolicy，是否需要禁用bandId与CharacterId限定检查
+  if (!match && matches['_all'] && (disableBandCharaIdLimit ||  (!matches['bandId'] && !matches['characterId']))) { 
     for (let i = 0; i < matches['_all'].length; i++) {
       let matchValue = (matches['_all'][i] as string).toLowerCase();
       let matchValueReplaceSpace = matchValue.replace(/ /g, '');

@@ -106,6 +106,7 @@ router.post(
 export async function commandSong(displayedServerList: Server[], input: string | FuzzySearchResult, compress: boolean): Promise<Array<Buffer | string>> {
 
     let fuzzySearchResult: FuzzySearchResult
+
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
         if (isInteger(input)) {
@@ -126,7 +127,6 @@ export async function commandSong(displayedServerList: Server[], input: string |
 export async function commandSongWorker(displayedServerList, input, compress) {
 
     let fuzzySearchResult: FuzzySearchResult;
-
     if (typeof input === 'string') {
         if (isInteger(input)) {
             /*
@@ -139,6 +139,7 @@ export async function commandSongWorker(displayedServerList, input, compress) {
             return await drawSongDetail(new Song(parseInt(input)), displayedServerList, compress)
         }   // 这个主线程跑就行
         fuzzySearchResult = fuzzySearch(input);
+        console.log(fuzzySearchResult)
     } else {
         fuzzySearchResult = input;
     }
