@@ -706,7 +706,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
             if (!isSame) possibleAtSameRoom.push(tData) // 如果没有完全相同的就push进去
         }
-        //console.log(possibleAtSameRoom)
+        console.log(possibleAtSameRoom)
 
     }
     catch{
@@ -1235,8 +1235,8 @@ function removeNonSameDataArray(array){   // 去除数组中不重复的数据�
 }
 
 function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
-    //console.log('PreFind UID:',uid)
-    //console.log('original array',array)
+    console.log('PreFind UID:',uid)
+    
     var res = []
     //res.push(uid)
     var tempArr = []
@@ -1246,6 +1246,7 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
             tempArr.push(array[i])
         }
     }
+    console.log('original array',tempArr)
     if (tempArr.length == 0) return []
     if (tempArr.length == 1) return tempArr[0]
     // 把所有uid放进uidList中
@@ -1256,11 +1257,11 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
     }
     for(let i of uidList){
         var uidCount = 0
-        for(let j of tempArr){
+        for(let j of array){
             if (j.includes(i)) uidCount++
         }
         if (uidCount == tempArr.length) res.push(i)
     }
-    //console.log('after findUidSameDataInDifferentArray',res)
+    console.log('after findUidSameDataInDifferentArray',res)
     return res
 }
