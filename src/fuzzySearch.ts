@@ -336,8 +336,9 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
                 }
               }
                 */
-              var nicknameReplaceSpace = nickname.replace(/ /g, '')
+              
               if (!match){  // 如果仍然无结果，则合并空格进行查找
+                var nicknameReplaceSpace = nickname.replace(/ /g, '')
                 if (include(nicknameReplaceSpace, matchValueReplaceSpace)) {
                   match = true;
                   break;

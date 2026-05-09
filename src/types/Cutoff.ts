@@ -71,24 +71,21 @@ export class Cutoff {
             this.useHHWX = false
             return Bestdoriurl
         }
-        return !reverse?(this.useHHWX?HHWX_Url:Bestdoriurl):(this.useHHWX?Bestdoriurl:HHWX_Url)
+        var url =  !reverse?(this.useHHWX?HHWX_Url:Bestdoriurl):(this.useHHWX?Bestdoriurl:HHWX_Url)
+        if (reverse && this.server == Server.cn) this.useHHWX = !this.useHHWX
+        return url
     }
     async getFinalCutoffsData (forceReadCache:boolean = false ){
         if (!forceReadCache){
             try{
-               // this.useHHWX = this.useHHWX?true:false
                 var data = await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
-
                 return data
-
             }
             catch{
                 if (this.server ==  Server.cn)reportDataSourceProblem()
-                //this.useHHWX = this.useHHWX?false:true
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
             }
         }else{
-            //this.useHHWX = false    // 对于历史档线数据可以直接使用Bestdori而不是hhwx
             try{
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
