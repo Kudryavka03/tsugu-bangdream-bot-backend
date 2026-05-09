@@ -706,7 +706,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
             if (!isSame) possibleAtSameRoom.push(tData) // 如果没有完全相同的就push进去
         }
-        console.log(possibleAtSameRoom)
+        //console.log(possibleAtSameRoom)
 
     }
     catch{
