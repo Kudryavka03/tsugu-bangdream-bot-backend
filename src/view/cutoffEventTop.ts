@@ -1235,7 +1235,9 @@ function removeNonSameDataArray(array){   // 去除数组中不重复的数据�
 }
 
 function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
-    //console.log('PreFind UID:',uid)
+    var debugFlags = false
+    //if (uid == 1008549816 || uid == 1000522880) debugFlags = true
+    if (debugFlags) console.log('PreFind UID:',uid)
         var res = []
     //res.push(uid)
     var tempArr = []
@@ -1245,9 +1247,9 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
             tempArr.push(array[i])
         }
     }
-    //console.log('original array',tempArr)
+    //if (debugFlags) console.log('original array',tempArr)
     if (tempArr.length == 0) return []
-    if (tempArr.length == 1) return tempArr[0]
+    //if (tempArr.length == 1) return tempArr[0]
     // 把所有uid放进uidList中
     for(let i of tempArr){
         for(let j of i){
@@ -1256,7 +1258,7 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
     }
     for(let i of uidList){
         var uidCount = 0
-        var uidCountT2 = 0   // 查外层数量
+        var uidCountT2 = 0   // 查外层数量。当外层数量不一致的时候则表明这两个用户不出现在一个房间。
         for(let j of tempArr){
             if (j.includes(i)) uidCount++
         }
@@ -1265,6 +1267,6 @@ function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中
         }
         if ((uidCount == uidCountT2) && (uidCount == tempArr.length)) res.push(i)   // 外层数量对不上=不纯
     }
-    //console.log('after findUidSameDataInDifferentArray',res)
+    if (debugFlags) console.log('after findUidSameDataInDifferentArray',res)
     return res
 }
