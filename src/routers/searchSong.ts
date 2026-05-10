@@ -18,6 +18,7 @@ import { getCardDataCacheSize } from '@/types/Card';
 import { getEventDataCacheSize } from '@/types/Event';
 import { getGachaDataCacheSize } from '@/types/Gacha';
 import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
+import { compareSameDataArray } from '@/view/cutoffEventTop';
 
 const router = express.Router();
 
@@ -36,6 +37,13 @@ router.post(
         const { displayedServerList, fuzzySearchResult, text, compress } = req.body;
         if (text == "fetch" || text == "同步数据"|| text == "立即同步"|| text == "33824"|| text == "873283"|| text == "7963" || text == "7337374"){
             return res.send(listToBase64([await loadMainAPINow()]));
+        }
+        if (text == "compareSameDataArrayDev"){
+            var a = (compareSameDataArray([1,1,2],[1,2,1]))
+            var b = (compareSameDataArray([1,1,2],[1,2,2]))
+            var c = (compareSameDataArray([1,1,2],[1,2,2]))
+            console.log(a,b,c)
+            return res.send(listToBase64([ `${a} ${b} ${c}`]));
         }
         if (text == "8734499"){
             return res.send(listToBase64([await switchDataSource()]));
@@ -167,3 +175,4 @@ function toBuffer(x: any): Buffer | string {
     return x; // string 或已是 Buffer
 }
 export { router as searchSongRouter }
+

@@ -1192,9 +1192,30 @@ function getPossibleRoom (data,uid){
     }
 
 }
-function compareSameDataArray(arr1,arr2){       // 判断两个数组是否包含相同的数据
+export function compareSameDataArray(arr1,arr2){       // 判断两个数组是否包含相同的数据
+    if (arr1.length != arr2.length) return false
+    var tempArr = []
+    for (let i = 0;i<arr1.length;i++){
+        if (!tempArr.includes(arr1[i])){
+            tempArr.push(arr1[i])
+            var count1 = 0  // 判断相同元素
+            var count2 = 0
+            for(var i1 of arr1){
+                if (i1 == arr1[i])  count1 ++
+            }
+            for (var j1 of arr2){
+                if (j1 == arr1[i])  count2 ++
+            }
+            if (count1 != count2)
+                return false
+        }
+    }
+    return true
+}
+function compareSameDataArrayDev(arr1,arr2){       // 判断两个数组是否包含相同的数据
     var dataSameFlag = true
     if (arr1.length != arr2.length) return false
+    var tempArr = []
     for (let i = 0;i<arr1.length;i++){
         if (dataSameFlag == false) return false
         for(let j = 0;j<arr2.length;j++){
