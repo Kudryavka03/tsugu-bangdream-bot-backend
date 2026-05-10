@@ -41,7 +41,7 @@ router.post(
         if (text == "compareSameDataArrayDev"){
             var a = (compareSameDataArray([1,1,2],[1,2,1]))
             var b = (compareSameDataArray([1,1,2],[1,2,2]))
-            var c = (compareSameDataArray([1,1,2],[1,2,2]))
+            var c = (compareSameDataArray([NaN],[1]))
             console.log(a,b,c)
             return res.send(listToBase64([ `${a} ${b} ${c}`]));
         }

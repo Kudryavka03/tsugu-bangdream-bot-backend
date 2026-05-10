@@ -1201,10 +1201,10 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
             var count1 = 0  // 判断相同元素
             var count2 = 0
             for(var i1 of arr1){
-                if (i1 == arr1[i])  count1 ++
+                if (i1 === arr1[i] || isNaN(i1))  count1 ++
             }
             for (var j1 of arr2){
-                if (j1 == arr1[i])  count2 ++
+                if (j1 === arr1[i] || isNaN(j1))  count2 ++
             }
             if (count1 != count2)
                 return false
