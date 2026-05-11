@@ -156,7 +156,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         
         if (i % (maxCount) == 0 && i!=0) {
             if (tempEventImageList.length > 0) {
-                eventImageListHorizontal.push(stackImage(tempEventImageList));
+                eventImageListHorizontal.push(stackImage(tempEventImageList,false));
                 eventImageListHorizontal.push(line2);
             }
             tempEventImageList = [];
@@ -166,7 +166,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         tempEventImageList.push(line);
         //最后一张图
         if (i == eventResults.length - 1) {
-            eventImageListHorizontal.push(stackImage(tempEventImageList));
+            eventImageListHorizontal.push(stackImage(tempEventImageList,false));
             eventImageListHorizontal.push(line2);
         }
     }

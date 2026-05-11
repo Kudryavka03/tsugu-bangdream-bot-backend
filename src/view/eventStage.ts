@@ -84,7 +84,6 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
     }
 
     const eventStageListImage = stackImageHorizontal(eventStageImageListHorizontal)
-
     all.push(eventStageListImage)
 
     var buffer = await outputFinalBuffer({

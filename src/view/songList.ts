@@ -108,7 +108,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         tempH += tempImage.height
         if (i % maxCount == 0 && i!=0) {
             tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList))
+            songImageListHorizontal.push(stackImage(tempSongImageList,false))
             songImageListHorizontal.push(line2)
             tempSongImageList = []
             tempH = tempImage.height
@@ -117,7 +117,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         tempSongImageList.push(line)
         if (i == tempSongList.length - 1) {
             tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList))
+            songImageListHorizontal.push(stackImage(tempSongImageList,false))
             songImageListHorizontal.push(line2)
         }
     }

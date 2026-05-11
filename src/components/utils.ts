@@ -1,6 +1,6 @@
 import { Canvas, Image } from 'skia-canvas';
 
-export function stackImage(list: Array<Image | Canvas>) {
+export function stackImage(list: Array<Image | Canvas>,AutoDispose:boolean = true) {
     var maxW = 0
     var allH = 0
     for (var i = 0; i < list.length; i++) {
@@ -16,10 +16,12 @@ export function stackImage(list: Array<Image | Canvas>) {
         ctx.drawImage(list[i], 0, allH2)
         allH2 = allH2 + list[i].height
     }
-    for(const item of list){
-        if (item instanceof Canvas) {
-            item.width = 0
-            item.height = 0
+    if(AutoDispose){
+        for(const item of list){
+            if (item instanceof Canvas) {
+                item.width = 0
+                item.height = 0
+            }
         }
     }
     return (tempcanv)
