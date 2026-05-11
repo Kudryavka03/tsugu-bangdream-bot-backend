@@ -2,7 +2,7 @@ import { fileExists } from '@/api/downloader';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Canvas, loadImage, Image,CanvasRenderingContext2D as SkiaCtx } from 'skia-canvas';
-import svg2img from 'svg2img';
+import svg2img  from 'svg2img';
 
 const assetsRootPath: string = path.join(__dirname, '../../assets');
 
@@ -93,7 +93,15 @@ export function convertSvgToPngBuffer(svgBuffer: Buffer): Promise<Buffer> {
       const svgString = svgBuffer.toString('utf-8');
   
       // 使用 svg2img 将 SVG 字符串转换为 PNG buffer
-      svg2img(svgString, (error, buffer) => {
+      svg2img(svgString,{
+        quality:30,
+        resvg: {
+          shapeRendering: 0,
+          textRendering: 0,
+          imageRendering: 1,
+          fitTo: { mode: 'width', value: 60 }
+        }
+      }, (error, buffer) => {
         if (error) {
           return reject(new Error(`Failed to convert SVG to PNG: ${error.message}`));
         }
