@@ -145,12 +145,15 @@ export class Gacha {
     async getBannerImage(): Promise<Image> {
         if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
             // 尝试通过gachaname判断是加载Banner Image还是Gacha Logo，加快出图速度
-        if (this.gachaName[0] && ((
-                this.gachaName[0].includes('確定')
-            && !this.gachaName[0].includes('人確定')) 
-        
-        || (this.gachaName[0].includes('対象') || (this.gachaName[0].includes('タイプ'))))
-        ) return (this.getGachaLogo())
+        if (this.gachaName[0] && (
+            // 如果包含确定但是（不包含人确定跟成员确定）
+            (this.gachaName[0].includes('確定') && (!this.gachaName[0].includes('人確定') && !this.gachaName[0].includes('メンバー確定')))
+            // 如果包含对象或者属性字样
+            || (this.gachaName[0].includes('対象') || (this.gachaName[0].includes('タイプ'))
+            // 不包含纪念
+            //&& (!this.gachaName[0].includes('記念')
+        )
+        )) return (this.getGachaLogo())
         try {
             var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
             return await loadImage(BannerImageBuffer)
