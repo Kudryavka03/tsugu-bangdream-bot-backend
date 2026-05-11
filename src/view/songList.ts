@@ -87,6 +87,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         }
     }
     var songImages = await Promise.all(songPromises);
+    songPromises.length = 0 // clear memory
     //var t2 = Date.now()
     //console.log(t2-t1)
     let maxCount = getOptDrawCount(tempSongList.length,1000,85,10,30)  // 1000为一首歌长度，85为高度
@@ -108,7 +109,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         tempH += tempImage.height
         if (i % maxCount == 0 && i!=0) {
             tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList,false))
+            songImageListHorizontal.push(stackImage(tempSongImageList,true))
             songImageListHorizontal.push(line2)
             tempSongImageList = []
             tempH = tempImage.height
@@ -117,18 +118,19 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         tempSongImageList.push(line)
         if (i == tempSongList.length - 1) {
             tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList,false))
+            songImageListHorizontal.push(stackImage(tempSongImageList,true))
             songImageListHorizontal.push(line2)
         }
     }
 
     songImageListHorizontal.pop();
-
+    songImages.length = 0
+    tempSongImageList.length = 0    // clear memory
 
     var songListImage = await drawDatablockHorizontal({
         list: songImageListHorizontal
     })
-
+    songImageListHorizontal.length = 0 // 同上
     var all = []
     all.push(await drawTitle(`查询  共${tempSongList.length}条结果`, `歌曲列表`))
     

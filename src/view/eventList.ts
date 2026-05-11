@@ -129,7 +129,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     }
 
     var eventResults = await Promise.all(eventPromises);
-
+    eventPromises.length = 0    // 清理对promise的引用
     eventResults.sort((a, b) => a.index - b.index);
 
     var tempEventImageList: Canvas[] = [];
@@ -156,7 +156,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         
         if (i % (maxCount) == 0 && i!=0) {
             if (tempEventImageList.length > 0) {
-                eventImageListHorizontal.push(stackImage(tempEventImageList,false));
+                eventImageListHorizontal.push(stackImage(tempEventImageList));
                 eventImageListHorizontal.push(line2);
             }
             tempEventImageList = [];
@@ -166,18 +166,18 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         tempEventImageList.push(line);
         //最后一张图
         if (i == eventResults.length - 1) {
-            eventImageListHorizontal.push(stackImage(tempEventImageList,false));
+            eventImageListHorizontal.push(stackImage(tempEventImageList));
             eventImageListHorizontal.push(line2);
         }
     }
 
     eventImageListHorizontal.pop();
-
+    eventResults.length = 0
+    tempEventImageList.length = 0   // 清内存
     if (eventImageListHorizontal.length > maxColumns) {
         let times = 0
         let tempImageList: Array<string | Buffer> = []
         tempImageList.push('活动列表过长，已经拆分输出')
-        var outputFinalBufferPromise:Promise<Buffer>[] = []
         for (let i = 0; i < eventImageListHorizontal.length; i++) {
             const tempCanv = eventImageListHorizontal[i];
             if (tempCanv == line2) {
@@ -189,10 +189,11 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
             }
             all.push(await drawDatablock({ list: [tempCanv] }))
             if (heavyLoad) all.push(await drawTips({text:'[Priority Level Down] 模拟数量过多，CiRCLE工作人员喘不过气啦！'}))
-            outputFinalBufferPromise.push(outputFinalBuffer({
-                imageList: all,
-                useEasyBG: true
+            tempImageList.push(await outputFinalBuffer({
+            imageList: all,
+             useEasyBG: true
             }))
+            all.length = 0
             /*
             const buffer = await outputFinalBuffer({
                 imageList: all,
@@ -202,16 +203,14 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
             */
             times += 1
         }
-        var outputFinalBufferResult = await Promise.all(outputFinalBufferPromise)
-        for(var r of outputFinalBufferResult){
-            tempImageList.push(r)
-        }
+        eventImageListHorizontal.length = 0 // clear mem
         return tempImageList
     } else {
         const all = []
         const eventListImage = await drawDatablockHorizontal({
             list: eventImageListHorizontal
         })
+        eventImageListHorizontal.length = 0 // clear memory
         all.push((await drawTitle(`查询  共${tempEventList.length}条结果`, `活动列表`)))
         all.push(eventListImage)
         if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
@@ -329,6 +328,13 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         getEventGachaAndCardListResult
     ] = results
 
+    // clear ref
+    getIconPromise.length = 0
+    attributeListPromise.length = 0
+    characterListPromise.length = 0
+    getBannerImagePromise.length = 0
+    getEventGachaAndCardListPromise.length = 0
+    
     for(var i = 0;i<getIconResult.length;i++){
         content.push(getIconResult[i], Tips[i])
     }
@@ -358,6 +364,8 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         textSize,
         maxWidth: 500
     })
+    content.length = 0
+    Tips.length = 0     // clear mem
     const eventBannerImage = resizeImage({
         image: bannerImageR,
         heightMax: 100
@@ -390,11 +398,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     })
     //return stackImage([imageUp, imageDown])
     const result = stackImage([imageUp, imageDown])
-    imageUp.width = 0
-    imageUp.height = 0
 
-    imageDown.width = 0
-    imageDown.height = 0
 
     return result
 }

@@ -97,6 +97,8 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
 
         }
         const L5Result = await Promise.all([Promise.all(drawCardListLinePromise),Promise.all(drawCharacterIconImageListPromise)])
+        drawCardListLinePromise.length = 0
+        drawCharacterIconImageListPromise.length = 0    // clear mem
         //await Promise.all(promise)
         var k = 0;
         for (let i = 0; i < attributeList.length; i++) {
@@ -105,15 +107,17 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                 tempAttributeCardImageList.push(L5Result[0][k++])
             }
             tempAttributeImageList.push(stackImage(
-                tempAttributeCardImageList
+                tempAttributeCardImageList,true
             ));
             //characterIconImageList.push(L5Result[1][i])
         }
+        L5Result[0].length = 0
         for(var l5r2 of L5Result[1]){
             characterIconImageList.push(l5r2)
         }
         //console.log(tempAttributeCardImageList)
-        const characterIconImage = stackImage(characterIconImageList);
+        const characterIconImage = stackImage(characterIconImageList,true);
+        L5Result[1].length = 0  // clear mem
         tempAttributeImageList.unshift(characterIconImage);
         cardListImage = await drawDatablockHorizontal({
             list: tempAttributeImageList,
@@ -187,16 +191,19 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
             }
         }
         let results = await Promise.all([await Promise.all(promiseList),await Promise.all(promise)])
-        
+        promiseList.length = 0
+        promise.length = 0
         for(var n = 0;n<results[0].length;n++){
             tempCardImageList.push(results[0][n])
             characterIconImageList.push(results[1][n])
         }
+        results[0].length = 0
+        results[1].length = 0
 
 
         
         const cardListImageWithoutCharacterIcon = await stackImage(
-            tempCardImageList,
+            tempCardImageList,true
         )
         var characterIconImage = stackImage(characterIconImageList);
         cardListImage = await drawDatablockHorizontal({ list: [characterIconImage, cardListImageWithoutCharacterIcon] });
@@ -305,6 +312,7 @@ async function drawCardListLine(cardList: Card[],after_training) {
         }))
     }
     var result = await Promise.all(promiseList)
+    promiseList.length = 0
     for (const [i, cardIcon] of result.entries()) {
         const ratio = 120 / cardIcon.width
         ctx.drawImage(cardIcon, i * 140, 0, cardIcon.width * ratio, cardIcon.height * ratio)
