@@ -1,5 +1,8 @@
 import { downloadFile } from '@/api/downloadFile'
 import { assetErrorImageBuffer } from "@/image/utils";
+import { getCacheDirectory, getFileNameFromUrl } from '@/api/utils';
+import * as fs from 'fs';
+import path from 'path';
 const cache: Map<string, Buffer> = new Map();
 const MAX_CACHE_SIZE = 15;  // 设置最大缓存量
 const ENABLE_CACHE = false; // 是否启用缓存，启用后可以加快访问速度，但会占用更多内存。建议在服务器性能较好的情况下启用，在性能较差的情况下禁用。
@@ -28,6 +31,13 @@ async function downloadFileCache(url: string,IgnoreErr = true): Promise<Buffer> 
         cache.set(url, data);
     }
     return data;
+}
+export function checkCache(url){
+    const cacheDir = getCacheDirectory(url);
+    const fileName = getFileNameFromUrl(url);
+    const cachePath = cacheDir && fileName ? path.join(cacheDir, fileName) : null;
+    if (fs.existsSync(cachePath)) return true
+    return false
 }
 
 export { downloadFileCache }

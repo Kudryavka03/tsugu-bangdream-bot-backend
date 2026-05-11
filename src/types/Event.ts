@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import { Image, loadImage } from 'skia-canvas'
-import { downloadFileCache } from '@/api/downloadFileCache'
+import { checkCache, downloadFileCache } from '@/api/downloadFileCache'
 import { Server, getServerByPriority } from '@/types/Server'
 import mainAPI from '@/types/_Main';
 import { Attribute } from '@/types/Attribute';
@@ -234,9 +234,19 @@ export class Event {
     async getBannerImage(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
         if (!displayedServerList) displayedServerList = globalDefaultServer
         var server = getServerByPriority(this.startAt, displayedServerList)
+        var serverJp = Server.jp
         try {
-            var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
-            return await loadImage(BannerImageBuffer)
+            var bannerCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`)
+            var LogoCache = checkCache(`${Bestdoriurl}/assets/${Server[serverJp]}/homebanner_rip/${this.bannerAssetBundleName}.png`)
+            if (bannerCache || (!bannerCache && !LogoCache)){   // 如果BannerCache与LogoCache都不存在或者存在bannerCache
+                var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
+                return await loadImage(BannerImageBuffer)
+            }
+            if (!bannerCache && LogoCache){
+                downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
+                throw Error('Need to switch event banner source.')
+            }
+
         } catch (e) {
             logger(`Event`, `"${e}"`);
             var server = Server.jp

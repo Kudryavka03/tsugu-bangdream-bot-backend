@@ -1,7 +1,7 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
 import { Image, loadImage } from 'skia-canvas'
-import { downloadFileCache } from '@/api/downloadFileCache'
+import { checkCache, downloadFileCache } from '@/api/downloadFileCache'
 import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
 import { globalDefaultServer, Bestdoriurl  } from '@/config';
@@ -143,21 +143,20 @@ export class Gacha {
         return gachaData
     }
     async getBannerImage(): Promise<Image> {
+        var server = getServerByPriority(this.publishedAt)
         if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
-            // 尝试通过gachaname判断是加载Banner Image还是Gacha Logo，加快出图速度
-        if (this.gachaName[0] && (
-            // 如果包含确定但是（不包含人确定跟成员确定）
-            (this.gachaName[0].includes('確定') && (!this.gachaName[0].includes('人確定') && !this.gachaName[0].includes('メンバー確定')))
-            // 如果包含对象或者属性或者联动字样
-            || (this.gachaName[0].includes('対象') || this.gachaName[0].includes('タイプ') || this.gachaName[0].includes('コラボ')
-            || this.gachaName[0].includes('10回')|| this.gachaName[0].includes('回限定'))
-            // 不包含纪念
-            //&& (!this.gachaName[0].includes('記念')
-        
-        )) return (this.getGachaLogo())
         try {
-            var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
-            return await loadImage(BannerImageBuffer)
+            var bannerCache = checkCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`)
+            var LogoCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/gacha/screen/${this.resourceName}_rip/logo.png`)
+            //console.log(bannerCache,LogoCache)
+            if (bannerCache || (!bannerCache && !LogoCache)){   // 如果BannerCache与LogoCache都不存在或者存在bannerCache
+                var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
+                return await loadImage(BannerImageBuffer)
+            }
+            if (!bannerCache && LogoCache){
+                downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)   // 后台下载缺失的bannerImage，争取下次使用bannerCache
+                return await loadImage(this.getGachaLogo())
+            }
         }
         catch (e) {
             return (this.getGachaLogo())
