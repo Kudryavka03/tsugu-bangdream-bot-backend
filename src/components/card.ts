@@ -39,8 +39,8 @@ export async function loadImageOnce() {
     loadImageOnceFinished = true
     }
 }
-if (isMainThread)loadImageOnce()
-
+//if (isMainThread)loadImageOnce()
+loadImageOnce()
 //根据稀有度与属性，获得图标框
 async function getCardIconFrame(rarity: number, attribute: 'cool' | 'happy' | 'pure' | 'powerful'): Promise<Image> {
     const baseUrl = `${Bestdoriurl}/res/image/card-`
@@ -102,6 +102,7 @@ export async function drawCardIcon({
     const canvas: Canvas = cardIdVisible ? new Canvas(180, 210) : new Canvas(180, 180);
     const ctx = canvas.getContext('2d');
     if (card.cardId === 947) illustTrainingStatus = false
+    if (!loadImageOnceFinished) await loadImageOnce()
     // ★ 所有异步操作先不 await，而是创建 Promise
     const pCardIcon = card.getCardIconImage(illustTrainingStatus);
     const pFrame = getCardIconFrame(card.rarity, card.attribute);

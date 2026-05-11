@@ -16,6 +16,12 @@ export function stackImage(list: Array<Image | Canvas>) {
         ctx.drawImage(list[i], 0, allH2)
         allH2 = allH2 + list[i].height
     }
+    for(const item of list){
+        if (item instanceof Canvas) {
+            item.width = 0
+            item.height = 0
+        }
+    }
     return (tempcanv)
 }
 

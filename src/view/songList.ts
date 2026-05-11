@@ -16,7 +16,7 @@ import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { loadImageOnce } from "@/components/card";
-
+const limit = pLimit(15);
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -26,9 +26,6 @@ if (!isMainThread && parentPort) {
       });
     };
   }
-
-
-
 
 
 // 紧凑化虚线分割
@@ -51,7 +48,7 @@ export async function initForWorker() {
     await preCacheIcon()
 }
 export async function drawSongList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,message?:string): Promise<Array<Buffer | string>> {
-    const limit = pLimit(10000);    // 限制3首歌同时绘制 // 进worker了，不关主线程事了，随便造了
+   // const limit = pLimit(10000);    // 限制3首歌同时绘制 // 进worker了，不关主线程事了，随便造了
     
     var heavyLoad = false
     // 计算歌曲模糊搜索结果
@@ -73,14 +70,20 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     if (tempSongList.length <50){
         
        for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
+            songPromises.push(
+                limit(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+            )
+            //songPromises.push();
         }
     } else{   // 大于15首，并发降级，不允许全部并发
         if(isMainThread) return null
         heavyLoad = true
         logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
         for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
+            songPromises.push(
+                limit(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+            )
+            //songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
         }
     }
     var songImages = await Promise.all(songPromises);

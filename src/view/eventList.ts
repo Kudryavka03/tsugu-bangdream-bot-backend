@@ -19,9 +19,8 @@ import { globalDefaultServer } from '@/config';
 import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
-import { LagTimes } from "@/app";
 import { drawTips } from "@/components/tips";
-const limit = pLimit(10000);
+const limit = pLimit(15);
 let maxHeight = 7000
 const maxColumns = 7
 import { parentPort, threadId,isMainThread  } from'worker_threads';
@@ -100,16 +99,32 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     //console.log(tempEventList)
     await Promise.all(tempEventList.map(e => e.initFull(false)));
     if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
-        for (var i = 0; i < tempEventList.length; i++) {
-            eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
+        for (let i = 0; i < tempEventList.length; i++) {
+            eventPromises.push(
+                limit(async () => ({
+                    index: i,
+                    image: await drawEventInList(
+                        tempEventList[i],
+                        displayedServerList
+                    )
+                }))
+            )
         }
     }
     else{   // 降级同步输出
         if (isMainThread) return null // 如果不是worker，那么就返回null。Null被中间件捕获到后会直接发去Worker请求
         logger('drawEventList','Concurrent Level down to sync draw! Reason: tempEventList is too large,size is ' + tempEventList.length);
         heavyLoad = true
-        for (var i = 0; i < tempEventList.length; i++) {
-            eventPromises.push(drawEventInList(tempEventList[i], displayedServerList).then(image => ({ index: i, image: image })));
+        for (let i = 0; i < tempEventList.length; i++) {
+            eventPromises.push(
+                limit(async () => ({
+                    index: i,
+                    image: await drawEventInList(
+                        tempEventList[i],
+                        displayedServerList
+                    )
+                }))
+            )
         }
     }
 
@@ -169,7 +184,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
                 continue
             }
             const all = []
-            if (times = 0) {
+            if (times == 0) {
                 all.push(await drawTitle('查询', `活动列表 共${tempEventList.length}条结果`))
             }
             all.push(await drawDatablock({ list: [tempCanv] }))
@@ -373,5 +388,13 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         trainingStatus: false,
         cardIdVisible: true,
     })
-    return stackImage([imageUp, imageDown])
+    //return stackImage([imageUp, imageDown])
+    const result = stackImage([imageUp, imageDown])
+    imageUp.width = 0
+    imageUp.height = 0
+
+    imageDown.width = 0
+    imageDown.height = 0
+
+    return result
 }
