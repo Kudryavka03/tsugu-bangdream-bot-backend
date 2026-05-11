@@ -146,12 +146,12 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
 }
 
 
-
+const disableBandCharaIdLimit = true
 // 计算歌曲模糊搜索结果
 export function matchSongList(matches: FuzzySearchResult, displayedServerList: Server[]) {
     var tempSongList: Array<Song> = [];
     var songIdList: Array<number> = Object.keys(mainAPI['songs']).map(Number)
-    
+
     //console.log(songIdList.length);
      //new Error(songIdList)
     for (let i = 0; i < songIdList.length; i++) {
@@ -174,7 +174,7 @@ export function matchSongList(matches: FuzzySearchResult, displayedServerList: S
 
     for (let i = 0; i < songIdList.length; i++) {
         const tempSong = new Song(songIdList[i]);
-        var isMatch = match(matches, tempSong, ['songId']);
+        var isMatch = match(matches, tempSong, ['songId'],disableBandCharaIdLimit);
         /*
         //如果在所有所选服务器列表中都不存在，则不输出
         var numberOfNotReleasedServer = 0;

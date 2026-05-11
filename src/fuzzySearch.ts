@@ -213,7 +213,7 @@ export function include(source: string, target: string) {
   || source == target
 }
 
-export function match(matches: FuzzySearchResult, target: any, numberTypeKey: string[]): boolean {
+export function match(matches: FuzzySearchResult, target: any, numberTypeKey: string[],disableBandCharaIdLimit = false): boolean {
   if (!target) {
     return false;
   }
@@ -309,7 +309,8 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
 
 
   //如果在config中所有类型都不符合的情况下，检查 _all
-  const disableBandCharaIdLimit = matches['fuzzySearchPolicy']?.includes('disableBandCharaIdLimit')  // 检查fuzzySearchPolicy，是否需要禁用bandId与CharacterId限定检查
+  
+  disableBandCharaIdLimit = disableBandCharaIdLimit || matches['fuzzySearchPolicy']?.includes('disableBandCharaIdLimit')  // 检查fuzzySearchPolicy，是否需要禁用bandId与CharacterId限定检查
   if (!match && matches['_all'] && (disableBandCharaIdLimit ||  (!matches['bandId'] && !matches['characterId']))) { 
     for (let i = 0; i < matches['_all'].length; i++) {
       let matchValue = (matches['_all'][i] as string).toLowerCase();
