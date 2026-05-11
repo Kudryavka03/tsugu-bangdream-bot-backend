@@ -94,12 +94,12 @@ export function convertSvgToPngBuffer(svgBuffer: Buffer): Promise<Buffer> {
   
       // 使用 svg2img 将 SVG 字符串转换为 PNG buffer
       svg2img(svgString,{
-        quality:30,
+        quality:70,
         resvg: {
-          shapeRendering: 0,
-          textRendering: 0,
-          imageRendering: 1,
-          fitTo: { mode: 'width', value: 60 }
+          //shapeRendering: 0,
+          //textRendering: 0,
+          //imageRendering: 1,
+          fitTo: { mode: 'width', value: 100 }
         }
       }, (error, buffer) => {
         if (error) {
