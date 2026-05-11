@@ -1,7 +1,7 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
 import { Image, loadImage } from 'skia-canvas'
-import { checkCache, downloadFileCache } from '@/api/downloadFileCache'
+import { checkCache, downloadFileCache, downloadFileCacheWithoutError } from '@/api/downloadFileCache'
 import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
 import { globalDefaultServer, Bestdoriurl  } from '@/config';
@@ -154,7 +154,7 @@ export class Gacha {
                 return await loadImage(BannerImageBuffer)
             }
             if (!bannerCache && LogoCache){
-                downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)   // 后台下载缺失的bannerImage，争取下次使用bannerCache
+                downloadFileCacheWithoutError(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)   // 后台下载缺失的bannerImage，争取下次使用bannerCache
                 return await loadImage(this.getGachaLogo())
             }
         }

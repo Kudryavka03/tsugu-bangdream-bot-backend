@@ -32,6 +32,15 @@ async function downloadFileCache(url: string,IgnoreErr = true): Promise<Buffer> 
     }
     return data;
 }
+
+async function downloadFileCacheWithoutError(url: string,IgnoreErr = true): Promise<Buffer> {
+    try{
+        return await downloadFileCache(url)
+    }
+    catch{
+
+    }
+}
 export function checkCache(url){
     const cacheDir = getCacheDirectory(url);
     const fileName = getFileNameFromUrl(url);
@@ -40,4 +49,4 @@ export function checkCache(url){
     return false
 }
 
-export { downloadFileCache }
+export { downloadFileCache,downloadFileCacheWithoutError }

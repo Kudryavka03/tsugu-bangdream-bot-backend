@@ -1,6 +1,6 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
 import { Image, loadImage } from 'skia-canvas'
-import { checkCache, downloadFileCache } from '@/api/downloadFileCache'
+import { checkCache, downloadFileCache, downloadFileCacheWithoutError } from '@/api/downloadFileCache'
 import { Server, getServerByPriority } from '@/types/Server'
 import mainAPI from '@/types/_Main';
 import { Attribute } from '@/types/Attribute';
@@ -243,7 +243,7 @@ export class Event {
                 return await loadImage(BannerImageBuffer)
             }
             if (!bannerCache && LogoCache){
-                downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
+                downloadFileCacheWithoutError(`${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/images_rip/banner.png`, false)
                 throw Error('Need to switch event banner source.')
             }
 
@@ -604,3 +604,4 @@ export function getRecentEventListByEventAndServer(event: Event, server: Server,
     sortEventList(tempEventList, [server])
     return tempEventList.slice(tempEventList.length - count, tempEventList.length)
 }
+
