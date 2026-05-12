@@ -19,6 +19,8 @@ import { drawText } from '@/image/text';
 import { drawTips } from '@/components/tips';
 import { changeTimePeriodFormat, changeTimefomant, formatSeconds } from '@/components/list/time';
 import mainAPI, { TopRateSpeed } from '@/types/_Main';
+import array from 'ref-array-di';
+import { min } from 'moment';
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
@@ -519,31 +521,19 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     var rankForBetween = []
     var userName = []
     
-    const now = new Date();
 
-    //var calcTimestamp = new Date(now);
-
-    /*
-    else {
-
-        calcTimestamp.setMinutes(0);
-        calcTimestamp.setSeconds(0);
-        calcTimestamp.setMilliseconds(0);
-    }
-    */
-
-     // thisHour = calcTimestamp.getTime();
-    //console.log(thisHour)
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
     var LastHour = thisHour - 3600000;
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
     // LastHour是上一个小时，到时候就只要取这几个区间的就好
     //console.log(userInRankings)
+    var sortUidList = []
     for (let i = 0; i < userInRankings.length; i++) {
         
 
         playerId = userInRankings[i].uid
+        sortUidList.push(playerId)
         var user = cutoffEventTop.getUserByUid(playerId);
         userName.push(user.name)
           // 玩家当前时刻分数
@@ -627,11 +617,6 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         }
         // 获取到采集点之后，开始对比采集点之间的不同
         var timeListIndex = 0;
-        type RecordItem = {
-            time: number
-            uid: number
-            value: number
-        }
         var valueChangeData = []
         // 将每一次采集点之间的变动情况进行记录
         for (let t = 0;t<timeList.length;t++){  // 便利timeList 。 t为timeList的Index
@@ -651,63 +636,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             }
             valueChangeData.push(valueChangeUid)
         }
-        //console.log(valueChangeData )
-        // 经过上述处理后，uid格式就变成：
-        // [[1,2],[1,2,3,4],[5,6,7,8,9,10]]这样的格式
-        // 搜寻当前uid的出现的最小变动数组
-        
-        let readUid = []
-        for(let uIndex = 0;uIndex<uidList.length;uIndex++){
-            let uSize = 11;
-            let vIndexFlag = 0;
-            //if (readUid.includes(uidList[uIndex])) continue
-            // 找出包含当前uid的变动数组中，数组长度最小的一个
-            for(let vIndex = 0;vIndex<valueChangeData.length;vIndex++){
-                if (valueChangeData[vIndex].includes(uidList[uIndex])){
-                    if (valueChangeData[vIndex].length <= uSize){
-                        uSize = valueChangeData[vIndex].length
-                        vIndexFlag = vIndex
-                    }
-                }
-            }
-            // 此时uSize是最小的
-            let tempArr = []
-            for(var a of valueChangeData){
-                // 遍历valueChangeData，找出所有包含当前uid的，并且长度等于最小长度的数组。
-                if (a.length == uSize && a.includes(uidList[uIndex]))
-                {
-                    tempArr.push(a)
-                }
-            }
-                        // 这样就得到了这些uid所有最小相同的数组
-            // 接下来开始对tempArr进行查重，保留相同的部分
-            // 例如tempArr是[[1,2,3,4],[1,2,3,4],[1,2,7,8],[1,2,7,8]]，那么就保留[1,2,3,4],[1,2,7,8]，去掉重复的部分。
-            //console.log('留重前',tempArr)
-            tempArr = removeNonSameDataArray(tempArr)
-            //console.log('留重后',tempArr)
-            for(let ta of tempArr){
-                tempArr1.push(ta)
-            }
-            for(let vcd of valueChangeData[vIndexFlag]){
-                if (!readUid.includes(vcd))readUid.push(vcd)
-            }
-        }
-        // 再次去重
-        tempArr2 = removeNonSameDataArray(tempArr1)
-        //console.log('tempArr2',tempArr2)
-        for(let uid of uidList){
-            var tData = findUidIntersectionInDifferentArray(tempArr2,uid)  // 找出跟着当前uid一起出现的集合交集
-            var isSame = false
-            for(let par of possibleAtSameRoom){
-                if (compareSameDataArray(par,tData)){
-                    isSame = true   // 如果完全相同就不push了
-                    break
-                }
-            }
-            if (!isSame) possibleAtSameRoom.push(tData) // 如果没有完全相同的就push进去
-        }
-        //console.log(possibleAtSameRoom)
-
+        possibleAtSameRoom =  inferPossibleRoomsByScoreChange(valueChangeData,sortUidList)
     }
     catch{
         // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。（已完成）
@@ -1212,82 +1141,103 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
     }
     return true
 }
-function compareSameDataArrayDev(arr1,arr2){       // 判断两个数组是否包含相同的数据
-    var dataSameFlag = true
-    if (arr1.length != arr2.length) return false
-    var tempArr = []
-    for (let i = 0;i<arr1.length;i++){
-        if (dataSameFlag == false) return false
-        for(let j = 0;j<arr2.length;j++){
-            if (arr1[i] == arr2[j]) {
-                dataSameFlag = true
-                break
-            }
-            else dataSameFlag =  false
-        }
-    }
-    return dataSameFlag
-}
 
-function removeNonSameDataArray(array){   // 去除数组中不重复的数据，并且只保留第一份
-    // reverse参数是为了判断是保留相同的数据还是保留不相同的数据，默认为false即保留相同的数据
-    var arr = [...array]
-    //console.log('留重前',arr    )
-    if (arr.length == 1){
-        //console.log('留重后',[arr[0]])
-        return [arr[0]]
-    }
-    var res = []
-    for(let i = 0;i<arr.length;i++){
-        if (arr[i] === null) continue;
-        for(let j = i+1;j<arr.length;j++){
-            if (arr[j] === null) continue
-            if (compareSameDataArray(arr[i],arr[j])){
-                arr[j] = null
+function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSort?: number[]){
+    var finalResultOut = []
+    var uidTotalList: number[] = []
+    var dupUid = []
+    if (!uidSort){
+        for(let t of valueChangeData){
+            for(let t1 of t){
+                if (!uidTotalList.includes(t1)) uidTotalList.push(t1)
             }
         }
+    }else{
+        uidTotalList = uidSort
     }
-    //console.log('留重后',arr    )
-    for(let i = 0;i<arr.length;i++){
-        if (arr[i] !== null) res.push(arr[i])
-    }
-    //console.log('留重后',res    )
-    return res
-}
 
-function findUidIntersectionInDifferentArray(array,uid){ // 查找所有array中包含这个uid的数组，并且提取出这些数组之间相同的数据
-    var debugFlags = false
-    //if (uid == 1008549816 || uid == 1000522880) debugFlags = true
-    if (debugFlags) console.log('PreFind UID:',uid)
-        var res = []
-    //res.push(uid)
-    var tempArr = []
-    var uidList = []
-    for(let i = 0;i<array.length;i++){
-        if (array[i].includes(uid)){
-            tempArr.push(array[i])
+    for(let utl = 0;utl<uidTotalList.length;utl++){
+        if (dupUid.includes(utl)) continue
+        var finalResultIn = []
+        var uid = uidTotalList[utl]
+        //if (uid == 0) uid = 1000522880
+        // 首先，将当前uid发生变动的提取出来
+        var currentUidChange = []   // 这个array的length就是代表当前uid总变动次数
+        for(let uidArray of valueChangeData){
+            if (uidArray.includes(uid) && uidArray.length < 10) currentUidChange.push(uidArray)
         }
+        var tempUidList = []    // 临时uidList，用于标记与当前查询uid分数一起变动的其他uid列表
+        var tempUidListAppearCount = [] // 临时uidList中的uid在pointData中出现的总次数
+        var tempUidListAppearCountInCurrentUidChange = [] // 临时uidList中的uid在currentUidChange中出现的总次数
+        var offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+        var offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+        var offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+        var minTogetherCount = 3    // 最小同房数量
+        for(let uidArray of currentUidChange){  // 标记所有一同更改过的uid
+            for(let uid2 of uidArray){
+                if (!tempUidList.includes(uid2))tempUidList.push(uid2)
+            }
+        }
+        for(let i =0;i<tempUidList.length;i++){ // 遍历tempUidList，将出现次数增加进入tempUidListAppearCount
+            let appearCount = 0
+            for(let uidArray of valueChangeData){
+                if (uidArray.includes(tempUidList[i])) {
+                    appearCount++
+                }
+            }
+            tempUidListAppearCount.push(appearCount)
+        }
+        for(let i =0;i<tempUidList.length;i++){ // 遍历currentUidChange，将出现次数增加进入tempUidListAppearCount
+            let appearCount = 0
+            for(let uidArray of currentUidChange){
+                if (uidArray.includes(tempUidList[i])) {
+                    appearCount++
+                }
+            }
+            tempUidListAppearCountInCurrentUidChange.push(appearCount)
+        }
+        var sureAtSameRoom = [] // 完全确认是在同一个房间的
+        var possibleAtSameRoom = [] // 可能在同一个房间的Uid
+        var possibleAtSameRoomRatio = [] // 可能在同一个房间的可能概率
+        for(let i = 0;i<tempUidList.length;i++){
+            // 参数UID与待查UID占整个时段的变动次数，取大
+            var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
+            // 参数UID与待查UID占整个时段的变动次数，取小
+            var smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
+            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
+            var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
+            var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5){
+                sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的   
+            }else if (sureAtSameRoom.length <5 && smallCountInPart>= minTogetherCount   ){     // 房间数量小于5且最小同房次数>=3 总数Ratio>= offsetRatioConfidence
+                // 假如参数uid因为掉线不与其他uid在一个房间，掉两把
+                if (largeCountInPart == smallCountInPart && (smallCountInTotal /largeCountInTotal >= offsetRatioConfidence) ){  // 如果是完全一起变动，且总变动 小/大 >= offsetRatioConfidence。
+                    possibleAtSameRoom.push(tempUidList[i])
+                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                }else if(smallCountInTotal == largeCountInTotal && (largeCountInPart - smallCountInPart <=  offsetCountConfidenceInCurrentUidChange)){  // 如果总变动一样，但是一起变动 大-小 <= offsetCountConfidenceInCurrentUidChange
+                    possibleAtSameRoom.push(tempUidList[i])
+                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                }else if((largeCountInTotal  - smallCountInTotal) == (largeCountInPart - smallCountInPart) && (largeCountInPart - smallCountInPart) <= offsetCountConfidenceTotalCount){    // 如果总数差 = 变动差 且差值<=2 则可能在同一个房间
+                    possibleAtSameRoom.push(tempUidList[i])
+                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                }
+            }
+        }
+        for(let f of sureAtSameRoom){
+            if (finalResultIn.length <5){
+                finalResultIn.push(f)
+                dupUid.push(f)
+            }
+        }
+        for(let f of possibleAtSameRoom){
+            if (finalResultIn.length <5){
+                finalResultIn.push(f)
+                dupUid.push(f)
+            }
+        }
+        if (finalResultIn.length != 0)finalResultOut.push(finalResultIn)
     }
-    //if (debugFlags) console.log('original array',tempArr)
-    if (tempArr.length == 0) return []
-    //if (tempArr.length == 1) return tempArr[0]
-    // 把所有uid放进uidList中
-    for(let i of tempArr){
-        for(let j of i){
-            if (!uidList.includes(j)) uidList.push(j)
-        }
-    }
-    for(let i of uidList){
-        var uidCount = 0
-        var uidCountT2 = 0   // 查外层数量。当外层数量不一致的时候则表明这两个用户不出现在一个房间。
-        for(let j of tempArr){
-            if (j.includes(i)) uidCount++
-        }
-        for(let j of array){
-            if (j.includes(i)) uidCountT2++
-        }
-        if ((uidCount == uidCountT2) && (uidCount == tempArr.length)) res.push(i)   // 外层数量对不上=不纯
-    }
-    if (debugFlags) console.log('after findUidSameDataInDifferentArray',res)
-    return res
+    console.log(finalResultOut)
+    return finalResultOut
 }
