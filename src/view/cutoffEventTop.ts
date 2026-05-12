@@ -1141,23 +1141,33 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
     }
     return true
 }
-
+// 猜房间
+// 首先取出要猜UID（参数UID）出现变动时，跟着一起变的用户
+// 然后对于整个小时数据而言，出现总数量相同，且变动数量相同的用户，则可以百分百确认时同一个房间的
+// 对于变动稍有出入的用户来说，允许设置一定的偏移去应对可能出现的掉线等情况从而无法记录。
 function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSort?: number[]){
     var finalResultOut = []
     var uidTotalList: number[] = []
     var dupUid = []
-    if (!uidSort){
-        for(let t of valueChangeData){
+    var totalChangeCount = 0    // 总变动次数，是否启用严格模式。处于严格模式下，只允许绝对确认
+    const strictCount = 270
+    const offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+    const offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+    const offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+    const minTogetherCount = 3    // 最小同房数量
+    for(let t of valueChangeData){
+        if (!uidSort){
             for(let t1 of t){
                 if (!uidTotalList.includes(t1)) uidTotalList.push(t1)
             }
         }
-    }else{
-        uidTotalList = uidSort
+        totalChangeCount += t.length
     }
-
+    //console.log(totalChangeCount)
+    const strictMode = totalChangeCount>=strictCount ?true:false
+    if (uidSort) uidTotalList = uidSort
     for(let utl = 0;utl<uidTotalList.length;utl++){
-        if (dupUid.includes(utl)) continue
+        if (dupUid.includes(utl)) continue  // 掩耳盗铃，但是确实可以避免一些问题
         var finalResultIn = []
         var uid = uidTotalList[utl]
         //if (uid == 0) uid = 1000522880
@@ -1169,10 +1179,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         var tempUidList = []    // 临时uidList，用于标记与当前查询uid分数一起变动的其他uid列表
         var tempUidListAppearCount = [] // 临时uidList中的uid在pointData中出现的总次数
         var tempUidListAppearCountInCurrentUidChange = [] // 临时uidList中的uid在currentUidChange中出现的总次数
-        var offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-        var offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-        var offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-        var minTogetherCount = 3    // 最小同房数量
+
         for(let uidArray of currentUidChange){  // 标记所有一同更改过的uid
             for(let uid2 of uidArray){
                 if (!tempUidList.includes(uid2))tempUidList.push(uid2)
@@ -1199,7 +1206,8 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         var sureAtSameRoom = [] // 完全确认是在同一个房间的
         var possibleAtSameRoom = [] // 可能在同一个房间的Uid
         var possibleAtSameRoomRatio = [] // 可能在同一个房间的可能概率
-        for(let i = 0;i<tempUidList.length;i++){
+        // 先把最有可能时同一个房间的uid加起来
+        for(let i = 0;i<tempUidList.length;i++){    // 严格模式下。优先添加
             // 参数UID与待查UID占整个时段的变动次数，取大
             var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
             // 参数UID与待查UID占整个时段的变动次数，取小
@@ -1208,9 +1216,23 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
             var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-            if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5){
+            if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5 && !dupUid.includes(tempUidList[i])){
                 sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的   
-            }else if (sureAtSameRoom.length <5 && smallCountInPart>= minTogetherCount   ){     // 房间数量小于5且最小同房次数>=3 总数Ratio>= offsetRatioConfidence
+            }
+        }
+        for(let i = 0;i<tempUidList.length;i++){
+            if (sureAtSameRoom.includes(tempUidList[i]))continue
+            if (sureAtSameRoom.length>=5)break
+            if (strictMode)break
+            // 参数UID与待查UID占整个时段的变动次数，取大
+            var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
+            // 参数UID与待查UID占整个时段的变动次数，取小
+            var smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
+            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
+            var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
+            var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 房间数量小于5且最小同房次数>=3 总数Ratio>= offsetRatioConfidence
                 // 假如参数uid因为掉线不与其他uid在一个房间，掉两把
                 if (largeCountInPart == smallCountInPart && (smallCountInTotal /largeCountInTotal >= offsetRatioConfidence) ){  // 如果是完全一起变动，且总变动 小/大 >= offsetRatioConfidence。
                     possibleAtSameRoom.push(tempUidList[i])
@@ -1238,6 +1260,6 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         }
         if (finalResultIn.length != 0)finalResultOut.push(finalResultIn)
     }
-    console.log(finalResultOut)
+    //console.log(finalResultOut)
     return finalResultOut
 }
