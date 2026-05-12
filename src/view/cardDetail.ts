@@ -148,14 +148,6 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     var drawSdcharaInListPromise: Promise<Canvas>[] = []
     drawSdcharaInListPromise.push(drawSdcharaInList(card))
 
-
-
-
-
-
-
-
-
     var all = []
     
 
@@ -185,7 +177,8 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
             gachaIdList.sort((a, b) => {
                 const gachaA = new Gacha(a);
                 const gachaB = new Gacha(b);
-                if (gachaA.publishedAt[server] != gachaB.publishedAt[server]) {
+                if (server!= Server.jp && gachaA.publishedAt[server] != gachaB.publishedAt[server] ) {
+                    // 检查publishedAt的正确性
                     return gachaA.publishedAt[server] - gachaB.publishedAt[server];
                 }
                 else {
@@ -208,6 +201,9 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
                 tempGachaIdList.push(tempGacha.gachaId)
             }
 
+        }
+        if (card.releaseGacha[server].length == 0 && card.releaseEvent[server].length != 0) {
+            
         }
     }
 

@@ -1154,7 +1154,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     const offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-    const minTogetherCount = 3    // 最小同房数量
+    const minTogetherCount = 10    // 最小同房数量
     for(let t of valueChangeData){
         if (!uidSort){
             for(let t1 of t){
