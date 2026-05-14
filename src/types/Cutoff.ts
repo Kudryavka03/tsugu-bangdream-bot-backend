@@ -131,7 +131,7 @@ export class Cutoff {
             cutoffData = await this.getFinalCutoffsData(true)
             //console.log(cutoffData["cutoffs"].length)
             // 检查缓存是否合法
-            if (cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000 ){
+            if (cutoffData["cutoffs"].length==0||(cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000) ){
                 cutoffData = await this.getFinalCutoffsData()
             } //如果最后一个记录的时间减去endAt，校验如果差距太大就要更新
             //cutoffData = await callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
