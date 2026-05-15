@@ -59,7 +59,7 @@ async function commandGetCardIllustration(cardText: string| FuzzySearchResult): 
        if(cardText.includes('开花后') || cardText.includes('花后')){
          after_training = true
        }
-       cardText.replace('开花前','').replace('花前','').replace('花后','').replace('开花后','')
+       cardText = cardText.replace('开花前','').replace('花前','').replace('花后','').replace('开花后','')
        fuzzySearchResult = fuzzySearch(cardText)
        const tempCardList: Array<Card> = matchCardList(fuzzySearchResult,[Server.jp]);
        if (tempCardList.length == 0) {
