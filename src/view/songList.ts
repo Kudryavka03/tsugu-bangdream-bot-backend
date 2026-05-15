@@ -56,7 +56,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     const tempSongList = matchSongList(matches, displayedServerList)
 
     if (tempSongList.length == 0) {
-        return ['没有搜索到符合条件的歌曲']
+        return [`没有搜索到符合条件的歌曲\nKeywords: ${matches._all}`]
     }
     if (tempSongList.length == 1) {
         return await drawSongDetail(tempSongList[0], displayedServerList, compress)
