@@ -2,11 +2,11 @@ import { callAPIAndCacheResponse } from '@/api/getApi';
 import mainAPI from '@/types/_Main';
 import { Bestdoriurl, HHWX_Url, USE_HHWX_SOURCE_PREFER, clearDataSourceProblem, extraUrl, reportDataSourceProblem, tierListOfServer } from '@/config';
 import { Server } from '@/types/Server';
-import { Event } from '@/types/Event';
+import { Event, getPresentEvent } from '@/types/Event';
 import { predict } from '@/api/cutoff.cjs'
 import * as fs from 'fs';
 import path from 'path'
-import { getDateByServerTimezone, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
+import { getDateByServerTimezone, GetProbablyTimeDifference, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 
 export class Cutoff {
     eventId: number;
@@ -50,16 +50,16 @@ export class Cutoff {
         this.isExist = true;
         this.startAtAll = this.event.startAt
         this.endAtAll = this.event.endAt
-        this.startAt = this.event.startAt[server]
-        this.endAt = this.event.endAt[server]
+        this.startAt = this.event.startAt[server]?this.event.startAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server))
+        this.endAt = this.event.endAt[server]?this.event.endAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server)) + (this.endAtAll[Server.jp] - this.startAtAll[Server.jp])
         //const tempEvent = new Event(this.eventId)
         this.currentGetDataTime = new Date().getTime()
         //状态
         var time = this.currentGetDataTime
-        if (time < this.startAtAll[this.server]) {
+        if (time < this.startAt) {
             this.status = 'not_start'
         }
-        else if (time > this.endAtAll[this.server]) {
+        else if (time > this.endAt) {
             this.status = 'ended'
         }
         else {
@@ -239,8 +239,8 @@ export class Cutoff {
     }
     getDaysOfEvent(ts: number) {
         const offsetMs = getServerUtcOffset(this.server) * 60 * 60 * 1000
-
         const eventStartAtTime = normalizeTimestamp(this.startAt)
+        //console.log(this.startAt)
         const timestamp = normalizeTimestamp(ts)
 
         const serverStartTime = eventStartAtTime + offsetMs

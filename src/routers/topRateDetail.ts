@@ -28,6 +28,7 @@ router.post(
         const { mainServer, playerId, tier, count, compress,mode,eventId } = req.body;
 
         try {
+           // console.log(eventId)
             const result = await commandTopRateDetail(getServerByServerId(mainServer), playerId, tier, compress, count,mode,eventId);
             res.send(listToBase64(result));
         } catch (e) {

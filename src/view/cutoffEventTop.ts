@@ -492,7 +492,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 }
 
 export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
-
+    console.log(eventId)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     /*
     if (cutoffEventTop.status != "in_progress") {

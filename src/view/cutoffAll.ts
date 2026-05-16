@@ -17,9 +17,11 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     if (!event.isExist) {
         return ['活动不存在']
     }
+    /*
     if (event.startAt[mainServer] == undefined) {
         return ['活动在该服务器不存在']
     }
+        */
     const bannerImageBox = drawEventDatablock(event, [mainServer]).catch(err => {
         console.error('drawEventDatablock error:', err);
         return null;
@@ -37,6 +39,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     var cutoffPromise = []
     for (var i in tierList) {
         const tempCutoff = new Cutoff(eventId, mainServer, tierList[i])
+        if (tempCutoff.status == 'not_start') return ['活动未开始']
         const cop = (async()=>{
             await tempCutoff.initFull() 
             if (tempCutoff.status == 'in_progress') {

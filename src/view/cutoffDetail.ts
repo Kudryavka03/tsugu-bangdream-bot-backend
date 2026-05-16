@@ -17,7 +17,7 @@ import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
-    if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
+    //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
     var cutoff = new Cutoff(eventId, mainServer, tier)
     if (cutoff.isExist == false) {
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
@@ -74,7 +74,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             }),
             await drawList({
                 key: '线性外推',
-                text: Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((event.endAt[mainServer] - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString()
+                text: Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString()
             }),
             await drawList({
                 key: '预测线2',
@@ -118,7 +118,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const tempList = []
         tempList.push((await drawList({
             key: `日增速 / ${changeTimefomant(Date.now())}`,
-            text: `${cutoff.dailyIncrement.join('/')}`
+            text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
         list.push(line)
@@ -144,6 +144,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(drawListMerge(Line2List))
         list.push(line)
         const tempList = []
+        console.log(cutoff.dailyIncrement)
         tempList.push((await drawList({
             key: '日增速',
             text: `${cutoff.dailyIncrement.join('/')}`
