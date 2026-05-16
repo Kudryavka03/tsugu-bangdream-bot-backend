@@ -50,8 +50,8 @@ export class Cutoff {
         this.isExist = true;
         this.startAtAll = this.event.startAt
         this.endAtAll = this.event.endAt
-        this.startAt = this.event.startAt[server]?this.event.startAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server))
-        this.endAt = this.event.endAt[server]?this.event.endAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server)) + (this.endAtAll[Server.jp] - this.startAtAll[Server.jp])
+        this.startAt = this.event.startAt[server] || server!=Server.cn?this.event.startAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server))
+        this.endAt = this.event.endAt[server] || server!=Server.cn?this.event.endAt[server]:GetProbablyTimeDifference(this.eventId,getPresentEvent(this.server)) + (this.endAtAll[Server.jp] - this.startAtAll[Server.jp])
         //const tempEvent = new Event(this.eventId)
         this.currentGetDataTime = new Date().getTime()
         //状态
