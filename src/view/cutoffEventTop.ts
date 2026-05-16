@@ -1146,6 +1146,8 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
 // 然后对于整个小时数据而言，出现总数量相同，且变动数量相同的用户，则可以百分百确认时同一个房间的
 // 对于变动稍有出入的用户来说，允许设置一定的偏移去应对可能出现的掉线等情况从而无法记录。
 function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSort?: number[]){
+    //console.log('test')
+    //console.log(valueChangeData)
     var finalResultOut = []
     var uidTotalList: number[] = []
     var dupUid = []
@@ -1174,7 +1176,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         // 首先，将当前uid发生变动的提取出来
         var currentUidChange = []   // 这个array的length就是代表当前uid总变动次数
         for(let uidArray of valueChangeData){
-            if (uidArray.includes(uid) && uidArray.length < 10) currentUidChange.push(uidArray)
+            if (uidArray.includes(uid) && uidArray.length < 11) currentUidChange.push(uidArray)
         }
         var tempUidList = []    // 临时uidList，用于标记与当前查询uid分数一起变动的其他uid列表
         var tempUidListAppearCount = [] // 临时uidList中的uid在pointData中出现的总次数
