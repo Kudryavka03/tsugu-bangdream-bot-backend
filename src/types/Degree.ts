@@ -42,9 +42,17 @@ export class Degree {
                 console.error(e)
             }
         }
-        let degreeImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
+        try{
+            let degreeImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`,false)
+            return loadImage(degreeImageBuffer)
+        }
+        catch{
+            let degreeImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/assets-star-forassetbundle-startapp-thumbnail-degree-${this.baseImageName[server]}.png`)
+            return loadImage(degreeImageBuffer)
+        }
+
         // console.log('getDegreeImage'+' '+`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${this.baseImageName[server]}.png`)
-        return loadImage(degreeImageBuffer)
+        
     }
     async getDegreeFrame(server: Server): Promise<Image | Canvas> {
         var frameName = this.degreeType[server] + "_" + this.rank[server]
@@ -61,7 +69,7 @@ export class Degree {
         if (this.iconImageName[server] == "none") {//这个为空底图
             return (new Canvas(1, 1))
         }
-        var degreeIconBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${iconName}.png`)
+        var degreeIconBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${iconName}.png`,true)
         // console.log('getDegreeIcon'+' '+`${Bestdoriurl}/assets/${Server[server]}/thumb/degree_rip/${iconName}.png`)
         return loadImage(degreeIconBuffer)
     }

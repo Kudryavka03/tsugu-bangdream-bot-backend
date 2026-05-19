@@ -45,11 +45,11 @@ export async function drawRoonInList(room: Room) {
     let workgroup = []
     let player:Player = null;
     workgroup.push(getUserIcon(room.avatarUrl))
-    console.log('drawRoonInList')
+    //console.log('drawRoonInList')
     if (room.player != undefined) { // 是否取得缓存是高度跟cacheTime挂钩的。如果出现Bestdori通知客户端使用缓存的话，cacheTime不会更新。因此要给Player增加强制使用本地缓存的选项
         player = new Player(room.player.playerId, room.player.server)
         //await player.initFull(true,1,true)
-        workgroup.push(player.initFull(true,1,true))
+        workgroup.push(player.initFull(true,1,false,0))
     }
     const Icon = (await Promise.all(workgroup))[0]
 
