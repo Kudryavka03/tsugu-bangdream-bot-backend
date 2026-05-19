@@ -238,6 +238,7 @@ export class Cutoff {
         return history
     }
     getDaysOfEvent(ts: number) {
+        if (!this.startAt)  return  0;
         const offsetMs = getServerUtcOffset(this.server) * 60 * 60 * 1000
         const eventStartAtTime = normalizeTimestamp(this.startAt)
         //console.log(this.startAt)
