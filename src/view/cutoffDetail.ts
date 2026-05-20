@@ -23,14 +23,14 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     }
     const initPromise = cutoff.initFull();
-    if (!cutoff.cutoffs) return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
+    
     var event = new Event(eventId)
     const drawPromise = await drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
     });
     await initPromise;
-
+    if (!cutoff.cutoffs) return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     //const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
     //await cutoff.initFull()
     /*
