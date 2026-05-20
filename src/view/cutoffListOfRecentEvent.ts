@@ -55,9 +55,9 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         })()
         cutoffPromise.push(cop)
     }
-    var cutoffPromiseR = await Promise.all(cutoffPromise)
+    var cutoffPromiseR:Cutoff[] = await Promise.all(cutoffPromise)
     for(var cor of cutoffPromiseR){
-        cutoffList.push(cor)
+        if (cor.latestCutoff)cutoffList.push(cor)
     }
     //console.log(cutoffPromiseR)
     

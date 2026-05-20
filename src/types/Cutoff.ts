@@ -81,17 +81,29 @@ export class Cutoff {
                 var data = await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
                 return data
             }
-            catch{
-                if (this.server ==  Server.cn)reportDataSourceProblem()
-                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+            catch(e){
+                if (e.response.status != 404 && this.server ==  Server.cn)reportDataSourceProblem()
+                try{
+                    return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,0,3,false)
+                }
+                catch{
+                    return null
+                }
             }
+                
         }else{
             try{
                 return await callAPIAndCacheResponse(`${this.getFinalApiUrl(false)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
             }
-            catch{
-                if (this.server ==  Server.cn)reportDataSourceProblem()
-                return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
+            catch(e){
+                if (e.response.status != 404 && this.server ==  Server.cn)reportDataSourceProblem()
+                try{
+                    return await callAPIAndCacheResponse(`${this.getFinalApiUrl(true)}/api/tracker/data?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`,1/0,3,true)
+                }
+                catch{
+                    return null
+                }
+                
             }
         }
     }
@@ -111,6 +123,10 @@ export class Cutoff {
             var oldDataSourceFlags = this.useHHWX
             var dateNow = Date.now()
             cutoffData = await this.getFinalCutoffsData()
+            if(!cutoffData){
+                this.isExist = false;
+                return
+            }
             if (this.server == Server.cn && cutoffData["cutoffs"]&& cutoffData["cutoffs"].length!=0 &&  dateNow - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >= 2700000){   // 对数据进行实时性检查，如果不通过则使用另一个数据源数据.确保服务器时间对齐东八区
                 this.useHHWX = !this.useHHWX
                 reportDataSourceProblem()
@@ -131,7 +147,7 @@ export class Cutoff {
             cutoffData = await this.getFinalCutoffsData(true)
             //console.log(cutoffData["cutoffs"].length)
             // 检查缓存是否合法
-            if (cutoffData["cutoffs"].length==0||(cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000) ){
+            if (cutoffData["cutoffs"] && (cutoffData["cutoffs"].length==0||(cutoffData["cutoffs"].length!=0 && this.endAt - cutoffData["cutoffs"][cutoffData["cutoffs"].length-1].time >410000)) ){
                 cutoffData = await this.getFinalCutoffsData()
             } //如果最后一个记录的时间减去endAt，校验如果差距太大就要更新
             //cutoffData = await callAPIAndCacheResponse(`${extraUrl}/cutoffs?server=${<number>this.server}&event=${this.eventId}&tier=${this.tier}`, 1 / 0,3,true)
@@ -199,7 +215,7 @@ export class Cutoff {
         return this.predictEP
     }
     predict2(): number {
-        this.predictEP2 = this.pCutoffs[this.pCutoffs.length-1]['ep']
+        this.predictEP2 = this.pCutoffs?this.pCutoffs[this.pCutoffs.length-1]['ep']:0
         return this.predictEP2
     }
     readPredict2Data(tier) {

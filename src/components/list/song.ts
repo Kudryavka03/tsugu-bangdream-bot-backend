@@ -11,7 +11,8 @@ import { drawDottedLine } from '@/image/dottedLine'
 import { formatSeconds } from './time'
 import mainAPI from '@/types/_Main'
 
-export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer,useFever?:boolean): Promise<Canvas> {
+    
     var server = getServerByPriority(song.publishedAt, displayedServerList)
     var songImage = resizeImage({
         image: await song.getSongJacketImage(),
@@ -43,9 +44,18 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
         let HDRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['2']
         let EXRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['3']
         let SPRankF=mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']?mainAPI['metaCache'][false][serverMeta][`${song.songId}`]['4']:''
-        if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
-        if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
-    
+        if (useFever!=null && useFever == true){
+            if(SPRankT == '') fullText += `有Fever HD: #${HDRankT} EX: #${EXRankT} `
+            if(SPRankT != '') fullText += `有Fever EX: #${EXRankT} SP: #${SPRankT} `
+        }
+        if(useFever!=null && useFever == false){
+            if(SPRankT == '') fullText += `无Fever HD: #${HDRankF} EX: #${EXRankF} `
+            if(SPRankT != '') fullText += `无Fever HD: #${EXRankF} SP: #${SPRankF} `
+        }
+        else{
+            if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `
+            if(SPRankT != '') fullText += `EX: #${EXRankT}/#${EXRankF} SP: #${SPRankT}/#${SPRankF} `
+        }
 
     }else fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
     if (!text) {
@@ -67,7 +77,7 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
 
 
     //难度
-    if (difficulty == undefined) {
+    if (!difficulty) {
         var difficultyImage = await drawDifficulityListInListWithNotes(song, 50, 10)
     }
     else {
@@ -164,7 +174,7 @@ export async function drawSongListInList(songs: Song[], difficulty?: number, tex
         spacing: 0
     })
 }
-export async function drawSongListInListWithMoreDetail(songs: Song[], difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+export async function drawSongListInListWithMoreDetail(songs: Song[], difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer,useFever?:boolean): Promise<Canvas> {
     let height: number = 75 * songs.length + 10 * (songs.length - 1)
     let canvas = new Canvas(760, height)
     let ctx = canvas.getContext("2d")
@@ -183,7 +193,7 @@ export async function drawSongListInListWithMoreDetail(songs: Song[], difficulty
         color: "#a8a8a8"
     })
     for (let i = 0; i < songs.length; i++) {
-        views.push(resizeImage({ image: await drawSongInListForQuerySong(songs[i], difficulty, text, displayedServerList), widthMax: 760 }))
+        views.push(resizeImage({ image: await drawSongInListForQuerySong(songs[i], difficulty, text, displayedServerList,useFever), widthMax: 760 }))
         views.push(line)
     }
     views.pop()

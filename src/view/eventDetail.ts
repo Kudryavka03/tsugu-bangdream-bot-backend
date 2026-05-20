@@ -28,8 +28,14 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         return ['错误: 活动不存在']
     }
     await event.initFull()
-
-
+    let useFever = false
+    let useFeverList = ['story','live_try','mission_live']
+    for (let ufl of useFeverList){
+        if (event.eventType == ufl){
+            useFever = true
+            break
+        }
+    }
     var list: Array<Image | Canvas> = []
     const bannerImagePromise: Promise<Image>[] = []; 
     const BGImagePromise: Promise<Image>[] = []; 
@@ -103,7 +109,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     const eventTypes: string[] = ['versus', 'challenge', 'medley']
     let degreeSongs:Song[] = []
     if (eventTypes.includes(event.eventType) && event.musics != undefined && event.musics.length > 0) {
-        let songs: Song[] = []
+        // let songs: Song[] = []
         let defaultServer = displayedServerList[0]
         if (!event.musics[displayedServerList[0]]) {
             defaultServer = Server.jp
@@ -111,7 +117,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         for (let i = 0; i < event.musics[defaultServer].length; i++) {
             degreeSongs.push(new Song(event.musics[defaultServer][i].musicId))
         }
-        drawSongListInListPromise.push(drawSongListInListWithMoreDetail(degreeSongs))
+        drawSongListInListPromise.push(drawSongListInListWithMoreDetail(degreeSongs,null,null,
+            !event.startAt[displayedServerList[0]]?[Server.jp]:displayedServerList,false))
     }
 
     const drawSongListInListMorePromise: Promise<Image | Canvas>[] = []; 
