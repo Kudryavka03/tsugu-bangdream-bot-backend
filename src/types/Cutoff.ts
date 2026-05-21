@@ -410,7 +410,7 @@ export class Cutoff {
         let TodaysIncrement = (lastCutoffEp - score[1])
         let YesterdaysIncrement = ( scoreCur[0] - score[0] )
         let rate:number = YesterdaysIncrement!=0?TodaysIncrement / YesterdaysIncrement:1
-        let result =  `昨日同时段日增:${Math.round((YesterdaysIncrement)/10000)} 现在是昨天的${Math.round(rate * 100)}%${rate*100>=100?'↑':'↓'}`
+        let result =  `昨天同时刻日增${Math.round((YesterdaysIncrement)/10000)} 现在是昨天的${Math.round(rate * 100)}%${rate*100>=100?'↑':'↓'}`
         //console.log(result)
         return result
     }
