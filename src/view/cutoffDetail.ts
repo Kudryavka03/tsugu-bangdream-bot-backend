@@ -119,7 +119,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const tempList = []
         tempList.push((await drawList({
             key: `日增速 / ${changeTimefomant(Date.now())}`,
-            text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`
+            text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}\n${cutoff.getYesterdayIncrementRate()}`
         })))
         list.push(drawListMerge(tempList))
         list.push(line)
