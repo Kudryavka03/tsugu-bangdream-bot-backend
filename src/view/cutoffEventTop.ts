@@ -1146,8 +1146,8 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
 // 然后对于整个小时数据而言，出现总数量相同，且变动数量相同的用户，则可以百分百确认时同一个房间的
 // 对于变动稍有出入的用户来说，允许设置一定的偏移去应对可能出现的掉线等情况从而无法记录。
 function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSort?: number[]){
-    //console.log('test')
-    //console.log(valueChangeData)
+    console.log('test')
+    console.log(valueChangeData)
     var finalResultOut = []
     var uidTotalList: number[] = []
     var dupUid = []
@@ -1156,6 +1156,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     const offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+    const offsetCountDifferentCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const minTogetherCount = 10    // 最小同房数量
     for(let t of valueChangeData){
         if (!uidSort){
@@ -1245,6 +1246,9 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                 }else if((largeCountInTotal  - smallCountInTotal) == (largeCountInPart - smallCountInPart) && (largeCountInPart - smallCountInPart) <= offsetCountConfidenceTotalCount){    // 如果总数差 = 变动差 且差值<=2 则可能在同一个房间
                     possibleAtSameRoom.push(tempUidList[i])
                     possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                }else if((largeCountInTotal - smallCountInPart) <= offsetCountDifferentCount && (largeCountInPart - smallCountInPart) <= offsetCountDifferentCount){
+                    possibleAtSameRoom.push(tempUidList[i])
+                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
                 }
             }
         }
@@ -1262,6 +1266,6 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         }
         if (finalResultIn.length != 0)finalResultOut.push(finalResultIn)
     }
-    //console.log(finalResultOut)
+    console.log(finalResultOut)
     return finalResultOut
 }
