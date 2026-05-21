@@ -367,8 +367,15 @@ export class Cutoff {
             return '无数据'
         }
         let lastCutoffTime = this.cutoffs[this.cutoffs.length-1].time
+        // HHWX数据源会在快要结活的时候改为每15分钟抓取一次，因此需要主动规避
+        let usePrevPoint = false
+        let UTCMin =  getDateByServerTimezone(lastCutoffTime, this.server).getUTCMinutes()
+        if (UTCMin < 3 || (UTCMin >= 25 && UTCMin <= 35)){
+            lastCutoffTime = this.cutoffs[this.cutoffs.length-2].time
+            usePrevPoint = true
+        }
         let curEventDays = this.getDaysOfEvent(lastCutoffTime)
-        let lastCutoffEp = this.cutoffs[this.cutoffs.length-1].ep
+        let lastCutoffEp = this.cutoffs[this.cutoffs.length-(usePrevPoint?2:1)].ep
         //console.log(curEventDays)
         let score:number[] = []
         let time:number[] = []
