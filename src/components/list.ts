@@ -32,6 +32,8 @@ interface ListOptions {
     lineSpacing?: number;
     color?: string;
     maxWidth?: number;
+    RoundedRectColor?:string;
+    RoundedRectTextColor?:string;
     align?: "top" | "bottom" | "center"
 }
 
@@ -119,13 +121,17 @@ export async function drawList({
     lineHeight = textSize * 1.5,
     spacing = textSize / 3,
     color = '#505050',
-    maxWidth = 800
+    maxWidth = 800,
+    RoundedRectColor = '#5b5b5b',
+    RoundedRectTextColor = "#ffffff",
 
 }: ListOptions): Promise<Canvas> {
     const xmax = maxWidth - 40
     const keyImage = drawRoundedRectWithText({
         text: key,
         textSize: 30,
+        color:RoundedRectColor,
+        textColor:RoundedRectTextColor
     });
     var isNeedToRelease = false
     var textImage: Canvas

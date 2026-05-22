@@ -118,12 +118,27 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
-            key: `日增速 / ${changeTimefomant(Date.now())}`,
-            text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}\n${cutoff.getYesterdayIncrementRate()}`
+            key: `日增速 / ${changeTimefomant(cutoff.latestCutoff.time)}  Day${cutoff.getDaysOfEvent(cutoff.latestCutoff.time)+1}  完成率${Math.round((cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)*100)}%`,
+            text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
-        list.push(line)
 
+        let yesterdayIncrementRate = cutoff.getYesterdayIncrementRate()
+        let highestIncrementRate = cutoff.getYesterdayIncrementRate(-1)
+        if (yesterdayIncrementRate){
+            list.push(await drawList({
+                key: `${yesterdayIncrementRate}`,
+                //color:'#005737',
+                RoundedRectColor:yesterdayIncrementRate.includes('↑')?'#dc3545':'#59B748'
+            }))
+        }
+        if (highestIncrementRate && yesterdayIncrementRate!= highestIncrementRate){
+            list.push(await drawList({
+                key: `${highestIncrementRate}`,
+                RoundedRectColor:highestIncrementRate.includes('↑')?'#dc3545':'#59B748'
+            }))
+        }
+        list.push(line)
     }
     else if (cutoff.status == 'ended') {
         list.push(await drawList({
