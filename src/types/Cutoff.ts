@@ -215,7 +215,7 @@ export class Cutoff {
         return this.predictEP
     }
     predict2(): number {
-        this.predictEP2 = this.pCutoffs?this.pCutoffs[this.pCutoffs.length-1]['ep']:0
+        this.predictEP2 = (this.pCutoffs &&this.pCutoffs[this.pCutoffs.length-1]) ?this.pCutoffs[this.pCutoffs.length-1]['ep']:0
         return this.predictEP2
     }
     readPredict2Data(tier) {

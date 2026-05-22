@@ -75,7 +75,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             }),
             await drawList({
                 key: '线性外推',
-                text: Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString()
+                text: (cutoffs[cutoffs.length - 1])?Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
             await drawList({
                 key: '预测线2',
