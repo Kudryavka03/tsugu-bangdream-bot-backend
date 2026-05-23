@@ -1,12 +1,12 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
-import { Image, loadImage } from 'skia-canvas'
+import { Canvas, Image, loadImage } from 'skia-canvas'
 import { checkCache, downloadFileCache, downloadFileCacheWithoutError } from '@/api/downloadFileCache'
 import { Server, getServerByPriority } from '@/types/Server'
 import mainAPI from '@/types/_Main';
 import { Attribute } from '@/types/Attribute';
 import { Character } from '@/types/Character';
 import { globalDefaultServer, Bestdoriurl } from '@/config';
-import { stringToNumberArray } from '@/types/utils'
+import { readJSONFromBuffer, stringToNumberArray } from '@/types/utils'
 import { logger } from '@/logger';
 import { Card } from './Card';
 import { GetProbablyTimeDifference } from '@/components/list/time';
@@ -605,3 +605,58 @@ export function getRecentEventListByEventAndServer(event: Event, server: Server,
     return tempEventList.slice(tempEventList.length - count, tempEventList.length)
 }
 
+class Frame {
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    borderLeft: number;
+    borderRight: number;
+    borderTop: number;
+    borderBottom: number;
+    paddingLeft: number;
+    paddingRight: number;
+    paddingTop: number;
+    paddingBottom: number;
+}
+
+export async function getAnimatedStamp(baseImageName: string, server: Server, frame?: number): Promise<Canvas> {
+
+    // script
+    // example hhttps://bestdori.com/assets/cn/animestamp_bilibili112_rip/assets-star-forassetbundle-startapp-stampanime-animestamp_bilibili112-animestamp_bilibili112.asset
+    const scriptUrl = `${Bestdoriurl}/assets/${Server[server]}/${baseImageName}_rip/assets-star-forassetbundle-startapp-thumbnail-animedegree-${baseImageName}-${baseImageName}.asset`
+    const srciptBuffer = await downloadFileCache(scriptUrl)
+    const script = await readJSONFromBuffer(srciptBuffer)
+    const frames: Array<Frame> = script['Base']['mSprites'] as Array<Frame>
+    const framecount = frames.length
+    if (!frame) {
+        //random frame
+        frame = Math.floor(Math.random() * framecount)
+    }
+
+    // texture
+    // example https://bestdori.com/assets/cn/ani_degree_bilibili_day1_rip/ani_degree_bilibili_day1.png
+    // example https://bestdori.com/assets/cn/animestamp_bilibili112_rip/assets-star-forassetbundle-startapp-stampanime-animestamp_bilibili112-animestamp_bilibili112.png
+    const textureUrlOld = `${Bestdoriurl}/assets/${Server[server]}/${baseImageName}_rip/${baseImageName}.png`
+    const textureUrlNew = `${Bestdoriurl}/assets/${Server[server]}/${baseImageName}_rip/assets-star-forassetbundle-startapp-thumbnail-animedegree-${baseImageName}-${baseImageName}.png`
+    // 后期使用了统一的资源路径
+    const useTextureUrlOldAssetWhitelist = ['ani_degree_bilibili_day1','ani_degree_bilibili_092701','ani_degree_bilibili_collabo','ani_degree_bilibili_6years']
+    var useTextureUrlOld = false
+    for(var l of useTextureUrlOldAssetWhitelist){
+        if (baseImageName == l){
+            useTextureUrlOld = true
+            break
+        }
+    }
+    const textureBuffer = await downloadFileCache(useTextureUrlOld?textureUrlOld:textureUrlNew)
+    const texture = await loadImage(textureBuffer)
+
+    //get frame data
+    const frameData = frames[frame]
+    const canvas = new Canvas(frameData.width, frameData.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(texture, frameData.x, frameData.y, frameData.width, frameData.height, 0, 0, frameData.width, frameData.height)
+    //return frame image
+    return canvas
+}

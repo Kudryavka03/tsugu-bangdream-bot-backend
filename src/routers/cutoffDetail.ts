@@ -18,14 +18,15 @@ router.post(
         body('tier').isInt(),
         body('eventId').optional().isInt(),
         body('compress').optional().isBoolean(),
+        body('compare').optional().isInt(),
     ],
     middleware,
     async (req: Request, res: Response) => {
 
-        const { mainServer, tier, eventId, compress } = req.body;
+        const { mainServer, tier, eventId, compress,compare } = req.body;
 
         try {
-            const result = await commandCutoffDetail(getServerByServerId(mainServer), tier, compress, eventId);
+            const result = await commandCutoffDetail(getServerByServerId(mainServer), tier, compress, eventId,compare);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -34,7 +35,7 @@ router.post(
     }
 );
 
-export async function commandCutoffDetail(mainServer: Server, tier: number, compress: boolean, eventId?: number): Promise<Array<Buffer | string>> {
+export async function commandCutoffDetail(mainServer: Server, tier: number, compress: boolean, eventId?: number,compare?:number): Promise<Array<Buffer | string>> {
     if (!tier) {
         return ['请输入排名']
     }
@@ -44,7 +45,7 @@ export async function commandCutoffDetail(mainServer: Server, tier: number, comp
     if (tier == 10) {
         return await drawCutoffEventTop(eventId, mainServer, compress);
     }
-    return await drawCutoffDetail(eventId, tier, mainServer, compress)
+    return await drawCutoffDetail(eventId, tier, mainServer, compress,compare)
 
 }
 

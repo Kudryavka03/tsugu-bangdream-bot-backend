@@ -15,21 +15,36 @@ import { drawTips } from '@/components/tips';
 import path from 'path';
 import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
+import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
 
-export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
+    //eventId2 = 277
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
     var cutoff = new Cutoff(eventId, mainServer, tier)
+    var cutoffGroup = []
     if (cutoff.isExist == false) {
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     }
-    const initPromise = cutoff.initFull();
+    cutoffGroup.push(cutoff.initFull())
+    let cutoff2:Cutoff = null
+    if (eventId2){
+        cutoff2 = new Cutoff(eventId2,mainServer,tier)
+        if (cutoff2.isExist == false) {
+            return [`错误: ${serverNameFullList[mainServer]} 带对比的活动或档线不存在`]
+        }
+        cutoffGroup.push(cutoff2.initFull())
+    }
     
     var event = new Event(eventId)
     const drawPromise = await drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
     });
-    await initPromise;
+    const drawPromiseEvent2 = eventId2?await drawEventDatablock(new Event(eventId2), [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    }):null
+    await Promise.all(cutoffGroup);
     if (!cutoff.cutoffs) return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     //const [_, drawResult] = await Promise.all([initPromise, drawPromise]);
     //await cutoff.initFull()
@@ -173,18 +188,46 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     list.push(new Canvas(800, 50))
 
     //折线图
-    list.push(await drawCutoffChart([cutoff]))
-
+    list.push(cutoff2?(await drawCutoffChart([cutoff,cutoff2], true, mainServer)):(await drawCutoffChart([cutoff])))
+    if (cutoff2){
+        //list.pop()
+        list.push(line)
+        list.push((await drawList({
+            key: `对比档线：${eventId2} T${tier}`,
+        })))
+        list.push(line)
+        const Line2List = []
+        Line2List.push(await drawList({
+            key: '最终分数线',
+            text: cutoff2.latestCutoff.ep.toString()
+        }))
+        if (mainAPI['events'][eventId2.toString()]['totalPlayerDataCN']) Line2List.push(await drawList({
+            key: '国服 总参与人数',
+            text:  `${mainAPI['events'][eventId2.toString()]['totalPlayerDataCN']}`
+        }))
+        list.push(drawListMerge(Line2List))
+        list.push(line)
+        const tempList = []
+        //console.log(cutoff2.dailyIncrement)
+        tempList.push((await drawList({
+            key: '日增速',
+            text: `${cutoff2.dailyIncrement.join('/')}`
+        })))
+        list.push(drawListMerge(tempList))
+        //list.push(line)
+    }
     //创建最终输出数组
     var listImage = await drawDatablock({ list })
     all.push(drawPromise)
     all.push(listImage)
-    
+    if(eventId2)all.push(drawPromiseEvent2)
+    /*
     all.push(await drawTips({
         text: '预测线1为Tsugu原版预测线 / 数据源切换：查曲 8734499\n预测线2仅对伍佰、K、2K线服务，想法来自：byydzh/MYCX_1000\n若Bestdori关键节点(凌晨3:45)无数据，日增将根据时间差均匀补偿\n',
         
         //image: await loadImageFromPath(path.join(assetsRootPath, 'tsugu.png'))
     }))
+        */
     
     var buffer = await outputFinalBuffer({
         imageList: all,
