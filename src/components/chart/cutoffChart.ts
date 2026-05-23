@@ -8,7 +8,7 @@ import { getPresetColor } from '@/types/Color';
 import { drawList } from '@/components/list'
 import { stackImage } from '@/components/utils'
 
-export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp']) {
+export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp'],drawPredict=false) {
     //setStartToZero:是否将开始时间设置为0
     var datasets = []
     var time = new Date().getTime()
@@ -50,7 +50,19 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
             pointBorderColor: tempColor.getRGBA(1),
             fill: onlyOne
         })
-
+        if (drawPredict){
+            datasets.push({
+                label: lableName,
+                data: cutoff.getPredictChartData(setStartToZero),
+                borderWidth: 5,
+                borderColor: [tempColor.getRGBA(1)],
+                backgroundColor: [tempColor.getRGBA(1)],
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                borderDash: [10, 10],
+            }) 
+        }
         if (cutoff.status == 'in_progress') {
 
             datasets.push({

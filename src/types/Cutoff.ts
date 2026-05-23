@@ -439,6 +439,14 @@ export class Cutoff {
         //console.log(result)
         return result
     }
+    changeScoreRateForCompare(rate:number){
+        this.pCutoffs = structuredClone(this.cutoffs)
+        for(let t of this.pCutoffs){
+            t.ep = Math.round(t.ep * rate)
+        }
+        //this.pCutoffData = this.pCutoffs
+        
+    }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
             return [];
