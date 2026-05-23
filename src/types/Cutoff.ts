@@ -370,7 +370,8 @@ export class Cutoff {
         // HHWX数据源会在快要结活的时候改为每15分钟抓取一次，因此需要主动规避
         let usePrevPoint = false
         let UTCMin =  getDateByServerTimezone(lastCutoffTime, this.server).getUTCMinutes()
-        let UTCHour = getDateByServerTimezone(lastCutoffTime,this.server).getHours()
+        let UTCHour = getDateByServerTimezone(lastCutoffTime,this.server).getUTCHours()
+        console.log(UTCHour,UTCMin)
         let lengthLimit =2
         if (UTCMin < 3 || (UTCMin >= 25 && UTCMin <= 35)){
             lastCutoffTime = this.cutoffs[this.cutoffs.length-2].time,this.server
@@ -382,7 +383,7 @@ export class Cutoff {
         if (days == -1){
             let maxIncrementDays = -1;
             let maxIncrementDaysValue =-1
-            for(let i = 1;i<this.dailyIncrement.length-2;i++){  // 避开第一天跟最后一天
+            for(let i = 1;i<this.dailyIncrement.length-1;i++){  // 避开第一天跟最后一天
                 //console.log(typeof(this.dailyIncrement[i]))
                 if (typeof(this.dailyIncrement[i]) == 'string'){
                     if(this.dailyIncrement[i].includes('!')) continue
