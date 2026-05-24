@@ -29,6 +29,7 @@ export class CutoffEventTop{
         currentPt:number
     }[];
     constructor(eventId:number,server:Server){
+        console.log(server)
         const event = new Event(eventId)
         if(!event.isExist){
             this.isExist = false;
@@ -57,7 +58,21 @@ export class CutoffEventTop{
         if(this.isInitfull){
             return;
         }
-        const topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,0,3,false);
+        let topData = null;
+        if (this.status == 'ended'){
+            topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,1/0,1,true,1);
+            let pointsData = topData['points'] as {
+                time:number,
+                uid:number,
+                value:number
+            }[];
+            console.log(this.endAt,pointsData[pointsData.length-1].time)
+            if (this.endAt -  pointsData[pointsData.length-1].time > 60*3*1000){
+                topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,0,3,false);
+            }
+        }else{
+            topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,0,3,false);
+        }
         if(topData == undefined){
             this.isExist = false;
             return;
