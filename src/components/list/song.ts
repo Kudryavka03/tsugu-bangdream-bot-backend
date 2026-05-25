@@ -50,7 +50,7 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
         }
         if(useFever!=null && useFever == false){
             if(SPRankT == '') fullText += `无Fever HD: #${HDRankF} EX: #${EXRankF} `
-            if(SPRankT != '') fullText += `无Fever HD: #${EXRankF} SP: #${SPRankF} `
+            if(SPRankT != '') fullText += `无Fever EX: #${EXRankF} SP: #${SPRankF} `
         }
         else{
             if(SPRankT == '') fullText += `HD: #${HDRankT}/#${HDRankF} EX: #${EXRankT}/#${EXRankF} `

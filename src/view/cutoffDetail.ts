@@ -19,7 +19,7 @@ import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
 import { CutoffEventTop } from '@/types/CutoffEventTop';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
-    eventId2 = 277
+    //eventId2 = 277
     if (eventId2 == eventId) eventId2 = null
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
     var cutoff = new Cutoff(eventId, mainServer, tier)
