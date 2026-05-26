@@ -371,7 +371,7 @@ export class Cutoff {
         let usePrevPoint = false
         let UTCMin =  getDateByServerTimezone(lastCutoffTime, this.server).getUTCMinutes()
         let UTCHour = getDateByServerTimezone(lastCutoffTime,this.server).getUTCHours()
-        console.log(UTCHour,UTCMin)
+       // console.log(UTCHour,UTCMin)
         let lengthLimit =2
         if (UTCMin < 3 || (UTCMin >= 25 && UTCMin <= 35)){
             lastCutoffTime = this.cutoffs[this.cutoffs.length-2].time,this.server

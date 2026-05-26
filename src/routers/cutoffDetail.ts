@@ -1,4 +1,4 @@
-import { drawCutoffDetail } from '@/view/cutoffDetail';
+import { drawCutoffDetail, drawCutoffDetailWithCompare } from '@/view/cutoffDetail';
 import { Server, getServerByServerId } from '@/types/Server';
 import { getPresentEvent } from '@/types/Event';
 import { listToBase64 } from '@/routers/utils';
@@ -18,7 +18,7 @@ router.post(
         body('tier').isInt(),
         body('eventId').optional().isInt(),
         body('compress').optional().isBoolean(),
-        body('compare').optional().isInt(),
+        body('compare').optional().isString(),
     ],
     middleware,
     async (req: Request, res: Response) => {
@@ -35,7 +35,7 @@ router.post(
     }
 );
 
-export async function commandCutoffDetail(mainServer: Server, tier: number, compress: boolean, eventId?: number,compare?:number): Promise<Array<Buffer | string>> {
+export async function commandCutoffDetail(mainServer: Server, tier: number, compress: boolean, eventId?: number,compare?:string): Promise<Array<Buffer | string>> {
     if (!tier) {
         return ['请输入排名']
     }
@@ -45,7 +45,10 @@ export async function commandCutoffDetail(mainServer: Server, tier: number, comp
     if (tier == 10) {
         return await drawCutoffEventTop(eventId, mainServer, compress);
     }
-    return await drawCutoffDetail(eventId, tier, mainServer, compress,compare)
+    if (compare){
+        return await drawCutoffDetailWithCompare(eventId, tier, mainServer, compress,compare)
+    }
+    return await drawCutoffDetail(eventId, tier, mainServer, compress)
 
 }
 

@@ -143,7 +143,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
 
     //活动表情
-    const getRewardStampPromise: Promise<Image | Canvas>[] = []; 
+    const getRewardStampPromise: Promise<(Image | Canvas)[]>[] = []; 
     getRewardStampPromise.push(event.getRewardStamp(displayedServerList[0]))
     // const stampImage = await event.getRewardStamp(displayedServerList[0])
     // 活动装饰
@@ -350,7 +350,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         list.push(
             await drawList({
                 key: '活动表情',
-                content: [getRewardStampResult[0]],
+                content: getRewardStampResult[0].filter(Boolean),
                 textSize: 160,
                 lineHeight: 160
             })

@@ -11,6 +11,7 @@ import { logger } from '@/logger';
 import { Card } from './Card';
 import { GetProbablyTimeDifference } from '@/components/list/time';
 import { LRUCache } from '@/LRUCache'
+import { assetErrorImageBuffer } from '@/image/utils';
 
 //var eventDataCache = {}
 const MAX_CACHE_SIZE = 200;  // 设置Event最大缓存量
@@ -122,7 +123,7 @@ export class Event {
     bandId: number[]
     nickname: string[]
     isInitfull: boolean = false
-    
+
     constructor(eventId: number) {
         this.eventId = eventId
         const eventData = mainAPI['events'][eventId.toString()]
@@ -341,25 +342,39 @@ export class Event {
         }
         return (memberList)
     }
-    async getRewardStamp(server:Server): Promise<Image> {
-        
+    async getRewardStamp(server:Server): Promise<Image[]> {
+        const stampReardsId:number[] = []   // 贴纸合集
         //const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)
         const allStamps = mainAPI['stamps']
-        const rewards = this.pointRewards.filter(Boolean)[0]
-        let rewardId = -1
+        const rewards = this.pointRewards[0].concat(server==Server.jp?[]:this.pointRewards[server]).filter(Boolean)
+        const rankingRewards = this.rankingRewards[0].concat(server==Server.jp?[]:this.rankingRewards[server]).filter(Boolean)
+        //let rewardId = -1
         for(let i = 0; i < rewards?.length; i++){
             if(rewards[i].rewardType == 'stamp'){
-                rewardId = rewards[i].rewardId
-                break
+                if (!stampReardsId.includes(rewards[i].rewardId)){
+                    stampReardsId.push(rewards[i].rewardId)
+                }
+                //rewardId = rewards[i].rewardId
+                //stampReardsId.push(rewards[i].rewardId)
+                //break
             }
         }
-        let stampAssentName = ''
+        for(let i = 0; i < rankingRewards?.length; i++){
+            if(rankingRewards[i].rewardType == 'voice_stamp'){
+                if (!stampReardsId.includes(rankingRewards[i].rewardId)){
+                    stampReardsId.push(rankingRewards[i].rewardId)
+                }
+            }
+        }
+        const stampAssetName:string[] = []
         for(const i in allStamps){
-            if(i == rewardId.toString()){
-                stampAssentName = allStamps[i]['imageName']
+            for(const j of stampReardsId){
+                if (j.toString() == i){
+                    stampAssetName.push(allStamps[i]['imageName'])
+                }
             }
         }
-        if(stampAssentName == ''){
+        if(stampAssetName.length == 0){
             return undefined
         }
         let serverName = 'jp'
@@ -367,8 +382,17 @@ export class Event {
             serverName = Server[server]
         }
         try {
-            const stampBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${serverName}/stamp/01_rip/${stampAssentName}.png`)
-            return await loadImage(stampBuffer)
+            const ImageListPromise:Promise<Buffer>[] = []
+            for(const assetName of stampAssetName){
+                ImageListPromise.push(downloadFileCache(`${Bestdoriurl}/assets/${serverName}/stamp/01_rip/${assetName}.png`,false).catch(() => undefined))
+            }
+            const ImageBufferList = await Promise.all(ImageListPromise)
+            if (ImageBufferList.length == 0) return undefined
+            let ImageList:Image[] = []
+            for(const ImageBuffer of ImageBufferList){
+                if(ImageBuffer) ImageList.push(await loadImage(ImageBuffer))
+            }
+            return ImageList
         }
         catch{
             return undefined
@@ -411,7 +435,6 @@ export class Event {
             return undefined
         }
     }
-
 }
 //按时间范围获取符合条件的活动
 export function getEventListByTimeRange(rangeStart?: number, rangeEnd?: number, displayedServerList: Server[] = globalDefaultServer) {
