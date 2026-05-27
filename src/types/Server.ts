@@ -62,6 +62,7 @@ export async function getIcon(server: Server): Promise<Image> {
 }
 
 export function getServerByPriority(content: Array<any>, displayedServerList: Server[] = globalDefaultServer) {
+    if (!displayedServerList) displayedServerList = globalDefaultServer
     const serverPriority: Server[] = [...new Set([...displayedServerList, ...globalServerPriority])];
     for (let i = 0; i < serverPriority.length; i++) {
         const tempServer = serverPriority[i];

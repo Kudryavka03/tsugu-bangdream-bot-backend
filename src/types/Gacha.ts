@@ -151,7 +151,7 @@ export class Gacha {
     async getBannerImage(displayServerList?:Server[]): Promise<Image> {
         var server = getServerByPriority(this.publishedAt,displayServerList)
         //console.log(`卡池${this.gachaId} ${this.publishedAt} ${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png}`)
-        if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
+        if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo([server]))
         try {
             var bannerCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`)
             var LogoCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/gacha/screen/${this.resourceName}_rip/logo.png`)
@@ -163,16 +163,16 @@ export class Gacha {
             }
             if (!bannerCache && LogoCache){
                 downloadFileCacheWithoutError(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`, false)   // 后台下载缺失的bannerImage，争取下次使用bannerCache
-                return await loadImage(this.getGachaLogo())
+                return await loadImage(this.getGachaLogo([server]))
             }
         }
         catch (e) {
-            return (this.getGachaLogo())
+            return (this.getGachaLogo([server]))
         }
     }
     async getGachaBGImage(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
         if (!displayedServerList) displayedServerList = globalDefaultServer
-        var server = getServerByPriority(this.publishedAt)
+        var server = getServerByPriority(this.publishedAt,displayedServerList)
         let BGImageBuffer: Buffer
         try {
             BGImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/gacha/screen/${this.resourceName}_rip/bg.png`, false)
@@ -184,7 +184,7 @@ export class Gacha {
     }
     async getGachaLogo(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
         if (!displayedServerList) displayedServerList = globalDefaultServer
-        var server = getServerByPriority(this.publishedAt)
+        var server = getServerByPriority(this.publishedAt,displayedServerList)
         var LogoImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/gacha/screen/${this.resourceName}_rip/logo.png`)
         return await loadImage(LogoImageBuffer)
     }

@@ -164,7 +164,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
         if (event.startAt[server] == null) {
-            continue
+            //getEventGachaAndCardPromiseList.push(null)
         }
         getEventGachaAndCardPromiseList.push(getEventGachaAndCardList(event, server))
     }
