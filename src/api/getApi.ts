@@ -62,7 +62,20 @@ async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retr
   const fileName = getFileNameFromUrl(url);
   // rtLevel：规定API的实时性。不同的等级将会被赋予不同的实时性。
   // 0级：可以返回缓存数据，但是必须得在后台进行更新，确保下一次返回的数据是最新的 | 1级：要求返回服务器上的最新数据。例如个人信息，tracker数据等，默认为1. 0级可以加快event/歌曲的出图速度
+  // 2级：无视etag强制更新API缓存
   // 当isForceUseCache为true的时候，rtLevel将会被无视
+  if (rtLevel == 2) {
+    let pathName = path.join(cacheDir, `${fileName}.etag`)
+    try{
+      if (fs.existsSync(pathName)){
+        fs.rmSync(pathName)  // 删除eTag强制更新缓存
+      }
+    }
+    catch{
+      logger('callAPIAndCacheResponseF',`删除eTag ${pathName} 失败！`)
+    }
+    rtLevel =1
+  }
   for (let attempt = 0; attempt < retryCount; attempt++) {
     
     try {

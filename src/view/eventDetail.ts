@@ -164,12 +164,13 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
         if (event.startAt[server] == null) {
-            getEventGachaAndCardPromiseList.push(null)
             continue
         }
         getEventGachaAndCardPromiseList.push(getEventGachaAndCardList(event, server))
     }
     const getEventGachaAndCardFinalList = await Promise.all(getEventGachaAndCardPromiseList);
+    //console.log(getEventGachaAndCardFinalList)
+    let serverFlags:Server = null
     for (var i = 0; i < displayedServerList.length; i++) {
         var server = displayedServerList[i]
         if (event.startAt[server] == null) {
@@ -178,23 +179,29 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             var EventGachaAndCardList = getEventGachaAndCardFinalList[i]
             var tempGachaList = EventGachaAndCardList.gachaList
             var tempGachaCardList = EventGachaAndCardList.gachaCardList
-            for (let i = 0; i < tempGachaList.length; i++) {
-                const tempGacha = tempGachaList[i];
+            for (let q = 0; q < tempGachaList.length; q++) {
+                const tempGacha = tempGachaList[q];
+                /*
+                if (q == 0) console.log('---------------------------------------------------')
+                console.log(tempGacha.gachaId)
+                */
                 if (gachaIdList.indexOf(tempGacha.gachaId) != -1) {
                     continue
                 }
-                if (i == 0) {
-                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                if (serverFlags!= displayedServerList[i]) {
+                    //console.log(serverFlags,displayedServerList[i])
+                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`,[displayedServerList[i]]))
                     //gachaImageList.push(await drawGachaDatablock(tempGacha, `${serverNameFullList[server]}相关卡池`))
+                    serverFlags = displayedServerList[i]
                 }
                 else {
-                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha))
+                    drawGachaDatablockPromise.push(drawGachaDatablock(tempGacha,null,[displayedServerList[i]]))
                     //gachaImageList.push(await drawGachaDatablock(tempGacha))
                 }
                 gachaIdList.push(tempGacha.gachaId)
             }
-            for (let i = 0; i < tempGachaCardList.length; i++) {
-                const tempCard = tempGachaCardList[i];
+            for (let q = 0; q < tempGachaCardList.length; q++) {
+                const tempCard = tempGachaCardList[q];
                 if (gachaCardIdList.indexOf(tempCard.cardId) != -1) {
                     continue
                 }
@@ -437,11 +444,12 @@ export async function getEventGachaAndCardList(event: Event, mainServer: Server,
     var gachaList: Gacha[] = []
     var gachaIdList = []//用于去重
     if (event.startAt[mainServer] == null) {
+        
         return { gachaCardList: [], gachaList: [] }
     }
     let tempGachaList = await getPresentGachaList(mainServer, event.startAt[mainServer], event.endAt[mainServer])
     for (var j = 0; j < tempGachaList.length; j++) {
-        if (gachaIdList.indexOf(tempGachaList[j].gachaId) == -1) {
+        if (gachaIdList.indexOf(tempGachaList[j].gachaId) == -1 && tempGachaList[j].publishedAt[mainServer]) {
             gachaList.push(tempGachaList[j])
             gachaIdList.push(tempGachaList[j].gachaId)
         }
@@ -449,40 +457,40 @@ export async function getEventGachaAndCardList(event: Event, mainServer: Server,
     var gachaCardIdList: number[] = []
     const promiseList: Promise<void>[] = []; 
 
-
     for (var i = 0; i < gachaList.length; i++) {
 
 
         const p = (async function () {
             var tempGacha = gachaList[i]
-            if (tempGacha.type == 'birthday') {
-                
+            if (tempGacha.type == 'birthday') { // 加载生日池
+                //return;
             }
-            //console.log("tempGacha initFull 这里不应该一段一段出现。")
-            await tempGacha.initFull(!useCache)
-            // console.log(tempGacha.pickUpCardId)
-            var tempCardList = null;
-            tempCardList = tempGacha.pickUpCardId
-            /*
-            //检查是否有超过7张稀有度2的卡牌，发布了太多2星卡的卡池会被跳过
-            var rarity2CardNum = 0
-            for (var j = 0; j < tempCardList.length; j++) {
-                let tempCard = new Card(tempCardList[j])
-                if (tempCard.rarity == 2) {
-                    rarity2CardNum++
+            if (tempGacha.publishedAt[mainServer]){
+                //console.log("tempGacha initFull 这里不应该一段一段出现。")
+                await tempGacha.initFull(!useCache)
+                // console.log(tempGacha.pickUpCardId)
+                var tempCardList = null;
+                tempCardList = tempGacha.pickUpCardId
+                /*
+                //检查是否有超过7张稀有度2的卡牌，发布了太多2星卡的卡池会被跳过
+                var rarity2CardNum = 0
+                for (var j = 0; j < tempCardList.length; j++) {
+                    let tempCard = new Card(tempCardList[j])
+                    if (tempCard.rarity == 2) {
+                        rarity2CardNum++
+                    }
+                } 
+                if (rarity2CardNum > 6) {
+                    continue
                 }
-            } 
-            if (rarity2CardNum > 6) {
-                continue
-            }
-            */
-            for (var j = 0; j < tempCardList.length; j++) {
-                var tempCardId = tempCardList[j]
-                if (gachaCardIdList.indexOf(tempCardId) == -1) {
-                    gachaCardIdList.push(tempCardId)
+                */
+                for (var j = 0; j < tempCardList.length; j++) {
+                    var tempCardId = tempCardList[j]
+                    if (gachaCardIdList.indexOf(tempCardId) == -1) {
+                        gachaCardIdList.push(tempCardId)
+                    }
                 }
             }
-            
         })();
         promiseList.push(p)
     }
@@ -509,5 +517,6 @@ export async function getEventGachaAndCardList(event: Event, mainServer: Server,
             return a.gachaId - b.gachaId
         }
     })
+    //console.log(gachaList)
     return { gachaCardList, gachaList }
 }

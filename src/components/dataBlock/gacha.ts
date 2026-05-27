@@ -4,10 +4,11 @@ import { drawDatablock } from '@/components/dataBlock'
 
 import { Canvas } from 'skia-canvas';
 import { drawBannerImageCanvas } from '@/components/dataBlock/utils'
+import { Server } from "@/types/Server";
 
-export async function drawGachaDatablock(gacha: Gacha, topLeftText?: string) {
+export async function drawGachaDatablock(gacha: Gacha, topLeftText?: string,displayServerList?:Server[]) {
     var list = []
-    var gachaBannerImage = await gacha.getBannerImage()
+    var gachaBannerImage = await gacha.getBannerImage(displayServerList)
     var gachaBannerImageCanvas = drawBannerImageCanvas(gachaBannerImage)
     list.push(gachaBannerImageCanvas)
 

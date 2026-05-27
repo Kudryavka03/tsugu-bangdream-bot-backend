@@ -6,6 +6,7 @@ import { Server, getServerByPriority, serverList } from '@/types/Server';
 import { Event, getPresentEvent } from '@/types/Event';
 import { globalDefaultServer, Bestdoriurl  } from '@/config';
 import { LRUCache } from '@/LRUCache'
+import { arraysEqual } from '@/api/utils';
 
 //let gachaDataCache = {}
 const MAX_CACHE_SIZE = 300;  // 设置Event最大缓存量
@@ -139,18 +140,25 @@ export class Gacha {
     }
     async getData(update: boolean = true) {
         var time = update ? 0 : 1 / 0
-        const gachaData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/gacha/${this.gachaId}.json`, time,1,!update,0)
+        let gachaData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/gacha/${this.gachaId}.json`, time,1,true,0)    // 下一次更新卡尺
+        // 判断卡池信息是否过期
+        //console.log(`${this.gachaId} 来自MainAPI：${this.publishedAt} 来自缓存：${gachaData['publishedAt']} 是否一样：${arraysEqual(gachaData['publishedAt'],this.publishedAt)}`)
+        if (!arraysEqual(gachaData['publishedAt'],this.publishedAt)){
+            gachaData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/gacha/${this.gachaId}.json`, 0,1,false,2)
+        }
         return gachaData
     }
-    async getBannerImage(): Promise<Image> {
-        var server = getServerByPriority(this.publishedAt)
+    async getBannerImage(displayServerList?:Server[]): Promise<Image> {
+        var server = getServerByPriority(this.publishedAt,displayServerList)
+        //console.log(`卡池${this.gachaId} ${this.publishedAt} ${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png}`)
         if(this.bannerAssetBundleName == undefined) return (this.getGachaLogo())
         try {
-            var bannerCache = checkCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`)
+            var bannerCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`)
             var LogoCache = checkCache(`${Bestdoriurl}/assets/${Server[server]}/gacha/screen/${this.resourceName}_rip/logo.png`)
+            //var bannerCacheJP = checkCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`)
             //console.log(bannerCache,LogoCache)
             if (bannerCache || (!bannerCache && !LogoCache)){   // 如果BannerCache与LogoCache都不存在或者存在bannerCache
-                var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/jp/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
+                var BannerImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`, false)
                 return await loadImage(BannerImageBuffer)
             }
             if (!bannerCache && LogoCache){
@@ -213,6 +221,10 @@ export class Gacha {
             }
         }
     }
+    displayServerList:Server[] = [Server.jp]
+    setDisplayServerList(list:Server[]){
+        this.displayServerList = list
+    }
 }
 
 //获取当前进行中的卡池
@@ -237,8 +249,10 @@ export async function getPresentGachaList(server: Server, start: number = Date.n
                 if (gacha.gachaName[Server.jp] != null) {
                     gachaListTemp.push(gacha)
 
+                }else{
+                    gachaList.push(gacha)
                 }
-                // gachaList.push(gacha)
+
             }
         }
     }
@@ -256,6 +270,7 @@ export async function getPresentGachaList(server: Server, start: number = Date.n
         }
         gachaList.push(r)
     }
-
+    //console.log(gachaList)
     return gachaList
+    
 }
