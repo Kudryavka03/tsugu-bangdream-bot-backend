@@ -189,8 +189,8 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 export async function drawCutoffDetailWithCompare(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:string): Promise<Array<Buffer | string>> {
     // TODO: eventId2改为字符串，这样可以多个ycx一起对比。
     //eventId2 = 277
-    if (eventId2 == eventId.toString()) eventId2 = null
-    eventId2 = '  305t1000 308 292 292 308   308t500'
+    if (eventId2 == eventId.toString()) return ['同档线。']
+    //eventId2 = '  305t1000 308 292 292 308   308t500'
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
     let compareEventList:number[] = [eventId]
     let compareEventTierList:number[] = [tier]
@@ -239,6 +239,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
     //console.log(compareEventList)
     //console.log(compareEventTierList)
     if (compareEventList.length!= compareEventTierList.length) return ['内部错误']
+    if (compareEventList.length>5) return ['对比档线太多，请适当减少一些档线吧。']
     for(let e of compareEventList){
         compareEventObject.set(e,new Event(e))
     }

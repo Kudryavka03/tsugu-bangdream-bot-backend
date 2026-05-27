@@ -370,7 +370,7 @@ export class Event {
         for(const i in allStamps){
             for(const j of stampReardsId){
                 if (j.toString() == i){
-                    stampAssetName.push(allStamps[i]['imageName'])
+                    if(allStamps[i]['imageName'][server])stampAssetName.push(allStamps[i]['imageName'][server])
                 }
             }
         }
@@ -387,11 +387,11 @@ export class Event {
                 ImageListPromise.push(downloadFileCache(`${Bestdoriurl}/assets/${serverName}/stamp/01_rip/${assetName}.png`,false).catch(() => undefined))
             }
             const ImageBufferList = await Promise.all(ImageListPromise)
-            if (ImageBufferList.length == 0) return undefined
             let ImageList:Image[] = []
             for(const ImageBuffer of ImageBufferList){
                 if(ImageBuffer) ImageList.push(await loadImage(ImageBuffer))
             }
+            if (ImageList.length == 0) return undefined
             return ImageList
         }
         catch{

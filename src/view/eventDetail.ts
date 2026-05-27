@@ -60,11 +60,6 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         key: 'ID', text: event.eventId.toString()
     })
 
-
-
-
-
-
     var characterList = event.getCharacterList()
     /*
     for (const i in characterList) {
@@ -95,10 +90,6 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         list.push(i)
     }
     */
-    
-
-
-
     //牌子
     const drawDegreeListOfEventPromise: Promise<Image | Canvas>[] = []; 
     drawDegreeListOfEventPromise.push(drawDegreeListOfEvent(event, displayedServerList))
@@ -138,9 +129,6 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             }
         }
     }
-
-
-
 
     //活动表情
     const getRewardStampPromise: Promise<(Image | Canvas)[]>[] = []; 
@@ -352,7 +340,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
                 key: '活动表情',
                 content: getRewardStampResult[0].filter(Boolean),
                 textSize: 160,
-                lineHeight: 160
+                lineHeight: 160,
+                spacing:7
             })
         )
         list.push(line)
