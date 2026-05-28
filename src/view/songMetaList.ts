@@ -10,6 +10,8 @@ import { serverNameFullList } from '@/config';
 import { drawDatablock } from '@/components/dataBlock'
 import { formatSeconds } from "@/components/list/time";
 import mainAPI from "@/types/_Main";
+import { matchSongList } from "./songList";
+import { fuzzySearch, FuzzySearchResult, include } from "@/fuzzySearch";
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -23,15 +25,55 @@ const line = drawDottedLine({
     gap: 10,
     color: "#a8a8a8"
 })
+const difficulties = [
+    'easy',
+    'normal',
+    'hard',
+    'expert',
+    'special'
+]
 
-export async function drawSongMetaList(mainServer: Server, compress: boolean,bandId?:number): Promise<Array<Buffer | string>> {
+export async function drawSongMetaList(mainServer: Server, compress: boolean,searchCondition?:string): Promise<Array<Buffer | string>> {
+    let difficultMask = 0b00000
+    searchCondition = (searchCondition) ?searchCondition:''
+    searchCondition = searchCondition.toLowerCase()
+    let difficultyCondition = searchCondition.split(' ')
+    for(const [i,d] of difficultyCondition.entries()){
+        let cnDiffDesc =  d.replace('谱','').replace('铺','')
+        if(d == 'easy' || d == 'ez' || cnDiffDesc=='蓝'|| cnDiffDesc=='紫'){
+            difficultMask |= (1<<0)
+            difficultyCondition[i] = ''
+        }
+        else if(d == 'normal' || d == 'nl' || d == 'nm' || cnDiffDesc=='绿'){
+            difficultMask |= (1<<1)
+            difficultyCondition[i] = ''
+        }
+        else if(d == 'hard' || d == 'hd'|| cnDiffDesc=='黄'){
+            difficultMask |= (1<<2)
+            difficultyCondition[i] = ''
+        }
+        else if(d == 'expert' || d == 'ex'|| cnDiffDesc=='红'){
+            difficultMask |= (1<<3)
+            difficultyCondition[i] = ''
+        }
+        else if(d == 'special' || d == 'sp'|| cnDiffDesc=='粉'){
+            difficultMask |= (1<<4)
+            difficultyCondition[i] = ''
+        }
+    }
+
+    searchCondition = difficultyCondition.filter(x=>(x!='')).join(' ')
+    console.log(`\'${searchCondition}\'`)
+    console.log(difficultMask,[0,1,2,3,4].map(x=>{return (difficultMask & (1 << x))} ))
+    let fuzzySearchResult: FuzzySearchResult
+    fuzzySearchResult = (searchCondition!='')?fuzzySearch(searchCondition):null
     const feverMode = [true, false]
     const imageList = []
     var drawMetaRankListDatablockPromise = []
 
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
-        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer,bandId))
+        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask))
         // imageList.push(await drawMetaRankListDatablock(element, mainServer))
     }
     const drawMetaRankListDatablockResult = await Promise.all(drawMetaRankListDatablockPromise)
@@ -51,26 +93,37 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,ban
     return [buffer]
 }
 
-async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,bandId?:number): Promise<Canvas> {
+async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matches:FuzzySearchResult,difficultyMask=0b11111): Promise<Canvas> {
+    if (!difficultyMask || difficultyMask == 0b00000)difficultyMask = 0b11111
+    
+    const tempSongList = matches?matchSongList(matches, [Server.jp]):[]
+    let level = (matches && matches['songLevels'])?matches['songLevels']:null
     const metaRanking = getMetaRanking(Fever, mainServer);
     const maxMeta = metaRanking[0].meta
     let list: Array<Canvas> = []
     var drawSongInListPromise = []
     for (let i = 0; i < metaRanking.length; i++) {
         let song = new Song(metaRanking[i].songId)
-        //console.log(bandId)
-        if (bandId && song.bandId == bandId){
-            let difficultyId = metaRanking[i].difficulty
-            let precent = metaRanking[i].meta / maxMeta * 100
-            precent = Math.round(precent * 100) / 100
-            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
-        }
-        else{
-            if(!bandId){
-                let difficultyId = metaRanking[i].difficulty
-                let precent = metaRanking[i].meta / maxMeta * 100
-                precent = Math.round(precent * 100) / 100
-                drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+        let difficultyId = metaRanking[i].difficulty
+        if (tempSongList && tempSongList.length!=0){
+            for(let ts of tempSongList){
+                if (song.songId == ts.songId){
+                    if((difficultyMask & (1 << difficultyId)) !== 0){
+                        if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                            let precent = metaRanking[i].meta / maxMeta * 100
+                            precent = Math.round(precent * 100) / 100
+                            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+                        }
+                    }
+                }
+            }
+        }else{
+            if((difficultyMask == 0b11111) || (difficultyMask & (1 << difficultyId)) !== 0){
+                if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                    let precent = metaRanking[i].meta / maxMeta * 100
+                    precent = Math.round(precent * 100) / 100
+                    drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+                }
             }
         }
         if(drawSongInListPromise.length >= 50) break
