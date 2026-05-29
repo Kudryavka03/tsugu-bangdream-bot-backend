@@ -96,58 +96,14 @@ export var outputFinalBuffer = async function ({
         BGimage,
     })
     var tempBuffer: Buffer
-/*
-    const { width, height } = tempcanv;
-    const timestamp01 = Date.now();
-    //const imageData = ctx.getImageData(0, 0, width, height);
-    const raw = await tempcanv.raw;  // raw = Uint8ClampedArray
-    //const buffer = raw.buffer;       // 可转移
-    const timestamp02 = Date.now();
-    console.log('canvas.raw总用时：'+(timestamp02 - timestamp01))
-    // 直接把 ArrayBuffer 传给 Piscina 的任务
-    var buf = await pool.run(
-        {
-            width,
-            height,
-            pixels: raw,
-            format:'jpeg',
-            
-        },
-        { transferList: [raw.buffer] }
-    );
-    const timestamp03 = Date.now();
-    console.log('总用时：'+(timestamp03 - timestamp01) + '  worker用时：' +(timestamp03 - timestamp02) )
-    return Buffer.from(buf);
-*/
-/*
-    const timestamp = Date.now();
-    const buf = await sendCanvas(tempcanv)
-    const timestamp2 = Date.now();
-    console.log('总用时：'+(timestamp2 - timestamp))
-    console.log(buf)
-    return Buffer.from(buf); // PNG/JPEG Buffer
-    */
-    
-
-
-    //console.log("绘图开始")
-    //tempcanv.raw
     if (compress != undefined && compress) {
-       // const timestamp = Date.now();
-        //tempBuffer = await tempcanv.toBuffer('raw' )
-        //tempBuffer = await tempcanv.raw
         var size = (tempcanv.height * tempcanv.width)
         var qualityValue = 0.7
         //console.log(size)
         if (size >=6000000) qualityValue = 0.6
-        if (size >=10000000) qualityValue = 0.5
+        if (size >=70000000) qualityValue = 0.5
         logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue })
-        //const timestamp2 = Date.now();
-        //tempBuffer = await tempcanv.toBuffer('jpeg', { quality: 0.6 })
-        //const timestamp3 = Date.now();
-        //console.log(timestamp2 - timestamp)
-        //console.log(timestamp3 - timestamp2)
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')

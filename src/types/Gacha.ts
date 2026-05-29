@@ -163,7 +163,7 @@ export class Gacha {
             }
             if (!bannerCache && LogoCache){
                 downloadFileCacheWithoutError(`${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/${this.bannerAssetBundleName}.png`, false)   // 后台下载缺失的bannerImage，争取下次使用bannerCache
-                return await loadImage(this.getGachaLogo([server]))
+                return await (this.getGachaLogo([server]))
             }
         }
         catch (e) {
