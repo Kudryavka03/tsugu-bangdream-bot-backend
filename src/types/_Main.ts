@@ -202,7 +202,7 @@ async function loadMainAPI(useCache: boolean = false) {
     //await preCacheIcon()
     manualLoadFuzzyConfig()
     clearMeasureCache()
-    genEasyBGCache()
+   // genEasyBGCache()
     logger('getPD_Size',getPD_Size())
     if(isMainThread){
             await piscina.drawList.run({
