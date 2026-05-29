@@ -60,7 +60,7 @@ export var outputFinalCanv = async function ({ imageList,
             }), 0, 0)
             */
         }else{
-            ctx.drawImage(await CreateBGEazy({
+            ctx.drawImage(await CreateBGPure({
                 width: maxW,
                 height: allH
             }), 0, 0)

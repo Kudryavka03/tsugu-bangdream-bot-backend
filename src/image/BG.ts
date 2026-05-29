@@ -110,7 +110,7 @@ export async function CreateBGEazy({
   }
   return (canvas)
 }
-export async function CreateBGPure({  // 完全不生成背景
+export async function CreateBGPure({  // 只画一点点()
   width, height
 }) {
   const bgColor = '#fef3ef'
@@ -118,6 +118,17 @@ export async function CreateBGPure({  // 完全不生成背景
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
+  if (width < 2000) {
+    var ratio = defaultBGTexture.width / width
+  }
+  else {
+    ratio = 1
+  }
+  //只绘制上半部分
+  let x = 0,
+    y = 0;
+  const defaultValue = 0 - (Math.random() * defaultBGTexture.width * ratio);
+  ctx.drawImage(defaultBGTexture, defaultValue, y, defaultBGTexture.width * ratio, defaultBGTexture.height * ratio);
   return (canvas)
 }
 
