@@ -99,8 +99,9 @@ export async function CreateBGEazy({
   //将图片等比例缩放并重复铺满整个画布
   let x = 0,
     y = 0;
+  const defaultValue = 0 - (Math.random() * defaultBGTexture.width * ratio);
   while (y < height) {
-    x = 0 - (Math.random() * defaultBGTexture.width * ratio);
+    x = defaultValue
     while (x < width) {
       ctx.drawImage(defaultBGTexture, x, y, defaultBGTexture.width * ratio, defaultBGTexture.height * ratio);
       x += defaultBGTexture.width * ratio;
@@ -109,7 +110,16 @@ export async function CreateBGEazy({
   }
   return (canvas)
 }
-
+export async function CreateBGPure({  // 完全不生成背景
+  width, height
+}) {
+  const bgColor = '#fef3ef'
+  const canvas: Canvas = new Canvas(width, height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, width, height);
+  return (canvas)
+}
 
 export async function CreateBG({
   image,

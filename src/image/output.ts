@@ -1,5 +1,5 @@
 import { Canvas, Image } from 'skia-canvas';
-import { CreateBG, CreateBGEazy } from '@/image/BG';
+import { CreateBG, CreateBGEazy, CreateBGPure } from '@/image/BG';
 import { assetsRootPath } from '@/config';
 import * as path from 'path';
 import { loadImageFromPath } from '@/image/utils';
@@ -49,10 +49,23 @@ export var outputFinalCanv = async function ({ imageList,
     var ctx = tempcanv.getContext("2d")
 
     if (useEasyBG) {
-        ctx.drawImage(await CreateBGEazy({
-            width: maxW,
-            height: allH
-        }), 0, 0)
+        if ((maxW * allH) > 5000000){
+            const bgColor = '#fef3ef'
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, maxW, allH);
+            /*
+            ctx.drawImage(await CreateBGPure({
+                width: maxW,
+                height: allH
+            }), 0, 0)
+            */
+        }else{
+            ctx.drawImage(await CreateBGEazy({
+                width: maxW,
+                height: allH
+            }), 0, 0)
+        }
+        
     }
     else {
         ctx.drawImage(await CreateBG({
@@ -100,10 +113,10 @@ export var outputFinalBuffer = async function ({
         var size = (tempcanv.height * tempcanv.width)
         var qualityValue = 0.7
         //console.log(size)
-        if (size >=6000000) qualityValue = 0.6
+        if (size >=5000000) qualityValue = 0.6
         if (size >=70000000) qualityValue = 0.5
         logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true })
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true, matte: '#ffffff', })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')
