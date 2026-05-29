@@ -118,17 +118,12 @@ export async function CreateBGPure({  // 只画一点点()
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
-  if (width < 2000) {
-    var ratio = defaultBGTexture.width / width
-  }
-  else {
-    ratio = 1
-  }
+  var ratio = 1
   //只绘制上半部分
   let x = 0,
     y = 0;
-  const defaultValue = 0 - (Math.random() * defaultBGTexture.width * ratio);
-  ctx.drawImage(defaultBGTexture, defaultValue, y, defaultBGTexture.width * ratio, defaultBGTexture.height * ratio);
+  const defaultValue = 0 - (Math.random() * width * ratio);
+  ctx.drawImage(defaultBGTexture?defaultBGTexture:await loadImageFromPath(path.join(assetsRootPath, "/BG/bg_object_big.png")), defaultValue, y, width * ratio, height * ratio);
   return (canvas)
 }
 

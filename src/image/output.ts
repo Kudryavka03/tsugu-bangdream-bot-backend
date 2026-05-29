@@ -8,11 +8,21 @@ var BGDefaultImage: Image
 var useGpu = false  // 控制是否使用GPU
 async function loadImageOnce() {
     BGDefaultImage = await loadImageFromPath(path.join(assetsRootPath, "/BG/live.png"));
+    BGImageCache = await CreateBGPure({
+                width: 1334,
+                height: 1002
+            })
+}
+export async function genEasyBGCache() {
+    BGImageCache = await CreateBGPure({
+                width: 1334,
+                height: 1002
+            })
 }
 loadImageOnce()
 
 
-
+let BGImageCache = null
 interface outputFinalOptions {
     startWithSpace?: boolean;
     imageList: Array<Image | Canvas>;
@@ -47,24 +57,14 @@ export var outputFinalCanv = async function ({ imageList,
     tempcanv.gpu = useGpu
     
     var ctx = tempcanv.getContext("2d")
-
+    ctx.imageSmoothingEnabled = false
+    const bgColor = '#fef3ef'
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, maxW, allH);
+    
     if (useEasyBG) {
-        if ((maxW * allH) > 5000000){
-            const bgColor = '#fef3ef'
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, maxW, allH);
-            /*
-            ctx.drawImage(await CreateBGPure({
-                width: maxW,
-                height: allH
-            }), 0, 0)
-            */
-        }else{
-            ctx.drawImage(await CreateBGPure({
-                width: maxW,
-                height: allH
-            }), 0, 0)
-        }
+        if ((maxW * allH) < 5000000) ctx.drawImage(BGImageCache, 0, 0)
+        
         
     }
     else {
@@ -116,7 +116,7 @@ export var outputFinalBuffer = async function ({
         if (size >=5000000) qualityValue = 0.6
         if (size >=70000000) qualityValue = 0.5
         logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true, matte: '#ffffff', })
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true, matte: '#fef3ef', })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')

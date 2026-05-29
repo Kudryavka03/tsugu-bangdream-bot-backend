@@ -13,6 +13,8 @@ import { genMetaRankCache } from '@/view/songMetaList'
 import { manualLoadFuzzyConfig } from '@/fuzzySearch'
 import { clearMeasureCache } from '@/image/text'
 import { getPD_Size } from '@/api/downloader'
+import { CreateBGPure } from '@/image/BG'
+import { genEasyBGCache } from '@/image/output'
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -22,7 +24,6 @@ if (!isMainThread && parentPort) {
       });
     };
   }
-
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 const fuzzySearchDebug = false
 export let TopRateSpeed = null
@@ -201,6 +202,7 @@ async function loadMainAPI(useCache: boolean = false) {
     //await preCacheIcon()
     manualLoadFuzzyConfig()
     clearMeasureCache()
+    genEasyBGCache()
     logger('getPD_Size',getPD_Size())
     if(isMainThread){
             await piscina.drawList.run({
