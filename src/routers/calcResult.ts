@@ -1,5 +1,5 @@
 import { Server } from "@/types/Server";
-import { listToBase64 } from '@/routers/utils';
+import { listToBase64Old } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { getServerByServerId } from '@/types/Server';
 import { PlayerDB } from "@/database/playerDB";
@@ -40,13 +40,13 @@ router.post('',
                 isRunningTeamBuilderCalculatorTaskId = new Date().getTime()
             const result = await commandCalcResult(playerId, getServerByServerId(mainServer), useEasyBG, compress, eventId, save, description);
             isRunningTeamBuilderCalculator = false
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
             }
             else{
                 
                 var str = `当前已经有一个组队组曲的计算正在进行，任务ID为：${isRunningTeamBuilderCalculatorTaskId}\n已执行${Math.floor((new Date().getTime() - isRunningTeamBuilderCalculatorTaskId)/1000)}秒\n请稍后再发送计算请求叭\n组队组曲任务极端情况下甚至可能需要600秒用于计算，计算期间Tsugu的部分功能会受限或暂时无响应。`
                 //console.log(str)
-                res.send(listToBase64([str]));
+                res.send(listToBase64Old([str]));
             }
         } catch (e) {
             isRunningTeamBuilderCalculator = false

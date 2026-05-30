@@ -1,5 +1,5 @@
 import { Server } from "@/types/Server";
-import { listToBase64 } from '@/routers/utils';
+import { listToBase64Old } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { getServerByServerId } from '@/types/Server';
 import { compositionResultDB } from "@/database/compositionResultDB";
@@ -28,7 +28,7 @@ router.post('/',
 
         try {
             const result = await commandSearchComposition(getServerByServerId(mainServer), useEasyBG, compress, eventId, id);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });

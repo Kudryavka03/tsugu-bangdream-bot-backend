@@ -137,7 +137,8 @@ export class Card {
             return
         }
         this.isExist = true;
-        if (cardDataCache.has(this.cardId) && !useCache) {
+        if (cardDataCache.has(this.cardId) && useCache) {
+           // console.log('card',this.cardId,'match cache')
             var cardData = cardDataCache.get(this.cardId)
         }
         else {

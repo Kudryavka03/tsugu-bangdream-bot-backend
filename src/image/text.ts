@@ -138,38 +138,72 @@ export function wrapText({
     lineHeight,
     font = "old"
 }: warpTextOptions) {
-    var wrapFlags = `${text}-${textSize}-${maxWidth}-${font}`
-    if (wrapTextCache.has(wrapFlags)) return wrapTextCache.get(wrapFlags)
-    setFontStyle(normalCtx, textSize, font);
-    const temp = text.split('\n');
-    for (var i = 0; i < temp.length; i++) {
-        let temptext = temp[i]
-        let a = 0
-        for (var n = 0; n < temptext.length; n++) {
-            if (maxWidth > normalCtx.measureText(temptext.slice(0, temptext.length - n)).width) {
-                a = n
-                break
-            }
+    const wrapFlags = `${text}-${textSize}-${maxWidth}-${font}`;
 
+    if (wrapTextCache.has(wrapFlags)) {
+        return wrapTextCache.get(wrapFlags);
+    }
+
+    setFontStyle(normalCtx, textSize, font);
+
+    const temp = text.split('\n');
+
+    for (let i = 0; i < temp.length; i++) {
+        const temptext = temp[i];
+
+        if (temptext === "") continue;
+
+        // 如果整行已经能放下，不需要换行
+        if (normalCtx.measureText(temptext).width <= maxWidth) {
+            continue;
         }
-        if (a != 0) {
-            temp.splice(i + 1, 0, temp[i].slice(temp[i].length - a, temp[i].length))
-            temp[i] = temp[i].slice(0, temp[i].length - a)
+
+        let left = 0;
+        let right = temptext.length;
+        let fitLength = 0;
+
+        // 看草头黄修路灯想到的
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const width = normalCtx.measureText(temptext.slice(0, mid)).width;
+
+            if (width <= maxWidth) {
+                fitLength = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        // 防止0
+        if (fitLength <= 0) {
+            fitLength = 1;
+        }
+
+        const currentLine = temptext.slice(0, fitLength);
+        const restLine = temptext.slice(fitLength);
+
+        temp[i] = currentLine;
+
+        if (restLine.length > 0) {
+            temp.splice(i + 1, 0, restLine);
         }
     }
 
-    for (var i = 0; i < temp.length; i++) {
-        if (temp[i] == "") {
+    // 去除空行
+    for (let i = 0; i < temp.length; i++) {
+        if (temp[i] === "") {
             temp.splice(i, 1);
-            //去除空值
             i--;
         }
     }
-    var result = {
+
+    const result = {
         numberOfLines: temp.length,
         wrappedText: temp,
-    }
-    wrapTextCache.set(wrapFlags,result)
+    };
+
+    wrapTextCache.set(wrapFlags, result);
+
     return result;
 }
 
@@ -198,30 +232,6 @@ export function clearMeasureCache(immediately:boolean = false){
     logger('clearMeasureCache','Size of measure cache:' + mc)
     logger('clearMeasureCache','Size of warp text cache:' + wtc)
     logger('clearMeasureCache','Size of drawTextMeasureTextCache:' + dtmtc)
-    /*
-    if (immediately){
-        measureCache.clear()
-        wrapTextCache.clear()
-        drawTextMeasureTextCache.clear()
-        var str = ''
-        str += ('Size of measure cache:' + mc + '\n')
-        str += ('Size of warp text cache:' + wtc)
-        return str
-    }
-
-    if (mc > 500){
-        logger('clearMeasureCache','内存压力过大，清空MeasureCache')
-        measureCache.clear()
-    }
-    if (wtc > 500){
-        logger('clearMeasureCache','内存压力过大，清空WarpTextCache')
-        wrapTextCache.clear()
-    }
-    if (dtmtc > 500){
-        logger('clearMeasureCache','内存压力过大，清空drawTextMeasureTextCache')
-        drawTextMeasureTextCache.clear()
-    }
-        */
     var str = ''
     str += ('Size of measure cache:' + mc + '\n')
     str += ('Size of warp text cache:' + wtc+'\n')

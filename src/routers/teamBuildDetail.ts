@@ -1,5 +1,5 @@
 import { Server } from "@/types/Server";
-import { listToBase64 } from '@/routers/utils';
+import {  listToBase64Old } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { getServerByServerId } from '@/types/Server';
 import { PlayerDB } from "@/database/playerDB";
@@ -34,7 +34,7 @@ router.post('/',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress, eventId);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -58,7 +58,7 @@ router.post('/importPlayerData',
             //使用缓存查询，如果失败则返回失败
             await player.initFull(false, 0)
             if (player.initError || !player.isExist) {
-                res.send(listToBase64([`错误: 查询玩家时发生错误`]));
+                res.send(listToBase64Old([`错误: 查询玩家时发生错误`]));
                 return
             }
         }
@@ -99,7 +99,7 @@ router.post('/importPlayerData',
         await playerDB.updateCharacterBouns(playerId, characterBounsList)
 
         if (!player.profile.enabledUserAreaItems) {
-            res.send(listToBase64(['无法获取区域道具信息，请公开显示主乐队综合能力']))
+            res.send(listToBase64Old(['无法获取区域道具信息，请公开显示主乐队综合能力']))
             return
         }
         const areaItemList = player.profile.enabledUserAreaItems.entries.map((item) => {
@@ -112,7 +112,7 @@ router.post('/importPlayerData',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -136,13 +136,13 @@ router.post('/updateSong',
         let player: playerDetail = await playerDB.getPlayer(playerId)
         const eventId = player?.currentEvent
         if (!eventId) {
-            res.send(listToBase64['未选择活动，请发送 组队计算+活动id'])
+            res.send(listToBase64Old['未选择活动，请发送 组队计算+活动id'])
             return
         }
         await playerDB.updateSong(playerId, eventId, id, songId, difficulty)
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -164,13 +164,13 @@ router.post('/resetSong',
         let player: playerDetail = await playerDB.getPlayer(playerId)
         const eventId = player?.currentEvent
         if (!eventId) {
-            res.send(listToBase64['未选择活动，请发送 组队计算+活动id'])
+            res.send(listToBase64Old['未选择活动，请发送 组队计算+活动id'])
             return
         }
         await playerDB.resetSong(playerId, mainServer, eventId)
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -217,7 +217,7 @@ router.post('/levelUp',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -256,7 +256,7 @@ router.post('/levelReset',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -290,7 +290,7 @@ router.post('/addCard',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
@@ -316,7 +316,7 @@ router.post('/delCard',
 
         try {
             const result = await commandTeamBuildDetail(playerId, getServerByServerId(mainServer), useEasyBG, compress);
-            res.send(listToBase64(result));
+            res.send(listToBase64Old(result));
         } catch (e) {
             console.log(e);
             res.status(500).send({ status: 'failed', data: '内部错误' });
