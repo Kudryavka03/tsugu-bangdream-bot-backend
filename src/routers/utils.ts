@@ -1,5 +1,6 @@
 import { Server } from "@/types/Server";
 import { tsuguUser } from "@/database/userDB";
+import { pack } from 'msgpackr'
 
 export function generateVerifyCode(): number {
     let verifyCode: number;
@@ -18,7 +19,7 @@ function imageBufferToBase64(buffer: Buffer): string {
     return buffer.toString('base64');
 }
 
-export function listToBase64(list: Array<Buffer | string>): Array<{ type: 'string' | 'base64', string: string }> {
+export function listToBase64Old(list: Array<Buffer | string>): Array<{ type: 'string' | 'base64', string: string }> {
     if (!list) {
         return []
     }
@@ -44,6 +45,42 @@ export function listToBase64(list: Array<Buffer | string>): Array<{ type: 'strin
 
     return result
 }
+
+type BackendReplyItem =
+  | {
+      type: 'text'
+      text: string
+    }
+  | {
+      type: 'image'
+      mime: string
+      data: Buffer
+    }
+
+export function listToBase64(list: Array<Buffer | string>): Buffer {
+  const packet: BackendReplyItem[] = list.map(item => {
+    if (typeof item === 'string') {
+      return {
+        type: 'text',
+        text: item,
+      }
+    }
+
+    if (Buffer.isBuffer(item)) {
+      return {
+        type: 'image',
+        mime: 'image/jpeg',
+        data: item,
+      }
+    }
+
+    throw new TypeError('Unsupported reply item')
+  })
+
+  return Buffer.from(pack(packet))
+}
+
+
 function parseDateLiteral(input: string): Date | null {
     const match = input.trim().match(/^(\d{4})[.-](\d{2})[.-](\d{2})$/)
     if (!match) {

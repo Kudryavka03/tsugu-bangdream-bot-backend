@@ -1,6 +1,7 @@
 // @ts-nocheck
-import axios_1 from "axios";
+import axios from "axios";
 import * as koishi_1 from "koishi";
+import { unpack } from 'msgpackr'
 export const getReplyFromBackendLogger = new koishi_1.Logger('tsugu-getReplyFromBackend');
 function base64ToList(basd64List) {
     const result = [];
@@ -17,7 +18,7 @@ function base64ToList(basd64List) {
 }
 async function sendPostRequest(url, data) {
     try {
-        const response = await axios_1.post(url, data);
+        const response = await axios.post(url, data);
         const result = response.data;
         switch (response.status) {
             case 200:
@@ -52,7 +53,7 @@ async function sendPostRequest(url, data) {
     }
     catch (error) {
         // 在此处处理错误
-        if (axios_1.isAxiosError(error)) {
+        if (axios.isAxiosError(error)) {
             // 处理由 Axios 抛出的错误
             console.error('Axios Error:', error.message);
             return [{
@@ -70,8 +71,40 @@ async function sendPostRequest(url, data) {
             }];
     }
 }
-export async function getReplyFromBackend(url, data) {
+export async function getReplyFromBackendOld(url, data) {
     getReplyFromBackendLogger.info(url, data);
     const result = await sendPostRequest(url, data);
     return base64ToList(result);
 }
+export async function getReplyFromBackend(
+  url: string,
+  data: unknown,
+): Promise<Array<string | Buffer>> {
+  const response = await axios.post<ArrayBuffer>(url, data, {
+    responseType: 'arraybuffer',
+    validateStatus: () => true,
+  })
+
+  if (response.status !== 200) {
+    return [`错误: 后端返回状态码 ${response.status}`]
+  }
+
+  const packet = unpack(Buffer.from(response.data)) as BackendReplyItem[]
+
+  return packet.map(item => {
+    if (item.type === 'text') {
+      return item.text
+    }
+    return Buffer.from(item.data)
+  })
+}
+type BackendReplyItem =
+  | {
+      type: 'text'
+      text: string
+    }
+  | {
+      type: 'image'
+      mime: string
+      data: Uint8Array
+    }
