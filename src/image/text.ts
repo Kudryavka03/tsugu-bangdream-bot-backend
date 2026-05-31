@@ -97,7 +97,7 @@ export  function drawText({
 
     if (forceOneLine){
         var width = maxWidth = drawTextMeasureText(text,textSize,font)
-        console.log(width)
+        //console.log(width)
         var canvas = new Canvas(width, lineHeight);
     }
     else{
