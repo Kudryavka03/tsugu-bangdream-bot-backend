@@ -506,7 +506,16 @@ function drawEventTeamIconBlock(teamIcons: Image[], teamNames: string[],themeNam
         const textY = topPadding + titleTopPadding + iconSize +20 ;
         ctx.drawImage(textCanvas, textX, textY);
     }
-
+    const vsCanvas = drawText({
+        text: 'VS',
+        maxWidth: 20,
+        textSize:20,
+        lineHeight: 20,
+        font: 'old',
+        forceOneLine:true
+    })
+    let w =  maxWidth/2 - (vsCanvas.width / 2)
+    ctx.drawImage(vsCanvas, w, topPadding + titleTopPadding + 10 + (iconSize-vsCanvas.height)/2);
     return canvas;
 }
 
