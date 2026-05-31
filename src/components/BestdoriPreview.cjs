@@ -15,7 +15,7 @@ let noteAssetsPromise = null;
 // let fallbackImagePromise = null;
 function loadNoteAssets() {
     if (noteAssetsPromise) return noteAssetsPromise;
-
+   // console.log('No asset cache.')
     const base = path.join(assetsRootPath, 'SongChart/note');
 
     const entries = {
@@ -499,7 +499,7 @@ async function DrawPreview ({ meta, chartData }) {
             //
         }
     })
-    var buffer = await canvas.toBuffer('jpeg',{quality:0.5,downsample: true})
+    var buffer = await canvas.toBuffer('jpeg',{quality:0.6,downsample: true})
     return {buffer,transferList: [buffer.buffer]}
 }
 module.exports.DrawPreview = DrawPreview

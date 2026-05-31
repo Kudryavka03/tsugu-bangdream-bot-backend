@@ -224,7 +224,7 @@ export class Song {
     }
     async getSongChart(difficultyId: number,retry = false): Promise<any> {
         try{
-            const songChart = await callAPIAndCacheResponse(`${Bestdoriurl}/api/charts/${this.songId}/${difficultyName[difficultyId]}.json`)
+            const songChart = await callAPIAndCacheResponse(`${Bestdoriurl}/api/charts/${this.songId}/${difficultyName[difficultyId]}.json`,1/0,2,false,0)
             return songChart
         }
         catch(e){

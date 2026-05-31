@@ -388,8 +388,8 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     cpRatio = y/(x+y)
     cooperationRatio = x/(x+y)
     */
-       cpRatio = 0.1    // 当无法推断出他的清CP比例的时候我们就假设他前面清了10% CP
-        cooperationRatio = 0.9  
+       cpRatio = 0.11    // 当无法推断出他的清CP比例的时候我们就假设他前面清了10% CP
+        cooperationRatio = 1-cpRatio
     }
     //console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
 
@@ -408,7 +408,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 
 
     let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
-
+    /*
     if (currentCps + unRecordCurrentCpValues <0){   // 如果剩余CP小于0则全用于协力
         unRecordCpPts = 0
         unRecordCooperationPts =  Math.floor(ptsTotalUnRecord * cooperationRatio) 
@@ -416,6 +416,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         unRecordCurrentCpValues = ptsTotalUnRecord / 20
         unRecordClearCpCounts = 0
     }
+        */
     console.log(cooperationCounts,unRecordCooperationCounts)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
     cpTraceList.push(line)
