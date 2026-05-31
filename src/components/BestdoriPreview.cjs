@@ -5,6 +5,43 @@ const fs = require('fs')
 var assetsRootPath = process.env.ASROOT
 var useGpu = false
 
+const path = require('path');
+
+const DISPLAY_NOTE_TYPES = new Set(['Single', 'SingleOff', 'Skill', 'Flick', 'Directional', 'Long']);
+const NOTE_LINE_TYPES = new Set(['Single', 'SingleOff', 'Flick', 'Long', 'Skill', 'Tick', 'Directional']);
+const SIM_BASE_TYPES = new Set(['Single', 'Flick', 'Skill', 'Long', 'Directional']);
+
+let noteAssetsPromise = null;
+// let fallbackImagePromise = null;
+function loadNoteAssets() {
+    if (noteAssetsPromise) return noteAssetsPromise;
+
+    const base = path.join(assetsRootPath, 'SongChart/note');
+
+    const entries = {
+        Single: 'Single.png',
+        SingleOff: 'SingleOff.png',
+        Flick: 'Flick.png',
+        FlickTop: 'FlickTop.png',
+        Skill: 'Skill.png',
+        Long: 'Long.png',
+        Tick: 'Tick.png',
+        Sim: 'Sim.png',
+        LeftArrow: 'LeftArrow.png',
+        LeftArrowEnd: 'LeftArrowEnd.png',
+        RightArrow: 'RightArrow.png',
+        RightArrowEnd: 'RightArrowEnd.png',
+    };
+
+    noteAssetsPromise = Promise.all(
+        Object.entries(entries).map(async ([key, file]) => {
+            const img = await loadImageFromPath(path.join(base, file));
+            return [key, img];
+        })
+    ).then(Object.fromEntries);
+
+    return noteAssetsPromise;
+}
 /**
  * @typedef {object} BestdoriNote
  * @property {"BPM" | "Long" | "Slide" | "Single" | "Directional"} type
@@ -53,9 +90,16 @@ async function DrawPreview ({ meta, chartData }) {
     })
     const getTimepointBase = beat => {
         let lastBPM = timepoints[0]
-        for (let i = 0; i < timepoints.length; i++) {
-            if (timepoints[i].beat > beat) break
-            lastBPM = timepoints[i]
+        let l = 0;
+        let r = timepoints.length - 1;
+        while(l<=r){
+            const mid = (l+r)>>1
+            if (timepoints[mid].beat < beat){
+                lastBPM = timepoints[mid]
+                l = mid+1
+            }else{
+                r = mid-1
+            }
         }
         return lastBPM
     }
@@ -76,7 +120,7 @@ async function DrawPreview ({ meta, chartData }) {
     const generateSim = function (beat, time, lane) {
         notes.forEach(v => {
             if (v.beat === beat && v.lane === lane) return
-            if (["Single", "Flick", "Skill", "Long", "Directional"].includes(v.type) && v.beat === beat)
+            if (SIM_BASE_TYPES.has(v.type) && v.beat === beat)
                 notes.push({ type: "Sim", time, lane: [v.lane, lane].sort((a, b) => a - b) })
         })
     }
@@ -143,7 +187,7 @@ async function DrawPreview ({ meta, chartData }) {
     const splitLineWidth = 2;
     const blockDistance = 72; // 块与块之前的空隙；注意，这个数值是每块左右各占用的宽度。
     const heightPerSecond = 216; // 每秒对应的高度。
-    const displayNotes = notes.filter(n => ['Single', 'SingleOff', 'Skill', 'Flick', 'Directional', 'Long'].includes(n.type))
+    const displayNotes = notes.filter(n => DISPLAY_NOTE_TYPES.has(n.type))
     const chartLength = Math.ceil(displayNotes[displayNotes.length - 1].time + 0.25);
 
     const minHeight = 500; // 高度最小值，最小不能小于这个高度
@@ -172,20 +216,7 @@ async function DrawPreview ({ meta, chartData }) {
     const ctx = canvas.getContext('2d');
 
     // 读取音符图片
-    const img_notes = {
-        Single: await loadImageFromPath(assetsRootPath + '/SongChart/note/Single.png'),
-        SingleOff: await loadImageFromPath(assetsRootPath + '/SongChart/note/SingleOff.png'),
-        Flick: await loadImageFromPath(assetsRootPath + '/SongChart/note/Flick.png'),
-        FlickTop: await loadImageFromPath(assetsRootPath + '/SongChart/note/FlickTop.png'),
-        Skill: await loadImageFromPath(assetsRootPath + '/SongChart/note/Skill.png'),
-        Long: await loadImageFromPath(assetsRootPath + '/SongChart/note/Long.png'),
-        Tick: await loadImageFromPath(assetsRootPath + '/SongChart/note/Tick.png'),
-        Sim: await loadImageFromPath(assetsRootPath + '/SongChart/note/Sim.png'),
-        LeftArrow: await loadImageFromPath(assetsRootPath + '/SongChart/note/LeftArrow.png'),
-        LeftArrowEnd: await loadImageFromPath(assetsRootPath + '/SongChart/note/LeftArrowEnd.png'),
-        RightArrow: await loadImageFromPath(assetsRootPath + '/SongChart/note/RightArrow.png'),
-        RightArrowEnd: await loadImageFromPath(assetsRootPath + '/SongChart/note/RightArrowEnd.png'),
-    }
+    const img_notes = await loadNoteAssets();
     // 读取封面
     const coverImg = await (async () => {
         try {
@@ -347,7 +378,8 @@ async function DrawPreview ({ meta, chartData }) {
 
     // 画音符位置线和BPM线 // 如果不提前画，会覆盖住某些双押的音符
     for (let i = 0, n = 0; i < notes.length; i++) {
-        const noteType = ['Single', 'SingleOff', 'Flick', 'Long', 'Skill', 'Tick', 'Directional'];
+        //const noteType = ['Single', 'SingleOff', 'Flick', 'Long', 'Skill', 'Tick', 'Directional'];
+        const noteType = NOTE_LINE_TYPES
         const note = notes[i];
 
         const drawCol = Math.floor(note.time / secondsPerCol);
@@ -355,7 +387,7 @@ async function DrawPreview ({ meta, chartData }) {
         const w = 7 * laneWidth;
         const y = height - (note.time * heightPerSecond) % height;
 
-        if (noteType.includes(note.type)) {
+        if (noteType.has(note.type)) {
             n++;
             if (n % 50 === 0) {
                 ctx.font = '18px "Arial"';
@@ -467,7 +499,7 @@ async function DrawPreview ({ meta, chartData }) {
             //
         }
     })
-    var buffer = await canvas.toBuffer('jpeg',{quality:0.5})
+    var buffer = await canvas.toBuffer('jpeg',{quality:0.5,downsample: true})
     return {buffer,transferList: [buffer.buffer]}
 }
 module.exports.DrawPreview = DrawPreview

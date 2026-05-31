@@ -274,14 +274,14 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 cpCounts++
                 cpPtTotal += onceAddPt
                 if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
-               // console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+               //console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
             }
             else if (onceAddPt >= cp400 && (playerRating[cpindex -1].value > 910000)){ // 与烧fever作分辨
                 currentCps -=400
                 cpCounts++
                 cpPtTotal += onceAddPt
                 if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
-                //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value)
+                //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
                 // 不统计CP400，与BD记录间隙相鉴别
             }
             else{   // cp200 与 3火一把Pt没办法分辨。
@@ -290,6 +290,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
                 cooperationPtTotal += onceAddPt
                 cooperationToCpsTotal+= (onceAddPt / 20)
                 if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CooeprCounts++
+                //console.log('清CP200：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
             }
         }
     }
@@ -368,24 +369,29 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let cpRatio = f100CpCounts / ( f100CpCounts +f100CooeprCounts)
     // 这里如果cooperationRatio < 0.7,则明显是不对的
     if (cooperationRatio < 0.7){
+        /*
         // 我们就预估他CP收支是平很的
-        let cor = cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)
-        let cpr = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)
+        console.log(cp_clear_value)
+        let cor = cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)   // 协力获得的PT
+        let cpr = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)    // 清CP获得的pt
         /*
             则我们可以得到以下方程
            var cpcor = cpr / cor
            ptsTotalUnRecord = cor x + cpr y
 
 
-        */
-       let t1 = (cor / 20) / cp_clear_value 
+        
+       let t1 = (cor / 20) / cp_clear_value // t1: 
        let x = ptsTotalUnRecord / ((cpr*t1) + cor)   // 协力次数，x
        let y = ((cor / 20) * x) / cp_clear_value // 清CP次数，y
        console.log(x,y,cor,cpr)
     cpRatio = y/(x+y)
     cooperationRatio = x/(x+y)
+    */
+       cpRatio = 0.1    // 当无法推断出他的清CP比例的时候我们就假设他前面清了10% CP
+        cooperationRatio = 0.9  
     }
-    console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
+    //console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
 
 
     // 根据avg推算清cp挡位
@@ -393,7 +399,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
     let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
    
-    console.log('unRecordCooperationPts',unRecordCooperationPts,'unRecordCpPts',unRecordCpPts)
+    //console.log('unRecordCooperationPts',unRecordCooperationPts,'unRecordCpPts',unRecordCpPts)
     let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
     let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量
     let unRecordClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCpPts / avgClearCpPts)// 预估未记录的已经清CP的次数
@@ -403,7 +409,14 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 
     let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
 
-
+    if (currentCps + unRecordCurrentCpValues <0){   // 如果剩余CP小于0则全用于协力
+        unRecordCpPts = 0
+        unRecordCooperationPts =  Math.floor(ptsTotalUnRecord * cooperationRatio) 
+        unRecordCooperationCounts = Math.floor(unRecordCooperationPts / cooperationAvgPt)
+        unRecordCurrentCpValues = ptsTotalUnRecord / 20
+        unRecordClearCpCounts = 0
+    }
+    console.log(cooperationCounts,unRecordCooperationCounts)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
     cpTraceList.push(line)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算协力获得的CP`}), await drawList({ text: `${Math.round(cooperationToCpsTotal) + Math.round(unRecordCooperationPts / 20)}`})])) // 记录的CP+未记录的Pt转CP 
@@ -414,6 +427,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(cpPtTotalLast50 / cpCountsLast50)}`})]))    // 真实数据
     cpTraceList.push(line)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
+    console.log(cpCounts,unRecordClearCpCounts)
     cpTraceList.push(line)
     cpTraceList.push(drawListMerge([await drawList({ text: `估算现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
     //console.log(currentCps,unRecordCurrentCpValues)
