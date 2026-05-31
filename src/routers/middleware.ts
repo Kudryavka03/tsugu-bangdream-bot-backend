@@ -26,12 +26,33 @@ export const middleware = (req: Request, res: Response, next: NextFunction) => {
             const responseTime = Date.now();
             const duration = responseTime - requestTime;
             //size of response MB
-            const size = Buffer.byteLength(JSON.stringify(body)) / 1024 / 1024;
+            //const size = Buffer.byteLength(JSON.stringify(body)) / 1024 / 1024;
+            const size = getBodyByteLength(body)/ 1024 / 1024
             console.log(`[${timeString}] [Response] ${req.ip} ${req.baseUrl}${req.path} ${size.toFixed(2)}MB ${duration}ms`);
         }
+        res.setHeader('Content-Type', 'application/msgpack');
         // 调用原始的 send 方法，确保响应正常发送
         return originalSend.call(this, body);
     };
 
     next();
 };
+function getBodyByteLength(body: any): number {
+    if (body == null) {
+        return 0;
+    }
+
+    if (Buffer.isBuffer(body)) {
+        return body.length;
+    }
+
+    if (body instanceof Uint8Array) {
+        return body.byteLength;
+    }
+
+    if (typeof body === 'string') {
+        return Buffer.byteLength(body);
+    }
+
+    return Buffer.byteLength(JSON.stringify(body));
+}
