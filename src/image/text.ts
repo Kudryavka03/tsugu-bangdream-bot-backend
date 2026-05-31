@@ -14,7 +14,8 @@ interface warpTextOptions {
     maxWidth: number,
     lineHeight?: number
     color?: string,
-    font?: "FangZhengHeiTi" | "old" | "default"
+    font?: "FangZhengHeiTi" | "old" | "default",
+    forceOneLine?:boolean
 }
 interface CanvasPoolItem {
     canvas: Canvas;
@@ -90,25 +91,33 @@ export  function drawText({
     maxWidth,
     lineHeight = textSize * 4 / 3,
     color = "#505050",
-    font = "old"
+    font = "old",
+    forceOneLine = false
 }: warpTextOptions): Canvas {
-    var wrappedTextData =  wrapText({ text, maxWidth, lineHeight, textSize });
-    if (wrappedTextData.numberOfLines == 0) {
-        //var canvas: Canvas = new Canvas(1, lineHeight);
-        var canvas = new Canvas(1, lineHeight)
 
+    if (forceOneLine){
+        var width = maxWidth = drawTextMeasureText(text,textSize,font)
+        console.log(width)
+        var canvas = new Canvas(width, lineHeight);
     }
-    else if (wrappedTextData.numberOfLines == 1) {
+    else{
+         var wrappedTextData =  wrapText({ text, maxWidth, lineHeight, textSize });
+        if (wrappedTextData.numberOfLines == 0) {
+            //var canvas: Canvas = new Canvas(1, lineHeight);
+            var canvas = new Canvas(1, lineHeight)
 
-        
-        var width = maxWidth = drawTextMeasureText(wrappedTextData.wrappedText[0],textSize,font)
-        canvas = new Canvas(width, lineHeight);
+        }
+        else if (wrappedTextData.numberOfLines == 1) {
 
-    }
-    else {
-        //var canvas: Canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines);
-        var canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines)
+            var width = maxWidth = drawTextMeasureText(wrappedTextData.wrappedText[0],textSize,font)
+            canvas = new Canvas(width, lineHeight);
 
+        }
+        else {
+            //var canvas: Canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines);
+            var canvas = new Canvas(maxWidth, lineHeight * wrappedTextData.numberOfLines)
+
+        }
     }
     
     var ctx = canvas.getContext('2d');
@@ -119,12 +128,16 @@ export  function drawText({
     setFontStyle(ctx, textSize, font);
 
     ctx.fillStyle = color;
-    var wrappedText = wrappedTextData.wrappedText
-    
-    for (var i = 0; i < wrappedText.length; i++) {
-        ctx.fillText(wrappedText[i], 0, y);
-        y += lineHeight;
+    if (forceOneLine){
+        ctx.fillText(text, 0, y);
+    }else{
+        var wrappedText = wrappedTextData.wrappedText
+        for (var i = 0; i < wrappedText.length; i++) {
+            ctx.fillText(wrappedText[i], 0, y);
+            y += lineHeight;
+        }
     }
+
     return canvas;
 }
 
@@ -206,6 +219,7 @@ export function wrapText({
 
     return result;
 }
+
 
 interface TextWithImagesOptions {
     textSize?: number;

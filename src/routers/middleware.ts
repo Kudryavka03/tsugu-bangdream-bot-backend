@@ -30,7 +30,7 @@ export const middleware = (req: Request, res: Response, next: NextFunction) => {
             const size = getBodyByteLength(body)/ 1024 / 1024
             console.log(`[${timeString}] [Response] ${req.ip} ${req.baseUrl}${req.path} ${size.toFixed(2)}MB ${duration}ms`);
         }
-        res.setHeader('Content-Type', 'application/msgpack');
+        //res.setHeader('Content-Type', 'application/msgpack');
         // 调用原始的 send 方法，确保响应正常发送
         return originalSend.call(this, body);
     };

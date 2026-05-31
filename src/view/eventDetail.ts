@@ -6,6 +6,7 @@ import { drawGachaDatablock } from '@/components/dataBlock/gacha'
 import { Image, Canvas } from 'skia-canvas'
 import { drawBannerImageCanvas } from '@/components/dataBlock/utils'
 import { drawTimeInList } from '@/components/list/time';
+import { drawText } from '@/image/text';
 import { drawAttributeInList } from '@/components/list/attribute'
 import { drawCharacterInList } from '@/components/list/character'
 import { statConfig } from '@/components/list/stat'
@@ -137,6 +138,9 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     // 活动装饰
     const getRewardDecoPromise: Promise<Image | Canvas>[] = []; 
     getRewardDecoPromise.push(event.getRewardDeco(displayedServerList[0]))
+    // FES Team Icon
+    const getTeamIconPromise: Promise<Image[]>[] = []; 
+    getTeamIconPromise.push(event.getTeamIcon(displayedServerList[0]))
     //奖励卡牌
     var rewardCardList: Card[] = []
     for (let i = 0; i < event.rewardCards.length; i++) {
@@ -237,7 +241,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         Promise.all(drawGachaDatablockPromise),
         Promise.all(BGImagePromise),
         Promise.all(drawSongListInListMorePromise),
-        Promise.all(getRewardDecoPromise)
+        Promise.all(getRewardDecoPromise),
+        Promise.all(getTeamIconPromise)
     ]);
     const [
         bannerImageResult,
@@ -249,7 +254,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         drawGachaDatablockResult,
         BGImageResult,
         drawSongListInListMoreResult,
-        getRewardDecoResult
+        getRewardDecoResult,
+        teamIconResult
     ] = results;
 
     var eventBannerImage = bannerImageResult[0]
@@ -320,6 +326,21 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             text: statText
         }))
         list.push(line)
+    }
+    if (event.eventType == 'festival' && teamIconResult[0] && teamIconResult[0].length >= 2 && event.teamList.entries.length >= 2) {
+
+        const teamIconCanvas = drawEventTeamIconBlock(teamIconResult[0], [event.teamList.entries[0].teamName, event.teamList.entries[1].teamName],event.teamList.entries[0].themeTitle);
+        //console.log(teamIconCanvas)
+        list.push(
+            await drawList({
+                key: '队伍',
+                content: [teamIconCanvas],
+                textSize: teamIconCanvas.height,
+                lineHeight: teamIconCanvas.height,
+                spacing: 7
+            })
+        );
+        list.push(line);
     }
     if (getRewardDecoResult[0]){
         list.push(
@@ -439,6 +460,55 @@ function isSameSongList(a: Song[], b: Song[]): boolean {    // 这是原本的�
     return true;
 }
 
+function drawEventTeamIconBlock(teamIcons: Image[], teamNames: string[],themeNames:string, maxWidth = 760): Canvas {
+    let iconSize = 160
+    const textSize = 30;
+    const textLineHeight = 40;
+    const count = Math.min(teamIcons.length, teamNames.length, 2);
+    const textCanvases = teamNames.slice(0, count).map((name) => drawText({
+        text: name,
+        maxWidth: iconSize,
+        textSize,
+        lineHeight: textLineHeight,
+        font: 'old',
+        forceOneLine:true
+    }));
+    const titleCanvas = drawText({
+        text: themeNames,
+        maxWidth: textSize,
+        textSize,
+        lineHeight: textSize,
+        font: 'old',
+        forceOneLine:true
+    })
+    let textMaxWidth = 160
+    textCanvases.map((canvas)=> (canvas.width >textMaxWidth)?textMaxWidth= canvas.width:null)
+    iconSize = iconSize > textMaxWidth?160:textMaxWidth;
+    const iconSpacing = iconSize;
+    const topPadding = 20 + titleCanvas.height ;
+    const titleTopPadding = 15;
+
+    let blockWidth = iconSize * count + iconSpacing * (count - 1);
+
+    const textHeight = Math.max(...textCanvases.map((canvas) => canvas.height), 0);
+    const height = topPadding + iconSize + 10 + textHeight + topPadding;
+    const canvas = new Canvas(maxWidth, height);
+    const ctx = canvas.getContext('2d');
+    //console.log(textMaxWidth)
+    const startX = Math.round((maxWidth - blockWidth) / 2);
+    ctx.drawImage(titleCanvas, Math.round((maxWidth - titleCanvas.width) / 2), titleTopPadding);
+    for (let i = 0; i < count; i++) {
+        const icon = teamIcons[i];
+        const textCanvas = textCanvases[i];
+        const x = startX + i * (iconSize + iconSpacing);
+        ctx.drawImage(icon, x, topPadding + titleTopPadding + 5, iconSize, iconSize);
+        const textX = x + Math.round((iconSize - textCanvas.width) / 2) ;
+        const textY = topPadding + titleTopPadding + iconSize +20 ;
+        ctx.drawImage(textCanvas, textX, textY);
+    }
+
+    return canvas;
+}
 
 export async function getEventGachaAndCardList(event: Event, mainServer: Server, useCache = false) {
     var gachaList: Gacha[] = []
