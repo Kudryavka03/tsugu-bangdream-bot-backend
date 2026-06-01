@@ -541,7 +541,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
     
-    var LastHour = thisHour - 3600000 - ((new Date(thisHour).getSeconds()+1 )* 1000); 
+    var LastHour = thisHour - 3600000 - (new Date(thisHour).getSeconds() * 1000) - (new Date(thisHour).getMilliseconds()); 
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
     // LastHour是上一个小时，到时候就只要取这几个区间的就好
