@@ -15,7 +15,7 @@ interface warpTextOptions {
     lineHeight?: number
     color?: string,
     font?: "FangZhengHeiTi" | "old" | "default",
-    forceOneLine?:boolean
+    forceSingleLine?:boolean
 }
 interface CanvasPoolItem {
     canvas: Canvas;
@@ -92,16 +92,16 @@ export  function drawText({
     lineHeight = textSize * 4 / 3,
     color = "#505050",
     font = "old",
-    forceOneLine = false
+    forceSingleLine = false
 }: warpTextOptions): Canvas {
 
-    if (forceOneLine){
+    if (forceSingleLine){
         var width = maxWidth = drawTextMeasureText(text,textSize,font)
         //console.log(width)
         var canvas = new Canvas(width, lineHeight);
     }
     else{
-         var wrappedTextData =  wrapText({ text, maxWidth, lineHeight, textSize });
+        var wrappedTextData =  wrapText({ text, maxWidth, lineHeight, textSize });
         if (wrappedTextData.numberOfLines == 0) {
             //var canvas: Canvas = new Canvas(1, lineHeight);
             var canvas = new Canvas(1, lineHeight)
@@ -128,7 +128,7 @@ export  function drawText({
     setFontStyle(ctx, textSize, font);
 
     ctx.fillStyle = color;
-    if (forceOneLine){
+    if (forceSingleLine){
         ctx.fillText(text, 0, y);
     }else{
         var wrappedText = wrappedTextData.wrappedText
