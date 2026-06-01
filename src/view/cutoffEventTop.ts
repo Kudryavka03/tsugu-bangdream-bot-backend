@@ -540,7 +540,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     
 
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
-    var LastHour = thisHour - 3600000;
+    
+    var LastHour = thisHour - 3600000 - ((new Date(thisHour).getSeconds()+1 )* 1000); 
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
     // LastHour是上一个小时，到时候就只要取这几个区间的就好
@@ -592,11 +593,18 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         let pushNext = false
         for (let j = 0; j  < playerRating.length; j += 1) {
             if (!isPrev){   //计算尾空白
-                if (playerRating[j].value!= tmpScore){
-                    if (playerRating[j].time - tmpTime >=60) break
-                    nextNull.push(playerRating[j].time - tmpTime)
-                    isPrev = true
-                    pushNext = true
+                
+                if (playerRating[j].value!= tmpScore){      // 尾空白大于3600喵置0
+                    if ((playerRating[j].time - tmpTime + 60000) <= -3600000) {
+                        isPrev = true
+                        nextNull.push(1/0)
+                        pushNext = true
+                        break
+                    }else{
+                        nextNull.push(playerRating[j].time - tmpTime + 60000)
+                        isPrev = true
+                        pushNext = true
+                    }
                 }
             }
             if (isPrev){
@@ -606,16 +614,21 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 }
                 if (playerRating[j].time <LastHour){
                     if (playerRating[j].value!= tmpScore){
-                        prevNull.push(tmpTime - playerRating[j].time + 60000)
-                        pushPrev = true
+                        if(tmpTime - playerRating[j].time <= 3600000){   //前空白大于3600喵置0
+                            prevNull.push(tmpTime - playerRating[j].time)
+                            pushPrev = true
+                        }else{
+                            prevNull.push(1/0)
+                            pushPrev = true
+                        }
                         //console.log(playerId,prevNull[prevNull.length -1],nextNull[nextNull.length-1])
                         break
                     }
                 }
             }
         }
-        if (!pushPrev) prevNull.push(0)
-        if (!pushNext) nextNull.push(0)
+        if (!pushPrev) prevNull.push(1/0)
+        if (!pushNext) nextNull.push(1/0)
         
         //rankBetweenLastTick.push()
         rankChangeCount.push(countChange)   // 分数变动次数
@@ -726,8 +739,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
             await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
             await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
-            await drawList({ key: `${Math.floor(prevNull[k]/60000)}min`,maxWidth:200}),
-            await drawList({ key: `${Math.ceil(nextNull[k]/60000)}min`,maxWidth:200}),
+            await drawList({ key: `${isFinite(prevNull[k])?Math.floor(prevNull[k]/60000):'--'}min`,maxWidth:200}),
+            await drawList({ key: `${isFinite(nextNull[k])?Math.ceil(nextNull[k]/60000):'--'}min`,maxWidth:200}),
             await drawList({key:`${getPossibleRoom(possibleAtSameRoom,userInRankings[k].uid)}`,maxWidth:200})
         ]))
         imageList.push(FullLine)
