@@ -593,6 +593,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         for (let j = 0; j  < playerRating.length; j += 1) {
             if (!isPrev){   //计算尾空白
                 if (playerRating[j].value!= tmpScore){
+                    if (playerRating[j].time - tmpTime >=60) break
                     nextNull.push(playerRating[j].time - tmpTime)
                     isPrev = true
                     pushNext = true
@@ -605,7 +606,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 }
                 if (playerRating[j].time <LastHour){
                     if (playerRating[j].value!= tmpScore){
-                        prevNull.push(tmpTime - playerRating[j].time)
+                        prevNull.push(tmpTime - playerRating[j].time + 60000)
                         pushPrev = true
                         //console.log(playerId,prevNull[prevNull.length -1],nextNull[nextNull.length-1])
                         break
@@ -700,7 +701,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: pId==2?'统计时分数':'分数',maxWidth:275 })
 
     ,await drawList({ key: '上下分差',maxWidth:250 }),await drawList({ key: '1小时内分差',maxWidth:300 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
-    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '前空白' ,maxWidth:200}),await drawList({ key: '尾空表' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
+    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '前空白' ,maxWidth:200}),await drawList({ key: '尾空白' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
     const FullLine: Canvas = drawDottedLine({
         width: widthMax,
         height: 30,
