@@ -535,6 +535,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     var avgRankChange = [] // 把均pt
     var rankForBetween = []
     var userName = []
+    var prevNull = []   // 前空白
+    var nextNull = []   // 尾空白
     
 
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
@@ -582,6 +584,38 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 lastScore = playerRating[j].value
             }
         }
+        // 前后空白
+        let tmpScore = playerRating[0].value == -1?0:playerRating[0].value
+        let tmpTime = thisHour
+        let isPrev = false
+        let pushPrev = false
+        let pushNext = false
+        for (let j = 0; j  < playerRating.length; j += 1) {
+            if (!isPrev){   //计算尾空白
+                if (playerRating[j].value!= tmpScore){
+                    nextNull.push(playerRating[j].time - tmpTime)
+                    isPrev = true
+                    pushNext = true
+                }
+            }
+            if (isPrev){
+                if (playerRating[j].time >=LastHour && playerRating[j].value!= tmpScore){
+                    tmpScore = playerRating[j].value
+                    tmpTime = playerRating[j].time
+                }
+                if (playerRating[j].time <LastHour){
+                    if (playerRating[j].value!= tmpScore){
+                        prevNull.push(tmpTime - playerRating[j].time)
+                        pushPrev = true
+                        //console.log(playerId,prevNull[prevNull.length -1],nextNull[nextNull.length-1])
+                        break
+                    }
+                }
+            }
+        }
+        if (!pushPrev) prevNull.push(0)
+        if (!pushNext) nextNull.push(0)
+        
         //rankBetweenLastTick.push()
         rankChangeCount.push(countChange)   // 分数变动次数
 
@@ -660,13 +694,13 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     
     all.push(await drawTitle('T10时速排名', `${serverNameFullList[mainServer]} ${subTimeTips}`));
     var list = [], imageList = []
-    const widthMax = 200+300+420+250+275+300+300+300+200 + 200
+    const widthMax = 200+300+420+250+275+300+300+300+200 + 200+200+200
     var timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`
     
     list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: pId==2?'统计时分数':'分数',maxWidth:275 })
 
     ,await drawList({ key: '上下分差',maxWidth:250 }),await drawList({ key: '1小时内分差',maxWidth:300 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
-    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
+    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '前空白' ,maxWidth:200}),await drawList({ key: '尾空表' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
     const FullLine: Canvas = drawDottedLine({
         width: widthMax,
         height: 30,
@@ -691,6 +725,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
             await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
             await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
+            await drawList({ key: `${Math.floor(prevNull[k]/60000)}min`,maxWidth:200}),
+            await drawList({ key: `${Math.ceil(nextNull[k]/60000)}min`,maxWidth:200}),
             await drawList({key:`${getPossibleRoom(possibleAtSameRoom,userInRankings[k].uid)}`,maxWidth:200})
         ]))
         imageList.push(FullLine)
