@@ -79,14 +79,21 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
                 predictText = '?'
             }
             else {
-                predictText = cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString()
+                if (cutoff.latestCutoff.ep == cutoff.predictEP2){
+                    predictText = cutoff.predictEP.toString()
+                }
+                else{
+                    predictText = cutoff.predictEP.toString() + ' | ' + cutoff.predictEP2.toString()
+                }
             }
             cutoffContent.push(`当前预测线: ${predictText}\n`)
             cutoffContent.push(`最新分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
-            cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}`)
+            cutoffContent.push(`更新时间: ${changeTimefomant(cutoff.latestCutoff.time)}\n`)
+            cutoffContent.push(`日增: ` + `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`)
         }
         else if (cutoff.status == 'ended') {
             cutoffContent.push(`最终分数线:${cutoff.latestCutoff.ep.toString()}\n`)
+            cutoffContent.push(`日增: ` + `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`)
         }
 
 

@@ -58,7 +58,10 @@ export async function drawEventStageTypeTop(stage: Stage): Promise<Canvas> {//�
 
     return canvas;
 }
-
+const diffDesc = new Map<string,string>()
+diffDesc.set('expert','EX')
+diffDesc.set('special','SP')
+diffDesc.set('hard','HD')
 async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Promise<Canvas> {//绘制活动中的每个歌曲(包括难度)
     const canvas = new Canvas(800 / 8, 800 / 8 / 180 * 290);
     const ctx = canvas.getContext('2d');
@@ -84,8 +87,10 @@ async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Pr
     if (meta) {
         let difficultyLineGraphList = []
         let maxMeta = 0, maxDiff
+        let diff = 3
         for (let i in song.difficulty) {
             const difficultyId = parseInt(i);
+            diff = difficultyId
             const meta = song.calcMeta(true, difficultyId)
             // difficultyLineGraphList.push(drawDifficultyLineGraph(difficultyId, meta));
             if (maxMeta < meta) {
@@ -94,7 +99,7 @@ async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Pr
             }
         }
         const percent = Math.round(maxMeta / sosMeta * 1000) / 10
-        ctx.fillText(`难度:${maxDiff}`, 4, 128)
+        ctx.fillText(`难度:${diffDesc.get(maxDiff)}/${song.difficulty[diff].playLevel}`, 4, 128)
         ctx.fillText(`分数:${percent}%`, 4, 148)
         // const difficultyLineGraph = stackImageHorizontal(difficultyLineGraphList)
         // ctx.drawImage(difficultyLineGraph, 3, 0);
