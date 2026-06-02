@@ -7,6 +7,7 @@ import * as searchEvent_1 from "./commands/searchEvent";
 import * as searchSong_1 from "./commands/searchSong";
 import * as searchGacha_1 from "./commands/searchGacha";
 import * as cutoffDetail_1 from "./commands/cutoffDetail";
+import * as cutoffSong_1 from "./commands/cutoffSong";
 import * as searchPlayer_1 from "./commands/searchPlayer";
 import * as cutoffListOfRecentEvent_1 from "./commands/cutoffListOfRecentEvent";
 import * as cutoffAll_1 from "./commands/cutoffAll";
@@ -578,6 +579,26 @@ export function apply(ctx: Context, config: Config) {
             mainServer = serverFromServerNameFuzzySearch;
         }
         const list = await (0, cutoffListOfRecentEvent_1.commandCutoffListOfRecentEvent)(config, mainServer, tier, eventId);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("歌榜 <tier:integer> [eventId:integer] [serverName]", "查询歌榜档位分数", cmdConfig)
+        .usage(`查询歌榜活动指定档位的分数线。如果没有服务器名的话, 服务器为用户的默认服务器。如果没有活动ID的话, 活动为当前活动\n可用档线: 1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000`)
+        .example('歌榜 1000 :返回默认服务器当前活动1000档位的歌榜分数').example('歌榜 1000 300 jp:返回日服300号活动1000档位的歌榜分数')
+        .action(async ({ session }, tier, eventId, serverName) => {
+        const validTiers = [1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000];
+        if (tier == undefined || !validTiers.includes(tier)) {
+            return `错误: 档位必须为以下之一: ${validTiers.join(', ')}`;
+        }
+        const tsuguUserData = await observeUserTsugu(session);
+        let mainServer = tsuguUserData.mainServer;
+        if (serverName) {
+            const serverFromServerNameFuzzySearch = await (0, fuzzySearch_1.serverNameFuzzySearchResult)(config, serverName);
+            if (serverFromServerNameFuzzySearch == -1) {
+                return '错误: 服务器名未能匹配任何服务器';
+            }
+            mainServer = serverFromServerNameFuzzySearch;
+        }
+        const list = await (0, cutoffSong_1.commandCutoffSong)(config, mainServer, tier, eventId);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command('抽卡模拟 [times:integer] [gachaId:integer]', cmdConfig)

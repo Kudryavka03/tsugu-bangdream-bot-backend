@@ -19,6 +19,7 @@ import { getEventDataCacheSize } from '@/types/Event';
 import { getGachaDataCacheSize } from '@/types/Gacha';
 import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
 import { compareSameDataArray } from '@/view/cutoffEventTop';
+import { drawCutoffSongsDetail } from '@/view/cutoffSong';
 
 const router = express.Router();
 
@@ -54,6 +55,10 @@ router.post(
         if (text == "45622542"){
             global.gc?.()
             return res.send(listToBase64(['已尝试触发GC']));
+        }
+        if (text == "ycxsong"){
+            return res.send(listToBase64(await drawCutoffSongsDetail(311,100,Server.cn,true)));
+            return 
         }
         if (text == "6364636"){
             const m = process.memoryUsage();
