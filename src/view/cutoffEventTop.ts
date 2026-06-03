@@ -541,7 +541,17 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
     
-    var LastHour = thisHour - 3600000 - (new Date(thisHour).getSeconds() * 1000) - (new Date(thisHour).getMilliseconds()); 
+    var LastHour = thisHour - 3600000
+    var LastHourInCutoffT10 = 0
+    for(let i = cutoffEventTop.points.length -1;i>0;i--){   // 找出LastHour的上一个时间点
+        if (cutoffEventTop.points[i].time < LastHour){
+            //console.log(cutoffEventTop.points[i].time,LastHour)
+            LastHourInCutoffT10 = cutoffEventTop.points[i].time
+            break
+        }
+    }
+    LastHour = LastHourInCutoffT10
+    //LastHour = thisHour - 3600000
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
     // LastHour是上一个小时，到时候就只要取这几个区间的就好
@@ -585,23 +595,27 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 lastScore = playerRating[j].value
             }
         }
+        //console.log(new Date(LastHour).getHours(),new Date(LastHour).getMinutes(),new Date(LastHour).getSeconds())
         // 前后空白
         let tmpScore = playerRating[0].value == -1?0:playerRating[0].value
         let tmpTime = thisHour
         let isPrev = false
         let pushPrev = false
         let pushNext = false
+        let prevNextInListTime = 1000
         for (let j = 0; j  < playerRating.length; j += 1) {
+            if (pushPrev) break
             if (!isPrev){   //计算尾空白
                 
                 if (playerRating[j].value!= tmpScore){      // 尾空白大于3600喵置0
-                    if ((playerRating[j].time - tmpTime + 60000) <= -3600000) {
+                    if ((playerRating[j].time - tmpTime) <= -3600000) {
                         isPrev = true
                         nextNull.push(1/0)
                         pushNext = true
                         break
                     }else{
-                        nextNull.push(playerRating[j].time - tmpTime + 60000)
+                        //nextNull.push(playerRating[j].time - tmpTime + 60000)
+                        nextNull.push(Math.round((playerRating[j].time - tmpTime +60000) / (60000)))
                         isPrev = true
                         pushNext = true
                     }
@@ -614,15 +628,17 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 }
                 if (playerRating[j].time <LastHour){
                     if (playerRating[j].value!= tmpScore){
-                        if(tmpTime - playerRating[j].time <= 3600000){   //前空白大于3600喵置0
-                            prevNull.push(tmpTime - playerRating[j].time)
+                        if (Math.round((tmpTime - LastHour) / (60000)) <= 30){
+                            prevNull.push(Math.round((tmpTime - LastHour +60000) / (60000)))
                             pushPrev = true
-                        }else{
+                            //console.log((Math.round((tmpTime - LastHour+60000) / (60000))),nextNull.at(-1))
+                        } 
+                        else{
                             prevNull.push(1/0)
                             pushPrev = true
+                            //console.log(1/0,nextNull.at(-1))
                         }
-                        //console.log(playerId,prevNull[prevNull.length -1],nextNull[nextNull.length-1])
-                        break
+
                     }
                 }
             }
@@ -739,8 +755,8 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
             await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
             await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
-            await drawList({ key: `${isFinite(prevNull[k])?Math.floor(prevNull[k]/60000):'--'}min`,maxWidth:200}),
-            await drawList({ key: `${isFinite(nextNull[k])?Math.ceil(nextNull[k]/60000):'--'}min`,maxWidth:200}),
+            await drawList({ key: `${isFinite(prevNull[k])?prevNull[k]:'--'}min`,maxWidth:200}),
+            await drawList({ key: `${isFinite(nextNull[k])?nextNull[k]:'--'}min`,maxWidth:200}),
             await drawList({key:`${getPossibleRoom(possibleAtSameRoom,userInRankings[k].uid)}`,maxWidth:200})
         ]))
         imageList.push(FullLine)
