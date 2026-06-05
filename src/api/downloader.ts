@@ -186,7 +186,7 @@ return task;
 }
 
 
-const memoryCache = new LRUCacheAny(300);
+const memoryCache = new LRUCacheAny(100);
 
 
 export async function getJsonAndSave(url: string, directory?: string, fileName?: string, cacheTime = 0,isForceUseCache = true): Promise<any> { // 在调用档线，基础等API数据的时候检查缓存是否过期才使用缓存

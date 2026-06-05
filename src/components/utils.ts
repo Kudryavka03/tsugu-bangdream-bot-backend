@@ -1,3 +1,4 @@
+import { Chart } from 'chart.js';
 import { Canvas, Image } from 'skia-canvas';
 
 export function stackImage(list: Array<Image | Canvas>,AutoDispose:boolean = false) {
@@ -147,4 +148,19 @@ export function getOptDrawCount(n:number,x:number,y:number,line:number,line2:num
     //console.log(Math.ceil(offsetN))
     //if ((c + Math.ceil(offsetN)) > 31) return 31
     return c + Math.ceil(offsetN)
+}
+
+export function disposeChartButKeepingCanvas(chart: any) {     // chart.js 的destroy() 6420行，仿照着写但是不清空Canvas
+  chart.notifyPlugins?.('beforeDestroy');
+
+  chart._stop?.();
+  chart.config?.clearCache?.();
+  chart.unbindEvents?.();
+
+  delete Chart.instances[chart.id];
+
+  chart.canvas = null;
+  chart.ctx = null;
+
+  chart.notifyPlugins?.('afterDestroy');
 }

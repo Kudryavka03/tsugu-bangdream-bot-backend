@@ -1,4 +1,5 @@
 import { fileExists } from '@/api/downloader';
+import { LRUCacheAny } from '@/LRUCache';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Canvas, loadImage, Image,CanvasRenderingContext2D as SkiaCtx } from 'skia-canvas';
@@ -8,10 +9,12 @@ const assetsRootPath: string = path.join(__dirname, '../../assets');
 
 export const assetErrorImageBuffer = fs.readFileSync(`${assetsRootPath}/err.png`)
 export const assetErrorImage = loadImage(fs.readFileSync(`${assetsRootPath}/err.png`))
+const MAX_CACHE_SIZE = 100;  // 设置SkiaCtx最大缓存量
+const ENABLE_CACHE = true; // 是否启用缓存
+const FontCanvasPool = new LRUCacheAny(MAX_CACHE_SIZE);
+//const FontCanvasPool = new Map<string, SkiaCtx>();
 
-const FontCanvasPool = new Map<string, SkiaCtx>();
-
-export function getFontCanvasCtxFromPool(fontArgs: string) {
+export function getFontCanvasCtxFromPool(fontArgs: string):SkiaCtx {
   if (!FontCanvasPool.has(fontArgs)) {
     //console.log('Creat new CanvasCtx: '+fontArgs)
     const canvas = new Canvas(1, 1);

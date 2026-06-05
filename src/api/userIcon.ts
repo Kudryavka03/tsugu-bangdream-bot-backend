@@ -5,7 +5,7 @@ import { downloadFile } from '@/api/downloadFile'
 import { loadImageFromPath } from '@/image/utils';
 
 let userIconCache = {};
-
+const ENABLE_CACHE = false
 const iconUndefinedPath = path.join(assetsRootPath, 'iconUndefined.png');
 let iconUndefined:Image;
 loadImageFromPath(iconUndefinedPath).then((image) => {
@@ -24,7 +24,7 @@ export async function getUserIcon(avatarUrl?:string): Promise<Image> {
     try {
         const iconBuffer = await downloadFile(avatarUrl,false,true);
         const icon = await loadImage(iconBuffer);
-        userIconCache[avatarUrl] = icon;
+        if(ENABLE_CACHE) userIconCache[avatarUrl] = icon;
         return icon;
     } catch (e) {
         console.log(e)
