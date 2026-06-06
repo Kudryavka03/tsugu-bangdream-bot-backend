@@ -84,7 +84,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
             
             for (let j = 0; j < characterIdList.length; j++) {
                 const characterId = characterIdList[j];
-                var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
+                let tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
                 //const cardTask = drawCardListLine(tempAttributeCardList).then(result => tempAttributeCardImageList.push(result));
 
                 drawCardListLinePromise.push(limitTask(() => drawCardListLine(tempAttributeCardList, after_training)));
@@ -167,7 +167,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
             let icon = true
             for (let j = 0; j < attributeList.length; j++) {
                 const attribute = attributeList[j];
-                var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
+                let tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
                
                 if (tempAttributeCardList.length != 0) {
                     //promise.push(tempCardImageList.push(await drawCardListLine(tempAttributeCardList)));
