@@ -32,7 +32,7 @@ export async function drawTimeInList({
                 const currentEvent = getPresentEvent(getServerByName("cn"));
                 //const currentEventId = currentEvent.eventId;
                 if (!new Event(eventId).startAt[Server.cn]) {
-                    formatedTimeList.push(changeTimefomant(GetProbablyTimeDifference(eventId, currentEvent)) + " (预计开放时间)")
+                    formatedTimeList.push(changeTimefomant(GetProbablyTimeDifference(eventId, currentEvent),Server.cn) + " (预计开放时间)")
                 }
             }
             formatedTimeList.push(null)
