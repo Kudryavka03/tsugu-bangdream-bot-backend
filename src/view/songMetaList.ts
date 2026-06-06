@@ -12,7 +12,20 @@ import { formatSeconds } from "@/components/list/time";
 import mainAPI from "@/types/_Main";
 import { matchSongList } from "./songList";
 import { fuzzySearch, FuzzySearchResult, include } from "@/fuzzySearch";
-
+import pLimit from "p-limit";
+import { parentPort, threadId, isMainThread } from 'worker_threads';
+const limitSub = pLimit(3);
+const limitMain = pLimit(7);
+const limitTask = isMainThread ? limitMain : limitSub;
+if (!isMainThread && parentPort) {
+    console.log = (...args) => {
+      parentPort!.postMessage({
+        type: 'log',
+        threadId,
+        args
+      });
+    };
+  }
 // 紧凑化虚线分割
 const line = drawDottedLine({
     width: 800,
@@ -73,7 +86,7 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,sea
 
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
-        drawMetaRankListDatablockPromise.push(drawMetaRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask))
+        drawMetaRankListDatablockPromise.push(limitTask(() => drawMetaRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask)))
         // imageList.push(await drawMetaRankListDatablock(element, mainServer))
     }
     const drawMetaRankListDatablockResult = await Promise.all(drawMetaRankListDatablockPromise)
@@ -112,7 +125,7 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matc
                         if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
                             let precent = metaRanking[i].meta / maxMeta * 100
                             precent = Math.round(precent * 100) / 100
-                            drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+                            drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`)))
                         }
                     }
                 }
@@ -122,7 +135,7 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matc
                 if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
                     let precent = metaRanking[i].meta / maxMeta * 100
                     precent = Math.round(precent * 100) / 100
-                    drawSongInListPromise.push(drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`))
+                    drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`)))
                 }
             }
         }
