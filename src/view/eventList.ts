@@ -20,7 +20,8 @@ import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
-const limit = pLimit(15);
+const limitSub = pLimit(2);
+const limitMain = pLimit(7);
 let maxHeight = 7000
 const maxColumns = 7
 import { parentPort, threadId,isMainThread  } from'worker_threads';
@@ -101,7 +102,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
         for (let i = 0; i < tempEventList.length; i++) {
             eventPromises.push(
-                limit(async () => ({
+                limitMain(async () => ({
                     index: i,
                     image: await drawEventInList(
                         tempEventList[i],
@@ -117,7 +118,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         heavyLoad = true
         for (let i = 0; i < tempEventList.length; i++) {
             eventPromises.push(
-                limit(async () => ({
+                limitSub(async () => ({
                     index: i,
                     image: await drawEventInList(
                         tempEventList[i],

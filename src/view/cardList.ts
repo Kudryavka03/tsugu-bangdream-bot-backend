@@ -12,7 +12,11 @@ import { Server } from '@/types/Server'
 import { globalDefaultServer } from '@/config';
 
 import { drawCardDetail } from '@/view/cardDetail';
-import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { parentPort, threadId, isMainThread } from 'worker_threads';
+import pLimit from "p-limit";
+const limitSub = pLimit(2);
+const limitMain = pLimit(7);
+const limitTask = isMainThread ? limitMain : limitSub;
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -83,7 +87,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                 var tempAttributeCardList = getCardListByAttributeAndCharacterId(tempCardList, attribute, characterId);
                 //const cardTask = drawCardListLine(tempAttributeCardList).then(result => tempAttributeCardImageList.push(result));
 
-                drawCardListLinePromise.push(drawCardListLine(tempAttributeCardList,after_training))
+                drawCardListLinePromise.push(limitTask(() => drawCardListLine(tempAttributeCardList, after_training)));
                 //promise.push(tempAttributeCardImageList.push(await drawCardListLine(tempAttributeCardList)));
                 //promise.push(cardTask)
                 //画角色头像
@@ -91,7 +95,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                 //const iconTask = drawCharacterIcon(characterId).then(result => characterIconImageList.push(result));
                    // promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
                    //promise.push(iconTask)
-                   drawCharacterIconImageListPromise.push(drawCharacterIcon(characterId))
+                   drawCharacterIconImageListPromise.push(limitTask(() => drawCharacterIcon(characterId)));
                 }
             }
 
@@ -170,14 +174,14 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     //const drawLine =drawCardListLine(tempAttributeCardList).then(ra=>tempCardImageList.push(ra))
                     //promise.push(drawLine)
                     //console.log(characterId)
-                    promiseList.push(drawCardListLine(tempAttributeCardList,after_training))
+                    promiseList.push(limitTask(() => drawCardListLine(tempAttributeCardList, after_training)));
                     //画角色头像
                     if (icon) {
                       //icon = false
                         //promise.push(characterIconImageList.push(await drawCharacterIcon(characterId)));
                         //const drawIconTask = drawCharacterIcon(characterId).then(rb=>characterIconImageList.push(rb))
                         //promise.push(drawIconTask)
-                        promise.push(drawCharacterIcon(characterId))
+                        promise.push(limitTask(() => drawCharacterIcon(characterId)));
                       icon = false
                       
                     }
@@ -185,7 +189,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
                     //const drawIconTask = drawCharacterIcon(null).then(rc=>characterIconImageList.push(rc))
                         //promise.push(characterIconImageList.push(await drawCharacterIcon(null)));
                         //promise.push(drawIconTask)
-                        promise.push(drawCharacterIcon(null))
+                        promise.push(limitTask(() => drawCharacterIcon(null)));
                     }
                 }
             }

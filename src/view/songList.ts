@@ -14,9 +14,11 @@ import { drawSongDetail } from "./songDetail";
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
-import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { parentPort, threadId, isMainThread } from 'worker_threads';
 import { loadImageOnce } from "@/components/card";
-const limit = pLimit(15);
+const limitSub = pLimit(2);
+const limitMain = pLimit(7);
+const limitTask = isMainThread ? limitMain : limitSub;
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({
@@ -71,7 +73,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         
        for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(
-                limit(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+                limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
             )
             //songPromises.push();
         }
@@ -81,7 +83,7 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
         for (let i = 0; i < tempSongList.length; i++) {
             songPromises.push(
-                limit(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+                limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
             )
             //songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
         }
