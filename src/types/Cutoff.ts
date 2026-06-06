@@ -253,7 +253,7 @@ export class Cutoff {
         }
         return history
     }
-    getDaysOfEvent(ts: number) {
+    getDaysOfEvent(ts: number) {    // 天数从0开始。存在第0天。
         if (!this.startAt)  return  0;
         const offsetMs = getServerUtcOffset(this.server) * 60 * 60 * 1000
         const eventStartAtTime = normalizeTimestamp(this.startAt)
@@ -453,7 +453,8 @@ export class Cutoff {
         }
         let chartData: { x: Date, y: number }[] = [];
         if (setStartToZero) {
-            chartData.push({ x: new Date(0), y: 0 });
+            let startTime = getDateByServerTimezone(this.server,this.startAt).getUTCHours()
+            chartData.push({ x: new Date(3600*1000*startTime), y: 0 });    // 从第一天具体的小时开始
         } else {
             chartData.push({ x: new Date(this.startAt), y: 0 });
         }
@@ -480,7 +481,8 @@ export class Cutoff {
         }
         let chartData: { x: Date, y: number }[] = [];
         if (setStartToZero) {
-            chartData.push({ x: new Date(0), y: 0 });
+            let startTime = getDateByServerTimezone(this.server,this.startAt).getUTCHours()
+            chartData.push({ x: new Date(3600*1000*startTime), y: 0 });    // 从第一天具体的小时开始
         } else {
             chartData.push({ x: new Date(this.startAt), y: 0 });
         }

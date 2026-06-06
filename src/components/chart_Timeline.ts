@@ -5,6 +5,8 @@ import 'chartjs-adapter-moment';
 import { assetsRootPath } from '@/config';
 import { assetErrorImageBuffer } from '@/image/utils';
 import { disposeChartButKeepingCanvas } from './utils';
+import { Server } from '@/types/Server';
+import { getDateByServerTimezone } from './list/time';
 
 // 2. 注册 Chart.js 所有组件
 Chart.register(...registerables);
@@ -23,19 +25,61 @@ interface drawTimeLineChartOptions {
   data: {
     datasets: any[];
   };
+  server?:Server
 }
 
 // 6. 主函数：生成时间轴图表
 export async function drawTimeLineChart(
-  { start, end, setStartToZero = false, data }: drawTimeLineChartOptions,
+  { start, end, setStartToZero = false, data,server }: drawTimeLineChartOptions,
   displayLabel = false,widthNum:number = 800,heightNum:number =900
 ) {
   const width = widthNum;
   const height = heightNum;
-
+  const weekMap = server== Server.jp?['日', '月', '火', '水', '木', '金', '土']:['日', '一', '二', '三', '四', '五', '六'];
   // 7. 创建 skia-canvas 实例
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
+  console.log(start,end)
+  // scales options
+  let days = 0
+  let xOptions = {}
+  if (!setStartToZero){
+    xOptions = {
+          type: 'time',
+          time: {
+            unit: 'day',
+          },
+          min: start,
+          max: end,
+          display: !setStartToZero,
+          ticks: {
+            callback(value: any) {
+              const date = getDateByServerTimezone(value,server);
+              const month = date.getUTCMonth() + 1;
+              const day = date.getUTCDate();
+              const week = weekMap[date.getUTCDay()];
+              return [`${month}/${day}`, week];
+            },
+          },
+        }
+  }else{
+    xOptions = {
+          type: 'time',
+          time: {
+            unit: 'day',
+          },
+          min: start,
+          max: end,
+          display: true,
+          ticks: {
+            callback(value: any) {
+              const date = new Date(value);
+              const day = date.getUTCDate();
+              return [`Day${day+1}`];
+            },
+          },
+        }
+  }
 
   // 8. 计算 y 轴最大值
   const yMax = Math.max(
@@ -57,15 +101,7 @@ export async function drawTimeLineChart(
       },
     },
     scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-        },
-        min: start,
-        max: end,
-        display: !setStartToZero,
-      },
+      x: xOptions,
       y: {
         min: 0,
         max: Math.floor((yMax + 1000) * 1.1), // 美观输出

@@ -278,7 +278,9 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     list.push(line)
     list.push(await drawTimeInList({
         key: '结束时间',
-        content: event.endAt
+        content: event.endAt,
+        eventId: event.eventId,
+        calcLens:true
     }))
     list.push(line)
         //活动属性加成

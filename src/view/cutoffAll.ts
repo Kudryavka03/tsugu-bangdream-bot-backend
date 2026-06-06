@@ -88,7 +88,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
             }
             cutoffContent.push(`当前预测线: ${predictText}\n`)
             cutoffContent.push(`最新分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
-            cutoffContent.push(`更新时间: ${changeTimefomant(cutoff.latestCutoff.time)}\n`)
+            cutoffContent.push(`更新时间: ${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}\n`)
             cutoffContent.push(`日增: ` + `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`)
         }
         else if (cutoff.status == 'ended') {

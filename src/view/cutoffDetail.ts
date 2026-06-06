@@ -118,7 +118,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
-            key: `日增速 / ${changeTimefomant(cutoff.latestCutoff.time)}  Day${cutoff.getDaysOfEvent(cutoff.latestCutoff.time)+1}  完成率${Math.round((cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)*100)}%`,
+            key: `日增速 / ${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}  Day${cutoff.getDaysOfEvent(cutoff.latestCutoff.time)+1}  完成率${Math.round((cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)*100)}%`,
             text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))
@@ -364,7 +364,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         list.push(line)
         const tempList = []
         tempList.push((await drawList({
-            key: `日增速 / ${changeTimefomant(cutoff.latestCutoff.time)}  Day${cutoff.getDaysOfEvent(cutoff.latestCutoff.time)+1}  完成率${Math.round((cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)*100)}%`,
+            key: `日增速 / ${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}  Day${cutoff.getDaysOfEvent(cutoff.latestCutoff.time)+1}  完成率${Math.round((cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)*100)}%`,
             text: `${cutoff.dailyIncrement.length == 0?0:cutoff.dailyIncrement.join('/')}`
         })))
         list.push(drawListMerge(tempList))

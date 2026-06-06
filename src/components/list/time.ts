@@ -11,14 +11,20 @@ interface timeInListOptions {
     content: Array<number | null>;
     eventId?: number;
     estimateCNTime?: boolean;
+    calcLens?:boolean
 }
 export async function drawTimeInList({
     key,
     content,
     eventId,
+    calcLens,
     estimateCNTime = false
 }: timeInListOptions, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     var formatedTimeList: Array<string> = []
+    let event:Event = null
+    if(calcLens){
+        event = new Event(eventId)
+    }
     for (let i = 0; i < content.length; i++) {
         const element = content[i];
         if (element == null) {
@@ -32,11 +38,19 @@ export async function drawTimeInList({
             formatedTimeList.push(null)
             continue
         }
-        formatedTimeList.push(changeTimefomant(element))
+        if(calcLens){
+            let lastDays = event.getDaysOfEvent(event.endAt[i],i)
+            formatedTimeList.push(changeTimefomant(element,i) + '  Day'+ ++lastDays)
+        }
+        else{
+            formatedTimeList.push(changeTimefomant(element,i))
+        }
     }
     var canvas = await drawListByServerList(formatedTimeList, key, displayedServerList)
     return canvas
 }
+
+
 //获取当前活动与查询活动的大致时间差(国服)
 export function GetProbablyTimeDifference(eventId: number, currentEvent: Event): number {
     let eventsData = mainAPI['events'];
@@ -86,7 +100,7 @@ function occupiedDays(startTs: number, endTs: number): number {
     // 计算跨越的天数，再加1包含第一天
     return Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay) + 1;
 }
-export function changeTimefomant(timeStamp: number | null) {//时间戳到年月日 精确到分钟
+export function changeTimefomant(timeStamp: number | null,server?:Server) {//时间戳到年月日 精确到分钟
     if (timeStamp == null) {
         return '?'
     }
@@ -110,6 +124,12 @@ export function changeTimefomant(timeStamp: number | null) {//时间戳到年月
         nHours = date.getHours().toString()
     }
     var temp = date.getFullYear().toString() + "年" + (date.getMonth() + 1).toString() + "月" + date.getDate().toString() + "日 " + nHours + ":" + nMinutes
+    if (server!== undefined){
+        const weekMap = (server == Server.jp)?['日', '月', '火', '水', '木', '金', '土']:['日', '一', '二', '三', '四', '五', '六'];
+        const week = weekMap[date.getDay()];
+        temp +=`(${week})`
+    }
+
     return temp
 }
 

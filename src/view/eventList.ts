@@ -243,11 +243,11 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         let server = displayedServerList[i]
         if (server == getServerByName('cn') && event.startAt[server] == null ) {//&& event.eventId > currentEvent.eventId
             getIconPromise.push(getIcon(server))
-            Tips.push(`${changeTimefomant(GetProbablyTimeDifference(event.eventId, currentEvent))} (预计开放时间)\n`)
+            Tips.push(`${changeTimefomant(GetProbablyTimeDifference(event.eventId, currentEvent),Server.cn)} (预计开放时间)\n`)
         }
         else {
             getIconPromise.push(getIcon(server))
-            Tips.push(`${changeTimefomant(event.startAt[server])} - ${changeTimefomant(event.endAt[server])}\n`)
+            Tips.push(`${changeTimefomant(event.startAt[server],server)} - ${changeTimefomant(event.endAt[server],server)}\n`)
         }
     }
     //console.log(`${changeTimefomant(GetProbablyTimeDifference(299, currentEvent))}`)

@@ -15,7 +15,8 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
     if (cutoffList.length == 0) {
         return (new Canvas(1, 1))
     }
-
+    let cutoffServer = cutoffList[0].server
+    // getDateByServerTimezone
     const list = []
 
     var onlyOne = cutoffList.length == 1
@@ -149,11 +150,11 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
                 longestTime = cutoff.endAt - cutoff.startAt
             }
         }
-        all.push(await drawTimeLineChart({ data, start: new Date(0), end: new Date(longestTime), setStartToZero }))
+        all.push(await drawTimeLineChart({ data, start: new Date(0), end: new Date(longestTime), setStartToZero,server:cutoffServer }))
         return (stackImage(all))
     }
     else {
-        all.push(await drawTimeLineChart({ data, start: new Date(cutoffList[0].startAt), end: new Date(cutoffList[0].endAt), setStartToZero }))
+        all.push(await drawTimeLineChart({ data, start: new Date(cutoffList[0].startAt), end: new Date(cutoffList[0].endAt), setStartToZero,server:cutoffServer }))
         return (stackImage(all))
     }
 

@@ -9,7 +9,7 @@ import { globalDefaultServer, Bestdoriurl } from '@/config';
 import { readJSONFromBuffer, stringToNumberArray } from '@/types/utils'
 import { logger } from '@/logger';
 import { Card } from './Card';
-import { GetProbablyTimeDifference } from '@/components/list/time';
+import { GetProbablyTimeDifference, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 import { LRUCache } from '@/LRUCache'
 import { assetErrorImageBuffer } from '@/image/utils';
 
@@ -484,6 +484,38 @@ export class Event {
         }
         catch{
             return undefined
+        }
+    }
+    getDaysOfEvent(ts: number,server:Server) {
+        if (!this.startAt)  return  0;
+        const offsetMs = getServerUtcOffset(server) * 60 * 60 * 1000
+        const eventStartAtTime = normalizeTimestamp(this.startAt[server])
+        //console.log(this.startAt)
+        const timestamp = normalizeTimestamp(ts)
+
+        const serverStartTime = eventStartAtTime + offsetMs
+
+        const startDate = new Date(serverStartTime)
+
+        const hour = startDate.getUTCHours()
+        const minute = startDate.getUTCMinutes()
+        const second = startDate.getUTCSeconds()
+        const millisecond = startDate.getUTCMilliseconds()
+
+        let firstDayEndServerTime =
+            serverStartTime +
+            ((86400000 + 4 * 60 * 60 * 1000)
+                - hour * 60 * 60 * 1000
+                - minute * 60 * 1000
+                - second * 1000
+                - millisecond)
+
+        const firstDayEndTime = firstDayEndServerTime - offsetMs
+
+        if (timestamp < firstDayEndTime) {
+            return 0
+        } else {
+            return Math.ceil((timestamp - firstDayEndTime) / 86400000)
         }
     }
 }

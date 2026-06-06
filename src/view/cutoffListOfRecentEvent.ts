@@ -109,7 +109,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                 }
                 cutoffContent.push(`当前分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
             }
-            cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time)}\n`)
+            cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}`)
             cutoffContent.push('\n')
         }
