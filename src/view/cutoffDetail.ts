@@ -254,8 +254,13 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         cutoffWorkGroup.push(c.initFull())
     }
     var cutoffT10AvgScoreWorkGroup = []
-    for(let t of compareEventList){
-        cutoffT10AvgScoreWorkGroup.push(getTop10AvgScore(compareEventObject.get(t),mainServer))
+    var cutoffT10Record = new Map<number,number>()
+    let dupRecordEvent = new Set<number>()
+    for(let t = 0;t<compareEventList.length;t++){
+        if (!dupRecordEvent.has(compareEventList[t])){
+            cutoffT10AvgScoreWorkGroup.push(getTop10AvgScore(compareEventObject.get(compareEventList[t]),mainServer,cutoffT10Record))
+            dupRecordEvent.add(compareEventList[t])
+        }
     }
     const [_, compareEventScoreAvg] = await Promise.all([
         Promise.all(cutoffWorkGroup),
@@ -268,10 +273,10 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }
     }
     // 开始计算比例
-    let baseScore = compareEventScoreAvg[0]
+    let baseScore = cutoffT10Record.get(eventId)
     for(let i = 1;i<compareEventList.length;i++){
-        if (compareEventScoreAvg[i]>0){
-            compareEventRateOfFirstEvent.push(baseScore / compareEventScoreAvg[i])
+        if (cutoffT10Record.get(compareEventList[i])>0){
+            compareEventRateOfFirstEvent.push(baseScore / cutoffT10Record.get(compareEventList[i]))
         }
         else{
             compareEventRateOfFirstEvent.push(1)
@@ -410,7 +415,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         list.push(drawListMerge(Line2List))
         list.push(line)
         const tempList = []
-        console.log(cutoff.dailyIncrement)
+        //console.log(cutoff.dailyIncrement)
         tempList.push((await drawList({
             key: '日增速',
             text: `${cutoff.dailyIncrement.join('/')}`
@@ -427,7 +432,6 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
     for(let i = 1;i<compareEventList.length;i++){
         let subEvent = compareEventObject.get(compareEventList[i])
         let eventIdStr = compareEventList[i].toString()
-        console.log(subEvent.bandId[0])
         try{
             var bandName = new Band(subEvent.bandId[0]).bandName[0]
         }
@@ -437,7 +441,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         
         list.push(line)
         list.push((await drawList({
-            key: `对比档线：${compareEventList[i]} T${compareEventTierList[i]}  顶配 ${Math.round(compareEventScoreAvg[i])}  ${subEvent.getTypeName()}`,
+            key: `对比档线：${compareEventList[i]} T${compareEventTierList[i]}  顶配 ${Math.round(cutoffT10Record.get(subEvent.eventId))}  ${subEvent.getTypeName()}`,
             text:`活动名称：${subEvent.eventName[mainServer]?subEvent.eventName[mainServer]:subEvent.eventName[0]}\n活动乐队：${bandName}`
         })))
         list.push(line)
@@ -480,7 +484,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
 
 }
 
-async function getTop10AvgScore(event:Event,mainServer:Server):Promise<number>{
+async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,number>):Promise<number>{
     if (event.eventType=='challenge') return 0
     const t10Cutoff = new CutoffEventTop(event.eventId, mainServer)
     await t10Cutoff.initFull(0)
@@ -503,5 +507,7 @@ async function getTop10AvgScore(event:Event,mainServer:Server):Promise<number>{
         avgScore+=a
     }
     if (scoreChange.length == 0) return 0
-    return avgScore/ scoreChange.length
+    const result:number = avgScore/ scoreChange.length
+    record.set(event.eventId,result)
+    return result
 }
