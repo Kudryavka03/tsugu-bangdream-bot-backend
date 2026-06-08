@@ -53,10 +53,29 @@ export class EventStage {
             return;
         }
         try {
-            let stageData = await this.getData(true, 'stages')
-            let rotationMusicsData = await this.getData(true, 'rotationMusics')
-            this.stageType = stageData as any
-            this.rotationMusics = rotationMusicsData as any
+            let datenow = Date.now()
+            let stageData = await this.getData(false, 'stages') as Array<{ type: string, startAt: string, endAt: string }>
+            // 设置占位符
+            let stageDataGroupItem:any= null
+            // 检查cache，expire就再fetch一次data
+            if (Number(stageData[stageData.length-1].endAt) < datenow) stageDataGroupItem = this.getData(true, 'stages')
+            // 设置占位符
+            let rotationMusicsDataGroupItem:any = null
+            // read data
+            let rotationMusicsData = await this.getData(false, 'rotationMusics') as Array<{ musicId: string, startAt: string, endAt: string }>;
+            // 检查cache，expire就再fetch一次data
+            if (Number(rotationMusicsData[rotationMusicsData.length-1].endAt) < datenow) rotationMusicsDataGroupItem = this.getData(true, 'rotationMusics')
+            // 赋值
+            if (stageDataGroupItem){
+                this.stageType = await stageDataGroupItem as any
+            }else{
+                this.stageType = stageData as any
+            }
+            if (rotationMusicsDataGroupItem){
+                this.rotationMusics = await rotationMusicsDataGroupItem as any
+            }else{
+                this.rotationMusics = rotationMusicsData as any
+            }
             this.isInitFull = true;
         }
         catch (e) {
