@@ -1234,11 +1234,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     var dupUid = []
     var totalChangeCount = 0    // 总变动次数，是否启用严格模式。处于严格模式下，只允许绝对确认
     const strictCount = 295
-    const offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const sameRoomRatioConfidence = 0.86  // 同房倍率
-    const offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-    const offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
-    const offsetCountDifferentCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const minTogetherCount = 10    // 最小同房数量
     for(let t of valueChangeData){
         if (!uidSort){
@@ -1252,7 +1248,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     const strictMode = totalChangeCount>=strictCount ?true:false
     if (uidSort) uidTotalList = uidSort
     for(let utl = 0;utl<uidTotalList.length;utl++){
-        if (dupUid.includes(utl)) continue  // 掩耳盗铃，但是确实可以避免一些问题
+        if (dupUid.includes(uidTotalList[utl])) continue  // 掩耳盗铃，但是确实可以避免一些问题
         var finalResultIn = []
         var uid = uidTotalList[utl]
         //if (uid == 0) uid = 1000522880
@@ -1305,9 +1301,12 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                 sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的   
             }
         }
+        let possibleAtSameRoomTemp = []
+        let possibleAtSameRoomRatioTemp = []
+        const roomLeft = 5 - sureAtSameRoom.length
         for(let i = 0;i<tempUidList.length;i++){
             if (sureAtSameRoom.includes(tempUidList[i]))continue
-            if (sureAtSameRoom.length>=5)break
+            //if (sureAtSameRoom.length>=5)break
             if (strictMode)break
             // 参数UID与待查UID占整个时段的变动次数，取大
             var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
@@ -1317,27 +1316,73 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
             var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+
             if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 房间数量小于5且最小同房次数>=3 总数Ratio>= offsetRatioConfidence
-                // 假如参数uid因为掉线不与其他uid在一个房间，掉两把
-                if (largeCountInPart == smallCountInPart && (smallCountInTotal /largeCountInTotal >= offsetRatioConfidence) ){  // 如果是完全一起变动，且总变动 小/大 >= offsetRatioConfidence。
-                    possibleAtSameRoom.push(tempUidList[i])
-                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
-                }else if(smallCountInTotal == largeCountInTotal && (largeCountInPart - smallCountInPart <=  offsetCountConfidenceInCurrentUidChange)){  // 如果总变动一样，但是一起变动 大-小 <= offsetCountConfidenceInCurrentUidChange
-                    possibleAtSameRoom.push(tempUidList[i])
-                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
-                }else if((largeCountInTotal  - smallCountInTotal) == (largeCountInPart - smallCountInPart) && (largeCountInPart - smallCountInPart) <= offsetCountConfidenceTotalCount){    // 如果总数差 = 变动差 且差值<=2 则可能在同一个房间
-                    possibleAtSameRoom.push(tempUidList[i])
-                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
-                }else if((largeCountInTotal - smallCountInPart) <= offsetCountDifferentCount && (largeCountInPart - smallCountInPart) <= offsetCountDifferentCount){
-                    possibleAtSameRoom.push(tempUidList[i])
-                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
-                }
-                else if((smallCountInPart - largeCountInTotal) > sameRoomRatioConfidence && (smallCountInPart / largeCountInPart) > sameRoomRatioConfidence){
-                    possibleAtSameRoom.push(tempUidList[i])
-                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){
+                    possibleAtSameRoomTemp.push(tempUidList[i])
+                    possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                 }
             }
         }
+
+        if (roomLeft > 0 && possibleAtSameRoomTemp.length >roomLeft){
+            const swap = function (arr: number[],lNumber:number,rNumber:number){
+                if(lNumber == rNumber) return
+                let old = arr[lNumber]
+                arr[lNumber] = arr[rNumber]
+                arr[rNumber] = old
+            }
+            const qs = function(arr: number[], left, right){
+            left = typeof left != 'number' ? 0 : left,
+                right = typeof right != 'number' ? arr.length - 1 : right;
+                if (left>=right) return 
+                let pivot  = left
+                let index = pivot+1
+                for(let l = index ;l<=right;l++){
+                    if (arr[l] > arr[pivot]) {
+                        swap(arr, l, index);
+                        swap(possibleAtSameRoomTemp,l,index)
+                        index++;
+                    }   
+                }
+                    // 此时index是所有小于pivot的值的总和+1
+                    // pivot此时还在第一位，至于两数组中间
+                    // 3214567 此时index是3（对应数组1）
+                    //    1      2        3       4       5
+                    // 3214567 3214567 3412567 3452167 3456127      …   3456721
+                    //    1       1        2      3        4       
+                    // 3跟1交换，即1234567
+                swap(arr, pivot, index - 1)
+                swap(possibleAtSameRoomTemp, pivot, index - 1)     
+                qs(arr,left,index-2) // 12排序
+                qs(arr,index,right)// 4567排序
+            }
+            qs(possibleAtSameRoomRatioTemp,0,possibleAtSameRoomRatioTemp.length-1)
+                //此时排序好了
+            let gaps = (1-sameRoomRatioConfidence)/2.5
+            let preAdd = -1;
+            for(let i =0;i<possibleAtSameRoomTemp.length-1;i++){
+
+                if (possibleAtSameRoom.length>=roomLeft) break
+                let o =possibleAtSameRoomRatioTemp[i]
+                let n =possibleAtSameRoomRatioTemp[i+1]
+                if (o-n <gaps && i<=roomLeft){
+                    possibleAtSameRoom.push(possibleAtSameRoomTemp[i])
+                    preAdd = i+1
+                } //尝试从大于5个房间中再细分两到三个房间
+            }
+            if(preAdd != -1 && possibleAtSameRoom.length<roomLeft){
+                possibleAtSameRoom.push(possibleAtSameRoomTemp[preAdd])
+            }else{
+                possibleAtSameRoom.push(possibleAtSameRoomTemp[0])
+            }
+        }
+        else if (roomLeft > 0){
+            for(let d of possibleAtSameRoomTemp){
+                possibleAtSameRoom.push(d)
+            }
+        }
+        
         for(let f of sureAtSameRoom){
             if (finalResultIn.length <5){
                 finalResultIn.push(f)
@@ -1345,7 +1390,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             }
         }
         for(let f of possibleAtSameRoom){
-            if (finalResultIn.length <5){
+            if (finalResultIn.length <5 && !finalResultIn.includes(f)){
                 finalResultIn.push(f)
                 dupUid.push(f)
             }
