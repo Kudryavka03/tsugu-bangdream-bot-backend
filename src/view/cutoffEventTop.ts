@@ -1235,6 +1235,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     var totalChangeCount = 0    // 总变动次数，是否启用严格模式。处于严格模式下，只允许绝对确认
     const strictCount = 295
     const offsetRatioConfidence = 0.9  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
+    const sameRoomRatioConfidence = 0.86  // 同房倍率
     const offsetCountConfidenceInCurrentUidChange = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountConfidenceTotalCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
     const offsetCountDifferentCount = 2  // 用于判断偏移以应对玩家中途掉线的情况，一般不要调整这个参数。
@@ -1328,6 +1329,10 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     possibleAtSameRoom.push(tempUidList[i])
                     possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
                 }else if((largeCountInTotal - smallCountInPart) <= offsetCountDifferentCount && (largeCountInPart - smallCountInPart) <= offsetCountDifferentCount){
+                    possibleAtSameRoom.push(tempUidList[i])
+                    possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
+                }
+                else if((smallCountInPart - largeCountInTotal) > sameRoomRatioConfidence && (smallCountInPart / largeCountInPart) > sameRoomRatioConfidence){
                     possibleAtSameRoom.push(tempUidList[i])
                     possibleAtSameRoomRatio.push(smallCountInTotal /largeCountInTotal)
                 }
