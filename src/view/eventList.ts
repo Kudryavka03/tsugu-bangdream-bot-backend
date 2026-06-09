@@ -20,7 +20,7 @@ import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
-const limitSub = pLimit(2);
+const limitSub = pLimit(3);
 const limitMain = pLimit(7);
 let maxHeight = 7000
 const maxColumns = 7
