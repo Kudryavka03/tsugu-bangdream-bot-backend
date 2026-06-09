@@ -1235,6 +1235,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     var totalChangeCount = 0    // 总变动次数，是否启用严格模式。处于严格模式下，只允许绝对确认
     const strictCount = 295
     const sameRoomRatioConfidence = 0.86  // 同房倍率
+    const sameRoomRatioToTotalConfidence = 0.76  // 同房 / 总出现次数 > 0.76
     const minTogetherCount = 10    // 最小同房数量
     for(let t of valueChangeData){
         if (!uidSort){
@@ -1304,6 +1305,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         let possibleAtSameRoomTemp = []
         let possibleAtSameRoomRatioTemp = []
         const roomLeft = 5 - sureAtSameRoom.length
+        let skipCompare = false
         for(let i = 0;i<tempUidList.length;i++){
             if (sureAtSameRoom.includes(tempUidList[i]))continue
             //if (sureAtSameRoom.length>=5)break
@@ -1317,14 +1319,24 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
             var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
 
-            if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 房间数量小于5且最小同房次数>=3 总数Ratio>= offsetRatioConfidence
-                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){
+            if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
+                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                 }
+                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioToTotalConfidence){
+                    // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
+                    possibleAtSameRoomTemp.push(tempUidList[i])
+                    possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                }
+                // 如果当前查询UID变动小于待查UID变动呢？
+                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
+                    // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 当前查询总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
+                    if(!skipCompare)skipCompare = true  // 让后面的流程来匹配
+                }
             }
         }
-
+        if (skipCompare == true && possibleAtSameRoomTemp.length <1) continue
         if (roomLeft > 0 && possibleAtSameRoomTemp.length >roomLeft){
             const swap = function (arr: number[],lNumber:number,rNumber:number){
                 if(lNumber == rNumber) return
