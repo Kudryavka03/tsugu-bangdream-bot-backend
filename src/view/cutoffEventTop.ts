@@ -1324,13 +1324,13 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                 }
-                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioToTotalConfidence){
-                    // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
+                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioToTotalConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
+                    // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13) 且 
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                 }
                 // 如果当前查询UID变动小于待查UID变动呢？
-                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
+                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 当前查询总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
                     if(!skipCompare)skipCompare = true  // 让后面的流程来匹配
                 }
