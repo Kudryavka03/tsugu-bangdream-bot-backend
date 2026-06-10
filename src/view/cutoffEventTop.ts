@@ -1320,7 +1320,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
 
             if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
-                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
+                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大变动次数 > sameRoomRatioConfidence比例
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                 }
@@ -1370,24 +1370,28 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                 qs(arr,index,right)// 4567排序
             }
             qs(possibleAtSameRoomRatioTemp,0,possibleAtSameRoomRatioTemp.length-1)
+            console.log('---------候选前----------')
+            console.log(possibleAtSameRoomTemp)
+            console.log(possibleAtSameRoomRatioTemp)
                 //此时排序好了
             let gaps = (1-sameRoomRatioConfidence)/2.5
-            let preAdd = -1;
+            possibleAtSameRoom.push(possibleAtSameRoomTemp[0])
             for(let i =0;i<possibleAtSameRoomTemp.length-1;i++){
 
                 if (possibleAtSameRoom.length>=roomLeft) break
                 let o =possibleAtSameRoomRatioTemp[i]
                 let n =possibleAtSameRoomRatioTemp[i+1]
                 if (o-n <gaps && i<=roomLeft){
-                    possibleAtSameRoom.push(possibleAtSameRoomTemp[i])
-                    preAdd = i+1
+                    possibleAtSameRoom.push(possibleAtSameRoomTemp[i+1])
                 } //尝试从大于5个房间中再细分两到三个房间
+                else{
+                    break
+                }
             }
-            if(preAdd != -1 && possibleAtSameRoom.length<roomLeft){
-                possibleAtSameRoom.push(possibleAtSameRoomTemp[preAdd])
-            }else{
-                possibleAtSameRoom.push(possibleAtSameRoomTemp[0])
-            }
+            console.log('---------候选后----------')
+            console.log(possibleAtSameRoom)
+            console.log(possibleAtSameRoomRatioTemp)
+            console.log('--------候选结束---------')
         }
         else if (roomLeft > 0){
             for(let d of possibleAtSameRoomTemp){
