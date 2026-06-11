@@ -2,7 +2,7 @@ import { stageTypeList, stageTypeTextStrokeColor, stageTypeName, Stage } from "@
 import { Song, difficultyColorList, difficultyNameList } from "@/types/Song";
 import { Canvas, Image, FontLibrary } from 'skia-canvas';
 import { assetsRootPath } from '@/config'
-import { changeTimefomant } from '@/components/list/time'
+import { changeTimefomant, changeTimePeriodFormat, formatSeconds } from '@/components/list/time'
 import { setFontStyle } from '@/image/text'
 import { stackImageHorizontal } from "../utils";
 import { loadImageFromPath } from '@/image/utils';
@@ -63,7 +63,7 @@ diffDesc.set('expert','EX')
 diffDesc.set('special','SP')
 diffDesc.set('hard','HD')
 async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Promise<Canvas> {//绘制活动中的每个歌曲(包括难度)
-    const canvas = new Canvas(800 / 8, 800 / 8 / 180 * 290);
+    const canvas = new Canvas(800 / 8, (800 / 8 / 180 * 290) + 15);
     const ctx = canvas.getContext('2d');
 
     const jacketImageHeight = 800 / 8 - 6
@@ -90,17 +90,18 @@ async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Pr
         let diff = 3
         for (let i in song.difficulty) {
             const difficultyId = parseInt(i);
-            diff = difficultyId
             const meta = song.calcMeta(true, difficultyId)
             // difficultyLineGraphList.push(drawDifficultyLineGraph(difficultyId, meta));
             if (maxMeta < meta) {
                 maxMeta = meta
                 maxDiff = difficultyNameList[difficultyId]
+                diff = difficultyId
             }
         }
         const percent = Math.round(maxMeta / sosMeta * 1000) / 10
         ctx.fillText(`难度:${diffDesc.get(maxDiff)}/${song.difficulty[diff].playLevel}`, 4, 128)
         ctx.fillText(`分数:${percent}%`, 4, 148)
+        ctx.fillText(`时长:${formatSeconds(song.length)}`, 4, 168)
         // const difficultyLineGraph = stackImageHorizontal(difficultyLineGraphList)
         // ctx.drawImage(difficultyLineGraph, 3, 0);
     }
@@ -112,7 +113,7 @@ async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Pr
 export async function drawEventStageSongHorizontal(stage: Stage, meta: boolean = false): Promise<Canvas> {//绘制活动中的歌曲列表(横向)
     const songIdList = stage.songIdList;
 
-    const canvas = new Canvas(800 + (meta ? 100 : 0), 800 / 8 / 180 * 290 + 10);
+    const canvas = new Canvas(800 + (meta ? 100 : 0), 800 / 8 / 180 * 290 + 10+6);
     const ctx = canvas.getContext('2d');
     var sumMeta = 0
     for (let i = 0; i < songIdList.length; i++) {
@@ -137,5 +138,6 @@ export async function drawEventStageSongHorizontal(stage: Stage, meta: boolean =
     ctx.fillStyle = '#a7a7a7'
     ctx.fillText('平均分数：', 800 + 4, 50)
     ctx.fillText(`${persent}%`, 800 + 4, 80)
+
     return canvas;
 }
