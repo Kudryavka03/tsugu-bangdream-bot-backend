@@ -12,6 +12,7 @@ import { Card } from './Card';
 import { GetProbablyTimeDifference, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 import { LRUCache } from '@/LRUCache'
 import { assetErrorImageBuffer } from '@/image/utils';
+import { arraysEqual } from '@/api/utils';
 
 //var eventDataCache = {}
 const MAX_CACHE_SIZE = 200;  // 设置Event最大缓存量
@@ -131,6 +132,7 @@ export class Event {
         visual?: number
     } = {}
     limitBreaks: Array<Array<number>>
+    themeTitle:string[]
     //以下用于模糊搜索
     characterId: number[]
     attribute: string[]
@@ -221,6 +223,7 @@ export class Event {
         this.publicEndAt = stringToNumberArray(eventData['publicEndAt']);
         this.pointRewards = eventData['pointRewards'];
         this.rankingRewards = eventData['rankingRewards'];
+        this.themeTitle = eventData['themeTitle']??[];
         /*
         this.distributionStartAt = eventData['distributionStartAt'];
         this.distributionEndAt = eventData['distributionEndAt'];
@@ -243,6 +246,9 @@ export class Event {
         if(this.data!= null) return this.data   // 如果存在了则直接返回this.data,不再访问callAPIAndCacheResponse
         var time = update ? 0 : 1 / 0
         var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, time,3,!update,0);
+        if (!update && !arraysEqual(eventData['startAt'],mainAPI['events'][this.eventId.toString()]['startAt'])){
+            eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/events/${this.eventId}.json`, 0,3,false,1)
+        }
         this.data = eventData
         //console.log(eventData)
         //eventData["eventCharacterParameterBonus"] = eventData["eventCharacterParameterBonus"] ?? eventCharacterParameterBonusFix[this.eventId.toString()]
