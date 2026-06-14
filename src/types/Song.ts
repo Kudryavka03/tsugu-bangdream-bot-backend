@@ -197,12 +197,28 @@ export class Song {
           const servers = ['jp', 'cn', 'en', 'tw', 'kr'];
           var jacketImageName = this.jacketImage[this.jacketImage.length - 1];
           for (const server of servers) {
-            const retryUrl = `${Bestdoriurl}/assets/${server}/musicjacket/musicjacket${this.getSongRip()}_rip/assets-star-forassetbundle-startapp-musicjacket-musicjacket${this.getSongRip()}-${jacketImageName}-jacket.png`;
+            const retryUrl = `${Bestdoriurl}/assets/${server}/musicjacket/musicjacket${this.getSongRip()}_rip/assets-star-forassetbundle-startapp-musicjacket-musicjacket${this.getSongRip()}-${jacketImageName.toLowerCase()}-jacket.png`;
             jacketImageBuffer = await downloadFile(retryUrl, true, false, 1);
             if (!jacketImageBuffer.equals(assetErrorImageBuffer)) break;
           }
         }
         return cacheOnly?null:await loadImage(jacketImageBuffer)
+    }
+    async getSongJacketBuffer(displayedServerList: Server[] = [Server.jp, Server.cn],cacheOnly=false): Promise<Buffer> {
+        const jacketImageUrl = this.getSongJacketImageURL(displayedServerList)
+        var jacketImageBuffer = await downloadFile(jacketImageUrl)
+        //下载失败自动尝试切换服务器下载
+        if (jacketImageBuffer.equals(assetErrorImageBuffer)) {
+            console.log("download failed, try to download jacket from other servers")
+          const servers = ['jp', 'cn', 'en', 'tw', 'kr'];
+          var jacketImageName = this.jacketImage[this.jacketImage.length - 1];
+          for (const server of servers) {
+            const retryUrl = `${Bestdoriurl}/assets/${server}/musicjacket/musicjacket${this.getSongRip()}_rip/assets-star-forassetbundle-startapp-musicjacket-musicjacket${this.getSongRip()}-${jacketImageName.toLowerCase()}-jacket.png`;
+            jacketImageBuffer = await downloadFile(retryUrl, true, false, 1);
+            if (!jacketImageBuffer.equals(assetErrorImageBuffer)) break;
+          }
+        }
+        return cacheOnly?null:await jacketImageBuffer
     }
     getSongJacketImageURL(displayedServerList?: Server[]): string {
         var server = getServerByPriority(this.publishedAt, displayedServerList)

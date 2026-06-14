@@ -24,6 +24,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     const server = getServerByPriority(song.publishedAt, displayedServerList)
     const band = new Band(song.bandId)
     const bandName = band.bandName[server]
+    const coverBuffer = song.getSongJacketBuffer([Server.jp,Server.cn])
     var songChart = await songChartDownload
     if (songChart == null){
         return ['谱面数据没法下载，再试一次看看']
@@ -48,7 +49,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     author: song.detail.lyricist[server],
     level: song.difficulty[difficultyId].playLevel,
     diff: difficultyName[difficultyId],
-    cover: song.getSongJacketImageURL(displayedServerList)
+    cover: await coverBuffer
     },chartData},{name:'DrawPreview'})
     //console.log(buffer.buffer, buffer.byteOffset, buffer.length)
     return [Buffer.from(buffer.buffer)]

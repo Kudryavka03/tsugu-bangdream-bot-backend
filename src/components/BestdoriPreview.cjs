@@ -220,7 +220,12 @@ async function DrawPreview ({ meta, chartData }) {
     // 读取封面
     const coverImg = await (async () => {
         try {
-            if (typeof cover === "string" || Buffer.isBuffer(cover)) return await Canvas.loadImage(cover)
+            let coverBuffer = Buffer.from(cover)
+            //console.log(coverBuffer)
+            
+            //if(typeof cover === "string" ) console.log(cover)
+            if (typeof cover === "string") return await Canvas.loadImage(cover)
+            if (Buffer.isBuffer(coverBuffer)) return await Canvas.loadImage(coverBuffer)
             else throw new Error()
         } catch (e) {
             return await loadImageFromPath(assetsRootPath + '/SongChart/jacket.png')
