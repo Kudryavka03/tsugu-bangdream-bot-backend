@@ -14,6 +14,7 @@ import { matchSongList } from "./songList";
 import { fuzzySearch, FuzzySearchResult, include } from "@/fuzzySearch";
 import pLimit from "p-limit";
 import { parentPort, threadId, isMainThread } from 'worker_threads';
+import { drawTips } from "@/components/tips";
 const limitSub = pLimit(3);
 const limitMain = pLimit(7);
 const limitTask = isMainThread ? limitMain : limitSub;
@@ -46,8 +47,14 @@ const difficulties = [
     'special'
 ]
 
-export async function drawSongMetaList(mainServer: Server, compress: boolean,searchCondition?:string): Promise<Array<Buffer | string>> {
+export async function drawSongMetaList(mainServer: Server, compress: boolean,searchCondition?:string,timeOffset:number=30): Promise<Array<Buffer | string>> {
     let difficultMask = 0b00000
+    let isRatioMode = false
+    //console.log(searchCondition)
+    if (searchCondition && searchCondition.includes('效率')){
+        isRatioMode = true
+        searchCondition = searchCondition.replace(' 效率','').replace('效率','')
+    }
     searchCondition = (searchCondition) ?searchCondition:''
     searchCondition = searchCondition.toLowerCase()
     let difficultyCondition = searchCondition.split(' ')
@@ -76,8 +83,8 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,sea
     }
 
     searchCondition = difficultyCondition.filter(x=>(x!='')).join(' ')
-    console.log(`\'${searchCondition}\'`)
-    console.log(difficultMask,[0,1,2,3,4].map(x=>{return (difficultMask & (1 << x))} ))
+    //console.log(`\'${searchCondition}\'`)
+    //console.log(difficultMask,[0,1,2,3,4].map(x=>{return (difficultMask & (1 << x))} ))
     let fuzzySearchResult: FuzzySearchResult
     fuzzySearchResult = (searchCondition!='')?fuzzySearch(searchCondition):null
     const feverMode = [true, false]
@@ -86,7 +93,8 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,sea
 
     for (let i = 0; i < feverMode.length; i++) {
         const element = feverMode[i];
-        drawMetaRankListDatablockPromise.push(limitTask(() => drawMetaRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask)))
+        !isRatioMode?drawMetaRankListDatablockPromise.push(limitTask(() => drawMetaRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask)))
+        : drawMetaRankListDatablockPromise.push(limitTask(() => drawMetaTimeRatioRankListDatablock(element, mainServer,fuzzySearchResult,difficultMask)))
         // imageList.push(await drawMetaRankListDatablock(element, mainServer))
     }
     const drawMetaRankListDatablockResult = await Promise.all(drawMetaRankListDatablockPromise)
@@ -98,6 +106,7 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,sea
     var all = []
     all.push(await drawTitle('查询', `${serverNameFullList[mainServer]} 分数排行榜`))
     all.push(stackImageHorizontal(imageList))
+     all.push(await drawTips({text:`按${!isRatioMode?'分数':'周回效率'}排序 在一个周回内，歌曲本体时长 + ${timeOffset}秒选歌回房时间的周回效率，超出周回的结算分将被丢弃。`,maxWidth:1600}))
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,
@@ -106,13 +115,22 @@ export async function drawSongMetaList(mainServer: Server, compress: boolean,sea
     return [buffer]
 }
 
-async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matches:FuzzySearchResult,difficultyMask=0b11111): Promise<Canvas> {
+async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matches:FuzzySearchResult,difficultyMask=0b11111,timeOffset:number=30): Promise<Canvas> {
     if (!difficultyMask || difficultyMask == 0b00000)difficultyMask = 0b11111
     
     const tempSongList = matches?matchSongList(matches, [Server.jp]):[]
     let level = (matches && matches['songLevels'])?matches['songLevels']:null
     const metaRanking = getMetaRanking(Fever, mainServer);
     const maxMeta = metaRanking[0].meta
+    const metaTimeRatioRankMap = new Map<string, number>();
+    [...metaRanking]
+        .sort((a, b) => {
+            return getMetaTimeRatio(b.meta, getSongLength(b.songId), timeOffset, 1)
+                - getMetaTimeRatio(a.meta, getSongLength(a.songId), timeOffset, 1);
+        })
+        .forEach((item, index) => {
+            metaTimeRatioRankMap.set(`${item.songId}_${item.difficulty}`, index + 1);
+        });
     let list: Array<Canvas> = []
     var drawSongInListPromise = []
     for (let i = 0; i < metaRanking.length; i++) {
@@ -123,9 +141,11 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matc
                 if (song.songId == ts.songId){
                     if((difficultyMask & (1 << difficultyId)) !== 0){
                         if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                            const metaTimeRatioRank = metaTimeRatioRankMap.get(`${song.songId}_${difficultyId}`) ?? '-';
                             let precent = metaRanking[i].meta / maxMeta * 100
                             precent = Math.round(precent * 100) / 100
-                            drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`)))
+                            let metaTimeRatio = getMetaTimeRatio(metaRanking[i].meta,song.length,timeOffset,1)
+                            drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}（${metaTimeRatio}%/#${metaTimeRatioRank}）`)))
                         }
                     }
                 }
@@ -133,9 +153,11 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matc
         }else{
             if((difficultyMask == 0b11111) || (difficultyMask & (1 << difficultyId)) !== 0){
                 if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                    const metaTimeRatioRank = metaTimeRatioRankMap.get(`${song.songId}_${difficultyId}`) ?? '-';
                     let precent = metaRanking[i].meta / maxMeta * 100
                     precent = Math.round(precent * 100) / 100
-                    drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}`)))
+                    let metaTimeRatio = getMetaTimeRatio(metaRanking[i].meta,song.length,timeOffset,1)
+                    drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}（${metaTimeRatio}%/#${metaTimeRatioRank}）`)))
                 }
             }
         }
@@ -149,6 +171,75 @@ async function drawMetaRankListDatablock(Fever: boolean, mainServer: Server,matc
     list.pop()
     const topLeftText = Fever ? '有Fever' : '无Fever'
     return (drawDatablock({ list, topLeftText }))
+}
+
+async function drawMetaTimeRatioRankListDatablock(Fever: boolean, mainServer: Server,matches:FuzzySearchResult,difficultyMask=0b11111,timeOffset:number=30): Promise<Canvas> {
+    if (!difficultyMask || difficultyMask == 0b00000)difficultyMask = 0b11111
+    
+    const tempSongList = matches?matchSongList(matches, [Server.jp]):[]
+    let level = (matches && matches['songLevels'])?matches['songLevels']:null
+    const metaRankingTemp = getMetaRanking(Fever, mainServer);
+    const maxMeta = metaRankingTemp[0].meta
+    //const metaTimeRatioRankMap = new Map<string, number>();
+    const metaRanking = [...metaRankingTemp].sort((a,b)=>getMetaTimeRatio(b.meta,getSongLength(b.songId),timeOffset,1) - getMetaTimeRatio(a.meta,getSongLength(a.songId),timeOffset,1))
+    /*
+    metaRanking.forEach((item, index) => {
+            metaTimeRatioRankMap.set(`${item.songId}_${item.difficulty}`, index + 1);
+        });
+        */
+    let list: Array<Canvas> = []
+    var drawSongInListPromise = []
+    for (let i = 0; i < metaRanking.length; i++) {
+        let song = new Song(metaRanking[i].songId)
+        let difficultyId = metaRanking[i].difficulty
+        if (tempSongList && tempSongList.length!=0){
+            for(let ts of tempSongList){
+                if (song.songId == ts.songId){
+                    if((difficultyMask & (1 << difficultyId)) !== 0){
+                        if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                            //const metaTimeRatioRank = metaTimeRatioRankMap.get(`${song.songId}_${difficultyId}`) ?? '-';
+                            let precent = metaRanking[i].meta / maxMeta * 100
+                            precent = Math.round(precent * 100) / 100
+                            let metaTimeRatio = getMetaTimeRatio(metaRanking[i].meta,song.length,timeOffset,1)
+                            drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}（${metaTimeRatio}%/#${i+1}）`)))
+                        }
+                    }
+                }
+            }
+        }else{
+            if((difficultyMask == 0b11111) || (difficultyMask & (1 << difficultyId)) !== 0){
+                if(!level || level.includes(song.difficulty[difficultyId].playLevel)){
+                    //const metaTimeRatioRank = metaTimeRatioRankMap.get(`${song.songId}_${difficultyId}`) ?? '-';
+                    let precent = metaRanking[i].meta / maxMeta * 100
+                    precent = Math.round(precent * 100) / 100
+                    let metaTimeRatio = getMetaTimeRatio(metaRanking[i].meta,song.length,timeOffset,1)
+                    drawSongInListPromise.push(limitTask(() => drawSongInList(song, difficultyId, `相对分数: ${precent}% #${metaRanking[i].rank + 1} / 时长：${formatSeconds(song.length)}（${metaTimeRatio}%/#${i+1}）`)))
+                }
+            }
+        }
+        if(drawSongInListPromise.length >= 50) break
+    }
+    for(var resultSong of await Promise.all(drawSongInListPromise)){
+        list.push(resultSong)
+        list.push(line)
+    }
+
+    list.pop()
+    const topLeftText = Fever ? '有Fever' : '无Fever'
+    return (drawDatablock({ list, topLeftText }))
+}
+
+function getMetaTimeRatio(meta:number,songLength,timeOffset:number=30,round:number=1):number{
+    let roundTime = 3600 * round
+    let baseTime = (Math.floor(songLength) + timeOffset)
+    let baseRatio = meta / baseTime
+    let count = Math.floor(roundTime / baseTime)
+    //console.log(baseTime,baseRatio,count,(baseRatio * count))
+    return Math.round((baseRatio * count)*10000)/100
+}
+
+function getSongLength(songId:number):number{
+    return mainAPI['songs'][songId.toString()]['length']
 }
 
 export async function genMetaRankCache(Fever: boolean, mainServer: Server) {

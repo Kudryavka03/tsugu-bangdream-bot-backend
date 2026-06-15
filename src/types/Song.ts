@@ -615,3 +615,17 @@ export function getMetaRanking(Fever: boolean, mainServer: Server): songInRank[]
     }
     return songRankList
 }
+
+export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId:number,mainServer:Server){ // 亏火计算，没写完，用到再写
+    let song1Meta = song1.calcMeta(fever,diffId)
+    let song2Meta = song2.calcMeta(fever,diffId)
+    let tips = ''
+    if(song1Meta>song2Meta){
+        let diff = song1Meta - song2Meta
+        let ratio = song1Meta / diff
+        let count = Math.round(ratio)
+        // 打count把song1 = 打count+1把song2
+        tips+=`${song1.musicTitle[mainServer]} 打${count}把 = ${song2.musicTitle[mainServer]} 打${count+1}把\n`
+        tips+=`${song1.musicTitle[mainServer]} 打${count}把 + ${song2.musicTitle[mainServer]} 打${count+1}把\n`
+    }
+}
