@@ -49,6 +49,8 @@
     "browser": true
   },
   "dependencies": {
+    "@koishijs/plugin-http": "^0.6.3",
+    "@koishijs/plugin-proxy-agent": "^0.3.3",
     "axios": "^1.7.4",
     "msgpackr": "^2.0.2"
   },

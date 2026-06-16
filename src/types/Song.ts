@@ -659,12 +659,35 @@ export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId1:number,
     //    换算为火 = 差值总量 / (5 * highMeta)
     const lostFiresFor30Plays = (30*15 * diff) / (5 * highMeta)
 
+    const timesPerOneRound = 3600
+    const extraTime1 = 30   // 严格模式
+    const extraTime2 = 40   // 宽松判定
+    let song1CountPerRoundStrict = Math.floor(timesPerOneRound / (Math.floor(song1.length) + extraTime1))
+    let song2CountPerRoundStrict = Math.floor(timesPerOneRound / (Math.floor(song2.length) + extraTime1))
+    const totalScoreSong1PreRound = (song1CountPerRoundStrict*15 * meta1)
+    const totalScoreSong2PreRound = (song2CountPerRoundStrict*15 * meta2)
+
+
     const tips = []
     tips.push(`${titleHigh} 相较于 ${titleLow} 出分更高 (meta: ${highMeta.toFixed(4)} vs ${lowMeta.toFixed(4)})`)
+    // 
+    tips.push(`打三火（15把）时，同样出分下 ${titleHigh} 比 ${titleLow} 少用 ${(((highMeta*15)-(lowMeta*15))/(lowMeta*5)).toFixed(4)} 火`) 
+    tips.push(`打三火（15把）时，同样出分下 ${titleLow} 比 ${titleHigh} 多用 ${(((highMeta*15)-(lowMeta*15))/(highMeta*5)).toFixed(4)} 火`) 
     tips.push(`约: ${titleHigh} 打 ${equalPlaysRound} 把 ≈ ${titleLow} 打 ${equalPlaysRound + 1} 把`) 
     tips.push(`精确值: n = ${equalPlaysExact.toFixed(4)} (向上取整 ${equalPlaysCeil})`)
-    tips.push(`大约再打 ${playsToLoseOneFire} 把 （${Math.round(playsToLoseOneFire/5)}火） ${titleLow} 会亏一火，精确值 ${playsToLoseOneFireExact.toFixed(4)}`)
-    tips.push(`一个周回内，${titleLow} 相较于 ${titleHigh} 会亏约 ${lostFiresFor30Plays.toFixed(2)} 火`)
+    tips.push(`大约打 ${playsToLoseOneFire} 把 （${Math.round(playsToLoseOneFireExact/5)}火） ${titleLow} 会亏一火，精确值 ${playsToLoseOneFireExact.toFixed(4)}`)
+    tips.push(`固定30把3火时，${titleLow} 相较于 ${titleHigh} 会亏约 ${lostFiresFor30Plays.toFixed(2)} 火`)
+    
+
+    if (totalScoreSong1PreRound<totalScoreSong2PreRound){
+        let lose = (totalScoreSong2PreRound - totalScoreSong1PreRound) / (5*meta2)
+        tips.push(`严格一个周回内，${song1.musicTitle[mainServer]} 相较于 ${song2.musicTitle[mainServer]} 会亏约 ${lose.toFixed(2)} 火`)
+        tips.push(`严格一个周回内，${song1.musicTitle[mainServer]} 相较于 ${song2.musicTitle[mainServer]} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
+    }else{
+        let lose = (totalScoreSong1PreRound - totalScoreSong2PreRound) / (5*meta1)
+        tips.push(`严格一个周回内，${song2.musicTitle[mainServer]} 相较于 ${song1.musicTitle[mainServer]} 会亏约 ${lose.toFixed(2)} 火`)
+        tips.push(`严格一个周回内，${song2.musicTitle[mainServer]} 相较于 ${song1.musicTitle[mainServer]} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
+    }
 
     return {
         ok: true,

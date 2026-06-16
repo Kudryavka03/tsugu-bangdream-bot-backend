@@ -11,6 +11,7 @@ import { resizeImage } from '@/components/utils'
 import { getServerByPriority } from '@/types/Server'
 import { Canvas } from 'skia-canvas'
 import { serverNameFullList } from '@/config'
+import { formatSeconds } from '@/components/list/time'
 
 const LIST_WIDTH = 800
 const SONG_ROW_WIDTH = 760
@@ -96,7 +97,7 @@ async function drawSongRow(song: Song, difficulty: number, mainServer: Server) {
     })
     const bandName = new Band(song.bandId).bandName[server] || ''
     const detailImage = await drawText({
-        text: `${bandName}    Meta: ${song.calcMeta(true, difficulty).toFixed(4)}`,
+        text: `${bandName} 时长：${formatSeconds(song.length)} Meta: ${song.calcMeta(true, difficulty).toFixed(4)}`,
         textSize: 20,
         lineHeight: 30,
         maxWidth: 520,

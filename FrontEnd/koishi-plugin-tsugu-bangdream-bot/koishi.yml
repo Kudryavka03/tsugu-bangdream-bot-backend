@@ -1,4 +1,6 @@
 plugins:
+  proxy-agent:di8vcj: {}
+  http:ytgqp8: {}
   server:mms91p:
     port: 5160
     host: localhost
