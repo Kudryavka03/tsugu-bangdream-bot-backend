@@ -80,6 +80,8 @@ export async function getReplyFromBackend(
   url: string,
   data: unknown,
 ): Promise<Array<string | Buffer>> {
+  getReplyFromBackendLogger.info(url, data)
+
   const response = await axios.post<ArrayBuffer>(url, data, {
     responseType: 'arraybuffer',
     validateStatus: () => true,

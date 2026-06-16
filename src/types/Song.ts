@@ -616,16 +616,68 @@ export function getMetaRanking(Fever: boolean, mainServer: Server): songInRank[]
     return songRankList
 }
 
-export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId:number,mainServer:Server){ // 亏火计算，没写完，用到再写
-    let song1Meta = song1.calcMeta(fever,diffId)
-    let song2Meta = song2.calcMeta(fever,diffId)
-    let tips = ''
-    if(song1Meta>song2Meta){
-        let diff = song1Meta - song2Meta
-        let ratio = song1Meta / diff
-        let count = Math.round(ratio)
-        // 打count把song1 = 打count+1把song2
-        tips+=`${song1.musicTitle[mainServer]} 打${count}把 = ${song2.musicTitle[mainServer]} 打${count+1}把\n`
-        tips+=`${song1.musicTitle[mainServer]} 打${count}把 + ${song2.musicTitle[mainServer]} 打${count+1}把\n`
+export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId1:number,diffId2:number,mainServer:Server){ // 亏火计算，没写完，用到再写
+    const meta1 = song1.calcMeta(fever, diffId1)
+    const meta2 = song2.calcMeta(fever, diffId2)
+
+    // Ensure `high` is the song with higher meta (A 相对 B 出分更高)
+    let highMeta = meta1, lowMeta = meta2
+    let highSong = song1, lowSong = song2
+    let highDiff = diffId1, lowDiff = diffId2
+    if (meta2 > meta1) {
+        highMeta = meta2; lowMeta = meta1
+        highSong = song2; lowSong = song1
+        highDiff = diffId2; lowDiff = diffId1
+    }
+
+    const titleHigh = (highSong.musicTitle && highSong.musicTitle[mainServer]) || 'Unknown'
+    const titleLow = (lowSong.musicTitle && lowSong.musicTitle[mainServer]) || 'Unknown'
+
+    // Guard: identical or non-positive meta
+    if (highMeta <= 0 || lowMeta <= 0 || Math.abs(highMeta - lowMeta) < 1e-9) {
+        const tips = `${titleHigh} 与 ${titleLow} 的 meta 相同或无效，无法计算亏火`
+        return { ok: false, tips }
+    }
+
+    const diff = highMeta - lowMeta
+
+    // 1) 计算 n 使得 n * highMeta ≈ (n+1) * lowMeta
+    //    解得 n = lowMeta / (highMeta - lowMeta)
+    const equalPlaysExact = lowMeta / diff
+    const equalPlaysRound = Math.round(equalPlaysExact)
+    const equalPlaysCeil = Math.ceil(equalPlaysExact)
+
+    // 2) 计算打多少把会亏一火（游戏中 1 火 = 5 把）
+    //    损失一火的价值 = 5 * highMeta
+    //    每多打一把 lowSong 相比 highSong 亏损 = (highMeta - lowMeta)
+    //    所以需要的把数 = 5 * highMeta / (highMeta - lowMeta)
+    const playsToLoseOneFireExact = 5 * highMeta / diff
+    const playsToLoseOneFire = Math.ceil(playsToLoseOneFireExact)
+
+    // 3) 各打 30 把，B 相较于 A 会亏多少火
+    //    差值总量 = 30 * (highMeta - lowMeta)
+    //    换算为火 = 差值总量 / (5 * highMeta)
+    const lostFiresFor30Plays = (30*15 * diff) / (5 * highMeta)
+
+    const tips = []
+    tips.push(`${titleHigh} 相较于 ${titleLow} 出分更高 (meta: ${highMeta.toFixed(4)} vs ${lowMeta.toFixed(4)})`)
+    tips.push(`约: ${titleHigh} 打 ${equalPlaysRound} 把 ≈ ${titleLow} 打 ${equalPlaysRound + 1} 把`) 
+    tips.push(`精确值: n = ${equalPlaysExact.toFixed(4)} (向上取整 ${equalPlaysCeil})`)
+    tips.push(`大约再打 ${playsToLoseOneFire} 把 （${Math.round(playsToLoseOneFire/5)}火） ${titleLow} 会亏一火，精确值 ${playsToLoseOneFireExact.toFixed(4)}`)
+    tips.push(`一个周回内，${titleLow} 相较于 ${titleHigh} 会亏约 ${lostFiresFor30Plays.toFixed(2)} 火`)
+
+    return {
+        ok: true,
+        highSong: highSong.songId,
+        lowSong: lowSong.songId,
+        highMeta,
+        lowMeta,
+        equalPlaysExact,
+        equalPlaysRound,
+        equalPlaysCeil,
+        playsToLoseOneFireExact,
+        playsToLoseOneFire,
+        lostFiresFor30Plays,
+        tips: tips.join('\n')
     }
 }
