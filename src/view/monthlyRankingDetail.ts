@@ -72,7 +72,7 @@ async function buildMonthlyRankingDetailBlocks(monthlyRanking: MonthlyRanking, d
         }
     }
 
-    const listImage = drawDatablock({ list })
+    const listImage = await drawDatablock({ list })
 
     const all = [];
     all.push(await drawTitle('查询', '月榜'))

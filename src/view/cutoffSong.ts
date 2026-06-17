@@ -12,6 +12,7 @@ import { outputFinalBuffer } from '@/image/output';
 import { changeTimePeriodFormat, changeTimefomant } from '@/components/list/time';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { logger } from '@/logger';
+import { drawCutoffSongChart, CutoffSongChartEntry } from '@/components/chart/cutoffSongChart';
 
 // 暂时全部集中在一个页面，待上游合入。
 interface cutoffSongsResponse {
@@ -50,7 +51,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     for (let i = 0; i < event.musics[defaultServer].length; i++) {
         songList.push(new Song(event.musics[defaultServer][i].musicId));
     }
-    console.log(songList)
+    //console.log(songList)
 
     const SongTierUrl = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=${tier}`;
     const SongT1Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=1`;
@@ -71,6 +72,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const t1Score = new Map<number, number>();
     const tierScore = new Map<number, number>();
     const latestUpdateTime = new Map<number, number>();
+    const chartEntries: CutoffSongChartEntry[] = [];
 
     for (const song of songList) {
         const songId = song.songId.toString();
@@ -89,6 +91,12 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
         t1Score.set(Number(songId), lastT1.ep);
         tierScore.set(Number(songId), lastTier.ep);
         latestUpdateTime.set(Number(songId), lastTier.time);
+        chartEntries.push({
+            song,
+            t1List,
+            tierList,
+            currentT1: lastT1.ep,
+        });
     }
 
 
@@ -147,6 +155,12 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
     all.push(eventBannerCanvas);
     all.push(listImage);
+
+    const startAt = event.startAt[mainServer];
+    const endAt = event.endAt[mainServer];
+    if (startAt != null && endAt != null && chartEntries.length > 0) {
+        all.push(await drawDatablock({list:[await drawCutoffSongChart(chartEntries, tier, startAt, endAt, mainServer)]}));
+    }
 
     const buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, text: 'Event', compress });
     return [buffer];

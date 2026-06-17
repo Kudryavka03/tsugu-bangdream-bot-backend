@@ -662,7 +662,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         else rankBetween.push(rank[i-1] - nowScore  )  // 与上一名的分数差距
     }
 
-
+    LastHour = thisHour - 3600000 - new Date(thisHour).getMilliseconds()
     for (let h = 0; h < rankBetweenLastTick.length; h++) {
         let rank = 1;
         for (let g = 0; g < rankBetweenLastTick.length; g++) {
@@ -672,7 +672,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     }
 
     // 判断是否在同一房间内
-    // 基本思路：抽取出同一时间value的人，数据越多越纯。
+    // 基本思路：抽取出同一时间value的人，数据越多越纯。但也不要太多
     // [[1,2,3,4,5,6,8],[7,9]],[[1,2,3,4,5],[6,8],[7,9]]
     // 就可以判断得出，[1,2,3,4,5]在同一辆车上,[6,8]在同一辆车上,[7,9]在同一辆车上
     let possibleAtSameRoom = []
@@ -1323,16 +1323,19 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                 if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大变动次数 > sameRoomRatioConfidence比例
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
                 }
                 else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioToTotalConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13) 且 
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioToTotalConfidence} / 规则2`)
                 }
                 // 如果当前查询UID变动小于待查UID变动呢？
                 else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 当前查询总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
                     if(!skipCompare)skipCompare = true  // 让后面的流程来匹配
+                    console.log(`数值偏少但可能同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length} > ${sameRoomRatioToTotalConfidence} / 规则3`)
                 }
             }
         }
