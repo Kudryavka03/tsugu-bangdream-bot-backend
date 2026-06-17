@@ -16,7 +16,7 @@ export async function drawMonthlyRankingCutoffDetail(monthlyRankingId: number, t
         return ['月榜档线仅支持国服'];
     }
     if (!tier) return ['请输入排名'];
-
+    console.log(typeof(monthlyRankingId))
     const cutoff = new MonthlyRankingCutoff(monthlyRankingId, mainServer, tier);
     if (cutoff.isExist == false) {
         return [`错误: ${ serverNameFullList[mainServer] } 月榜或档线不存在`];
@@ -39,30 +39,41 @@ export async function drawMonthlyRankingCutoffDetail(monthlyRankingId: number, t
         const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0;
         const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600);
         let smoothRate = 0;
+        let smoothTime = 0;
+        let smoothRateAll = 0;
+        let smoothTimeAll = 0;
         if (cutoffs && cutoffs.length >= 2) {
             const lastPoint = cutoffs[cutoffs.length - 1];
 
             // 向前寻找大约 1 小时前（3600000 毫秒）的数据点
             const oneHourAgoTime = lastPoint.time - 3600000;
-            let prevPoint = cutoffs[0];
-
+            const oneDayAgoTime = lastPoint.time - (3600000 * 24);
+            const firstPoint = cutoffs[0];
+            let prevPoint = cutoffs[cutoffs.length - 2];
+            let prev24hPoint = cutoffs[cutoffs.length - 2];
+            /*
             for (let i = cutoffs.length - 1; i >= 0; i--) {
                 if (cutoffs[i].time <= oneHourAgoTime) {
-                    prevPoint = cutoffs[i];
+                    prev24hPoint = cutoffs[i];
                     break;
                 }
             }
+                */
+                
 
             // 计算实际的时间差（小时）和分数差
-            const dt = (lastPoint.time - prevPoint.time) / 3600000;
-            if (dt > 0) {
-                smoothRate = (lastPoint.ep - prevPoint.ep) / dt; // 单位：EP/小时
-            }
+            //const dt = (lastPoint.time - prevPoint.time) / 3600000;
+
+            smoothRate = (lastPoint.ep - prevPoint.ep); // 单位：EP/小时
+            smoothTime = (lastPoint.time - prevPoint.time)
+            smoothRateAll = (lastPoint.ep - firstPoint.ep)
+            smoothTimeAll = (lastPoint.time - firstPoint.time)
+
         }
         list.push(drawListMerge([
             await drawList({ key: '预测线', text: predictText }),
             await drawList({ key: '当前时速', text: `${ Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan) } pt/h` }),
-            await drawList({ key: '线性外推', text: cutoffs[cutoffs.length - 1] ? Math.round(cutoffs[cutoffs.length - 1].ep + smoothRate * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000)).toString() : '无数据' })
+            await drawList({ key: '瞬时线性外推', text: cutoffs[cutoffs.length - 1] ? Math.round(cutoffs[cutoffs.length - 1].ep + smoothRate * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / smoothTime)).toString() : '无数据' })
         ]));
         list.push(line);
 
@@ -70,9 +81,9 @@ export async function drawMonthlyRankingCutoffDetail(monthlyRankingId: number, t
         tempImageList.push(await drawList({ key: '最新分数线', text: cutoff.latestCutoff.ep.toString() }));
         tempImageList.push(await drawList({
             key: '更新时间',
-            text: `${ changeTimePeriodFormat((Date.now()) - cutoff.latestCutoff.time) }前`
+            text: `${ changeTimePeriodFormat((Date.now()) - cutoff.latestCutoff.time,false) }前`
         }));
-        tempImageList.push(await drawList({ text: '' }));
+        tempImageList.push(await drawList({ key:'全段线性外推',text: cutoffs[cutoffs.length - 1] ? Math.round(cutoffs[cutoffs.length - 1].ep + smoothRateAll * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / smoothTimeAll)).toString() : '无数据' }));
         list.push(drawListMerge(tempImageList));
         list.push(line);
 

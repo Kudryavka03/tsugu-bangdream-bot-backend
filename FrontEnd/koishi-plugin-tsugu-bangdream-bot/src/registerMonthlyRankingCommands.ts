@@ -285,7 +285,7 @@ export function registerMonthlyRankingCommands(
         });
     */
 
-    ctx.command("mycx <tier:integer> [monthlyRankingId] [serverName]", "查询指定档位的月榜预测线", cmdConfig)
+    ctx.command("mycx <tier:integer> [monthlyRankingId:integer] [serverName]", "查询指定档位的月榜预测线", cmdConfig)
         .usage(`查询指定档位的月榜预测线, 如果没有服务器名的话, 服务器为用户的默认服务器。如果没有月榜ID的话, 活动为当前月榜\n可用档线:\n${utils_1.tierListOfServerToString()}`)
         .example('mycx 1000 :返回默认服务器当前月榜1000档位的档线与预测线')
         .action(async ({ session }, tier, monthlyRankingId, serverName) => {

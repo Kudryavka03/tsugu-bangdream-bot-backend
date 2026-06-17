@@ -41,6 +41,7 @@ export function getCnMonthlyTimeRange(eventId: number): { startAt: number; endAt
 }
 
 export function isCnMonthlyEventId(eventId: number): boolean {
+    console.log(typeof(eventId),Number.isInteger(eventId),eventId,eventId >= 0)
     return Number.isInteger(eventId) && eventId >= 0;
 }
 

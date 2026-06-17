@@ -79,7 +79,7 @@ export async function drawCutoffSongChart(
             continue;
         }
 
-        const t1Label = onlyOne ? 'T1 参考线' : `${songLabel} T1 参考线`;
+        const t1Label = onlyOne ? `T1 参考线 (${entry.t1List[entry.t1List.length-1].ep})` : `${songLabel} T1 参考线 (${entry.t1List[entry.t1List.length-1].ep})`;
         legendList.push(await drawList({
             content: [tempColor.generateColorBlock(0.4), t1Label],
             textSize: 20,

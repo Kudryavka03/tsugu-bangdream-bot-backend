@@ -71,6 +71,8 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
     const t1Score = new Map<number, number>();
     const tierScore = new Map<number, number>();
+    const t1PrevScore = new Map<number, number>();
+    const tierPrevScore = new Map<number, number>();
     const latestUpdateTime = new Map<number, number>();
     const chartEntries: CutoffSongChartEntry[] = [];
 
@@ -87,9 +89,19 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
         let tierList = isVersus?vTierN.cutoffs:tierN.cutoffs[songId];
         let lastT1 = t1List[t1List.length - 1];
         let lastTier = tierList[tierList.length - 1];
+        let prevT1 = [...t1List]
+                .reverse()
+                .find(x => x.ep < lastT1.ep)
+                ?.ep;
+        let prevTier = [...tierList]
+                .reverse()
+                .find(x => x.ep < lastTier.ep)
+                ?.ep;
 
         t1Score.set(Number(songId), lastT1.ep);
         tierScore.set(Number(songId), lastTier.ep);
+        t1PrevScore.set(Number(songId), prevT1);
+        tierPrevScore.set(Number(songId), prevTier);
         latestUpdateTime.set(Number(songId), lastTier.time);
         chartEntries.push({
             song,
@@ -126,6 +138,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     for (const song of songList) {
         const songId = song.songId;
         const latest = tierScore.get(songId);
+        const prev = tierPrevScore.get(songId)
         const t1 = t1Score.get(songId);
         if (latest == null || t1 == null) {
             continue;
@@ -137,7 +150,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
         list.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${indexFlags}`, [mainServer], false));
         //list.push(line);
         list.push(drawListMerge([
-            await drawList({ key: '最新分数', text: latest.toString() }),
+            await drawList({ key: '最新分数', text: latest.toString() + ` (+${latest - prev})` }),
             await drawList({ key: '占比', text: ratio })
         ]));
         list.push(line);

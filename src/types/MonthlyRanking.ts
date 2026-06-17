@@ -79,7 +79,6 @@ export class MonthlyRanking {
 
     constructor(monthlyRankingId: number) {
         this.monthlyRankingId = monthlyRankingId;
-
         if (isCnMonthlyEventId(monthlyRankingId)) {
             this.isExist = true;
             this.monthlyRankingName = buildCnMonthlyRankingNameArray(monthlyRankingId);
