@@ -5,12 +5,13 @@ import * as fuzzySearch_1 from "./api/fuzzySearch";
 import * as monthlyRankingCutoffDetail_1 from "./commands/monthlyRankingCutoffDetail";
 import * as monthlyRankingCutoffAll_1 from "./commands/monthlyRankingCutoffAll";
 import * as monthlyRankingCutoffListOfRecent_1 from "./commands/monthlyRankingCutoffListOfRecent";
-import * as monthlyRankingTopRateDetail_1 from "./commands/monthlyRankingTopRateDetail";
-import * as monthlyRankingTopRateRanking_1 from "./commands/monthlyRankingTopRateRanking";
-import * as monthlyRankingTopTenMinuteSpeed_1 from "./commands/monthlyRankingTopTenMinuteSpeed";
-import * as monthlyRankingTopRunningStatus_1 from "./commands/monthlyRankingTopRunningStatus";
-import * as monthlyRankingTopSleepStat_1 from "./commands/monthlyRankingTopSleepStat";
-import { isInteger } from "./commands/utils";
+// 依赖 Bestdori 月榜 top API，暂不可用
+// import * as monthlyRankingTopRateDetail_1 from "./commands/monthlyRankingTopRateDetail";
+// import * as monthlyRankingTopRateRanking_1 from "./commands/monthlyRankingTopRateRanking";
+// import * as monthlyRankingTopTenMinuteSpeed_1 from "./commands/monthlyRankingTopTenMinuteSpeed";
+// import * as monthlyRankingTopRunningStatus_1 from "./commands/monthlyRankingTopRunningStatus";
+// import * as monthlyRankingTopSleepStat_1 from "./commands/monthlyRankingTopSleepStat";
+// import { isInteger } from "./commands/utils";
 
 export function registerMonthlyRankingCommands(
     ctx: Context,
@@ -19,6 +20,9 @@ export function registerMonthlyRankingCommands(
     commandConfig,
 ) {
     const cmdConfig = commandConfig;
+
+    /*
+    // 依赖 私有API，暂不可用
     ctx.command('m查岗 <playerId:string> [limit:string] [monthlyRankingId] [serverName:string]', '查询月榜前十查岗', cmdConfig)
         .option('count', '-c <count:number> 指定显示最近的几次分数变化，默认20次')
         .option('day', '-d <day:number> 指定月榜开始的第几天的分数变动详情')
@@ -279,6 +283,7 @@ export function registerMonthlyRankingCommands(
             const list = await monthlyRankingTopSleepStat_1.commandMonthlyRankingTopSleepStat(config, monthlyRankingId === undefined ? undefined : Number(monthlyRankingId), playerId, tier, options?.time || 25, mainServer);
             return utils_1.paresMessageList(list);
         });
+    */
 
     ctx.command("mycx <tier:integer> [monthlyRankingId] [serverName]", "查询指定档位的月榜预测线", cmdConfig)
         .usage(`查询指定档位的月榜预测线, 如果没有服务器名的话, 服务器为用户的默认服务器。如果没有月榜ID的话, 活动为当前月榜\n可用档线:\n${utils_1.tierListOfServerToString()}`)
