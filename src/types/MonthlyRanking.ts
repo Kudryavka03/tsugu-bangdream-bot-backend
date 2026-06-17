@@ -1,0 +1,328 @@
+import { callAPIAndCacheResponse } from '@/api/getApi';
+import { Image, loadImage } from 'skia-canvas'
+import { downloadFileCache } from '@/api/downloadFileCache'
+import { Server, getServerByPriority } from '@/types/Server'
+import mainAPI from '@/types/_Main';
+import { globalDefaultServer, Bestdoriurl } from '@/config';
+import { stringToNumberArray } from '@/types/utils'
+import {
+    buildCnMonthlyRankingNameArray,
+    buildCnMonthlyTimeArray,
+    getPresentCnMonthlyEventId,
+    getRecentCnMonthlyEventIds,
+    isCnMonthlyEventId,
+    isCnMonthlyServer,
+} from '@/monthlyRanking/cn/cnMonthlyRanking';
+
+export type MonthlyRankingInfo = {
+    monthlyRankingName: Array<string | null>;
+    assetBundleName: string;
+    bgmFileName: string;
+    startAt: Array<number | null>;
+    endAt: Array<number | null>;
+}
+
+export interface GarupaMasterMonthlyRankingReward {
+    id?: number;
+    monthlyRankingId?: number;
+    fromRank?: number;
+    toRank?: number;
+    rewardType?: string;
+    rewardId?: number;
+    rewardQuantity?: number;
+}
+
+export interface GarupaMasterMonthlyRankingGrade {
+    id?: number;
+    monthlyRankingId?: number;
+    gradeAheadType?: string;
+    pt?: number;
+    rewardType?: string;
+    rewardId?: number;
+    rewardQuantity?: number;
+    rankingThresholdFlg?: boolean;
+}
+
+export interface MonthlyRankingDetail extends MonthlyRankingInfo {
+    monthlyRankingId: number;
+    enableFlag: Array<boolean | null>;
+    publicStartAt: Array<number | null>;
+    publicEndAt: Array<number | null>;
+    distributionStartAt: Array<number | null>;
+    distributionEndAt: Array<number | null>;
+    aggregateEndAt: Array<number | null>;
+    receptionEndAt: Array<number | null>;
+    rewards?: Array<GarupaMasterMonthlyRankingReward[] | null>;
+    grades?: Array<GarupaMasterMonthlyRankingGrade[] | null>;
+}
+
+export class MonthlyRanking {
+    monthlyRankingId: number;
+    isExist: boolean = false;
+    isInitFull: boolean = false;
+
+    monthlyRankingName: Array<string | null> = [];
+    assetBundleName: string = '';
+    bgmFileName: string = '';
+    startAt: Array<number | null> = [];
+    endAt: Array<number | null> = [];
+
+    enableFlag?: Array<boolean | null>;
+    publicStartAt?: Array<number | null>;
+    publicEndAt?: Array<number | null>;
+    distributionStartAt?: Array<number | null>;
+    distributionEndAt?: Array<number | null>;
+    aggregateEndAt?: Array<number | null>;
+    receptionEndAt?: Array<number | null>;
+    rewards?: Array<GarupaMasterMonthlyRankingReward[] | null>;
+    grades?: Array<GarupaMasterMonthlyRankingGrade[] | null>;
+
+    constructor(monthlyRankingId: number) {
+        this.monthlyRankingId = monthlyRankingId;
+
+        if (isCnMonthlyEventId(monthlyRankingId)) {
+            this.isExist = true;
+            this.monthlyRankingName = buildCnMonthlyRankingNameArray(monthlyRankingId);
+            const times = buildCnMonthlyTimeArray(monthlyRankingId);
+            this.startAt = times.startAt;
+            this.endAt = times.endAt;
+            return;
+        }
+
+        const monthlyRankingData = (mainAPI as any)['monthlyRanking'] ?? (mainAPI as any)['monthlyRankings'];
+        const data = monthlyRankingData?.[monthlyRankingId.toString()] as MonthlyRankingInfo | undefined;
+        if (!data) {
+            this.isExist = false;
+            return;
+        }
+        this.isExist = true;
+        this.monthlyRankingName = data.monthlyRankingName;
+        this.assetBundleName = data.assetBundleName;
+        this.bgmFileName = data.bgmFileName;
+        this.startAt = stringToNumberArray(data.startAt as any);
+        this.endAt = stringToNumberArray(data.endAt as any);
+    }
+
+    async initFull(useCache: boolean = true) {
+        if (this.isInitFull) return;
+        if (!this.isExist) return;
+        if (isCnMonthlyEventId(this.monthlyRankingId)) {
+            this.isInitFull = true;
+            return;
+        }
+
+        const detail = await this.getData(!useCache) as MonthlyRankingDetail;
+        if (!detail) return;
+
+        this.monthlyRankingName = detail.monthlyRankingName;
+        this.assetBundleName = detail.assetBundleName;
+        this.bgmFileName = detail.bgmFileName;
+        this.startAt = stringToNumberArray(detail.startAt as any);
+        this.endAt = stringToNumberArray(detail.endAt as any);
+
+        this.enableFlag = detail.enableFlag;
+        this.publicStartAt = stringToNumberArray(detail.publicStartAt as any);
+        this.publicEndAt = stringToNumberArray(detail.publicEndAt as any);
+        this.distributionStartAt = stringToNumberArray(detail.distributionStartAt as any);
+        this.distributionEndAt = stringToNumberArray(detail.distributionEndAt as any);
+        this.aggregateEndAt = stringToNumberArray(detail.aggregateEndAt as any);
+        this.receptionEndAt = stringToNumberArray(detail.receptionEndAt as any);
+        this.rewards = detail.rewards;
+        this.grades = detail.grades;
+
+        this.isInitFull = true;
+    }
+
+    async getData(update: boolean = true): Promise<MonthlyRankingDetail | MonthlyRankingInfo | undefined> {
+        const ttl = update ? 0 : Infinity;
+        try {
+            const url = `${Bestdoriurl}/api/monthlyRanking/info.${this.monthlyRankingId}.json`;
+            const data = await callAPIAndCacheResponse(url, ttl);
+            return data as MonthlyRankingDetail;
+        }
+        catch (e) {
+            try {
+                const url = `${Bestdoriurl}/api/monthlyRanking/info.json`;
+                const all = await callAPIAndCacheResponse(url, ttl) as { [key: string]: MonthlyRankingInfo } | MonthlyRankingInfo[];
+                if (Array.isArray(all)) {
+                    return all[this.monthlyRankingId] as MonthlyRankingInfo;
+                }
+                return (all as any)[this.monthlyRankingId.toString()];
+            }
+            catch (err) {
+                return undefined;
+            }
+        }
+    }
+
+    async getBannerImage(displayedServerList: Server[] = globalDefaultServer): Promise<Image> {
+        const server = getServerByPriority(this.startAt, displayedServerList) ?? Server.jp;
+        const url = `${Bestdoriurl}/assets/${Server[server]}/homebanner_rip/banner_monthly_ranking.png`;
+        const bannerBuffer = await downloadFileCache(url, false);
+        return await loadImage(bannerBuffer)
+    }
+
+    async getEventSlideImage(tempServer: Server): Promise<Image[]> {
+        const server = getServerByPriority(this.startAt, [tempServer]) ?? Server.jp
+        const result: Image[] = []
+        const baseUrl = `${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/slide_rip/`
+        let ruleNumber = 1
+        while (true) {
+            try {
+                const url = `${baseUrl}rule${ruleNumber}.png`
+                const slideImageBuffer = await downloadFileCache(url, false)
+                result.push(await loadImage(slideImageBuffer))
+            } catch (e) {
+                break
+            }
+            ruleNumber++
+        }
+        return result
+    }
+
+    async getEventBGImage(): Promise<Image> {
+        const server = getServerByPriority(this.startAt) ?? Server.jp
+        const url = `${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/topscreen_rip/bg_eventtop.png`
+        const bgImageBuffer = await downloadFileCache(url)
+        return await loadImage(bgImageBuffer)
+    }
+
+    async getEventTopscreenTrimImage(): Promise<Image> {
+        const server = getServerByPriority(this.startAt) ?? Server.jp
+        const url = `${Bestdoriurl}/assets/${Server[server]}/event/${this.assetBundleName}/topscreen_rip/trim_eventtop.png`
+        const topScreenTrimImageBuffer = await downloadFileCache(url)
+        return await loadImage(topScreenTrimImageBuffer)
+    }
+
+}
+
+export function getMonthlyRankingListByTimeRange(rangeStart?: number, rangeEnd?: number, displayedServerList: Server[] = globalDefaultServer) {
+    const monthlyRankingIdList: Array<number> = Object.keys((mainAPI as any)['monthlyRanking'] ?? (mainAPI as any)['monthlyRankings'] ?? {}).map(Number);
+    const tempMonthlyRankingList: Array<MonthlyRanking> = [];
+
+    if (rangeStart == null && rangeEnd == null) {
+        return tempMonthlyRankingList;
+    }
+
+    for (let i = 0; i < monthlyRankingIdList.length; i++) {
+        const monthlyRankingId = monthlyRankingIdList[i];
+        const tempMonthlyRanking = new MonthlyRanking(monthlyRankingId);
+        if (!tempMonthlyRanking.isExist) continue;
+
+        for (let j = 0; j < displayedServerList.length; j++) {
+            const server = displayedServerList[j];
+            const timeWindow = getMonthlyRankingTimeWindowByServer(tempMonthlyRanking, server);
+
+            if (!timeWindow) continue;
+
+            const { startAt, endAt } = timeWindow;
+            if ((rangeEnd == null || startAt < rangeEnd) && (rangeStart == null || endAt > rangeStart)) {
+                tempMonthlyRankingList.push(tempMonthlyRanking);
+                break;
+            }
+        }
+    }
+    return tempMonthlyRankingList;
+}
+
+export function getMonthlyRankingListByIdRange(rangeStart?: number, rangeEnd?: number) {
+    const monthlyRankingIdList: Array<number> = Object.keys((mainAPI as any)['monthlyRanking'] ?? (mainAPI as any)['monthlyRankings'] ?? {}).map(Number);
+    const tempMonthlyRankingList: Array<MonthlyRanking> = [];
+
+    if (rangeStart == null && rangeEnd == null) {
+        return tempMonthlyRankingList;
+    }
+
+    for (let i = 0; i < monthlyRankingIdList.length; i++) {
+        const monthlyRankingId = monthlyRankingIdList[i];
+        if ((rangeStart == null || monthlyRankingId >= rangeStart) && (rangeEnd == null || monthlyRankingId <= rangeEnd)) {
+            const tempMonthlyRanking = new MonthlyRanking(monthlyRankingId);
+            if (tempMonthlyRanking.isExist) {
+                tempMonthlyRankingList.push(tempMonthlyRanking);
+            }
+        }
+    }
+
+    sortMonthlyRankingList(tempMonthlyRankingList)
+    return tempMonthlyRankingList
+}
+
+function getMonthlyRankingTimeWindowByServer(monthlyRanking: MonthlyRanking, server: Server): { startAt: number, endAt: number } | null {
+    const startAt = monthlyRanking.startAt[server];
+    const endAt = monthlyRanking.endAt[server];
+    if (startAt != null && endAt != null) {
+        return { startAt, endAt };
+    }
+    return null;
+}
+
+export function getPresentMonthlyRanking(server: Server, time?: number) {
+    if (!time) {
+        time = Date.now()
+    }
+
+    if (isCnMonthlyServer(server)) {
+        const eventId = getPresentCnMonthlyEventId(time);
+        return new MonthlyRanking(eventId);
+    }
+
+    const monthlyRankingIdList: Array<number> = Object.keys((mainAPI as any)['monthlyRanking'] ?? (mainAPI as any)['monthlyRankings'] ?? {}).map(Number)
+    let tempMonthlyRankingList: Array<number> = []
+    for (const key of monthlyRankingIdList) {
+        const monthlyRanking = new MonthlyRanking(key)
+        if (monthlyRanking.startAt[server] != null && monthlyRanking.endAt[server] != null) {
+            if (monthlyRanking.startAt[server] <= time && monthlyRanking.endAt[server] >= time) {
+                tempMonthlyRankingList.push(key)
+            }
+        }
+    }
+
+    let monthlyRankingEndAtFlags:number = 0
+    if (tempMonthlyRankingList.length == 0) {
+        for (const key of monthlyRankingIdList) {
+            const monthlyRanking = new MonthlyRanking(key)
+            if (monthlyRanking.startAt[server] != null && monthlyRanking.endAt[server] != null) {
+                if (monthlyRanking.endAt[server] <= time) {
+                    if(monthlyRanking.endAt[server] > monthlyRankingEndAtFlags){
+                        tempMonthlyRankingList.push(key)
+                        monthlyRankingEndAtFlags = monthlyRanking.endAt[server]
+                    }
+                }
+            }
+        }
+    }
+
+    if (tempMonthlyRankingList.length == 0) {
+        return null
+    }
+
+    return new MonthlyRanking(tempMonthlyRankingList[tempMonthlyRankingList.length - 1])
+}
+
+export function sortMonthlyRankingList(tempMonthlyRankingList: MonthlyRanking[], displayedServerList: Server[] = globalDefaultServer) {
+    tempMonthlyRankingList.sort((a, b) => a.monthlyRankingId - b.monthlyRankingId)
+}
+
+export function getRecentMonthlyRankingListByMonthlyRankingAndServer(monthlyRanking: MonthlyRanking, server: Server, count: number) {
+    if (isCnMonthlyServer(server)) {
+        const eventIds = getRecentCnMonthlyEventIds(monthlyRanking.monthlyRankingId, count);
+        return eventIds.map((id) => new MonthlyRanking(id));
+    }
+
+    const monthlyRankingIdList: Array<number> = Object.keys((mainAPI as any)['monthlyRanking'] ?? (mainAPI as any)['monthlyRankings'] ?? {}).map(Number)
+    monthlyRankingIdList.sort((a, b) => a - b)
+
+    const tempMonthlyRankingList: Array<MonthlyRanking> = []
+    for (const monthlyRankingId of monthlyRankingIdList) {
+        const tempMonthlyRanking = new MonthlyRanking(monthlyRankingId)
+        if (tempMonthlyRanking.startAt[server] != null) {
+            if (tempMonthlyRanking.startAt[server] > monthlyRanking.startAt[server]) {
+                continue
+            }
+            tempMonthlyRankingList.push(tempMonthlyRanking)
+        }
+    }
+
+    sortMonthlyRankingList(tempMonthlyRankingList, [server])
+    return tempMonthlyRankingList.slice(tempMonthlyRankingList.length - count, tempMonthlyRankingList.length)
+}

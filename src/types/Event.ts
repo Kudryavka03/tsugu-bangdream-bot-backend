@@ -525,6 +525,65 @@ export class Event {
         }
     }
 }
+//按月榜时间范围（各服 startAt/endAt 数组）获取同期相关活动
+export function getEventListByDisplayServerListTimeRange(rangeStart?: number[], rangeEnd?: number[], displayedServerList: Server[] = globalDefaultServer) {
+    const eventIdList: Array<number> = Object.keys(mainAPI['events']).map(Number);
+    const tempEventList: Array<Event> = [];
+
+    if (rangeStart == null && rangeEnd == null) {
+        return tempEventList;
+    }
+
+    let baseServer: Server = Server.jp;
+    let hasFoundBase = false;
+
+    for (let i = 0; i < displayedServerList.length; i++) {
+        const server = displayedServerList[i];
+        if ((rangeStart && rangeStart[server] != null) || (rangeEnd && rangeEnd[server] != null)) {
+            baseServer = server;
+            hasFoundBase = true;
+            break;
+        }
+    }
+
+    if (!hasFoundBase) {
+        baseServer = Server.jp;
+    }
+
+    const limitStart = rangeStart ? rangeStart[baseServer] : null;
+    const limitEnd = rangeEnd ? rangeEnd[baseServer] : null;
+
+    if (limitStart == null && limitEnd == null) {
+        return tempEventList;
+    }
+
+    const eventCache = new Map<number, Event>();
+    const presentEventByServer = new Map<Server, Event | null>();
+
+    presentEventByServer.set(baseServer, getPresentEvent(baseServer));
+
+    for (let i = 0; i < eventIdList.length; i++) {
+        const eventId = eventIdList[i];
+        let tempEvent = eventCache.get(eventId);
+        if (!tempEvent) {
+            tempEvent = new Event(eventId);
+            eventCache.set(eventId, tempEvent);
+        }
+
+        const timeWindow = getEventTimeWindowByServer(tempEvent, baseServer, presentEventByServer.get(baseServer) ?? null);
+
+        if (!timeWindow) continue;
+
+        const { startAt, endAt } = timeWindow;
+
+        if ((limitEnd == null || startAt < limitEnd) && (limitStart == null || endAt > limitStart)) {
+            tempEventList.push(tempEvent);
+        }
+    }
+
+    return tempEventList;
+}
+
 //按时间范围获取符合条件的活动
 export function getEventListByTimeRange(rangeStart?: number, rangeEnd?: number, displayedServerList: Server[] = globalDefaultServer) {
     const eventIdList: Array<number> = Object.keys(mainAPI['events']).map(Number);

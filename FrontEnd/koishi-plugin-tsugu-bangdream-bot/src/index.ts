@@ -4,6 +4,7 @@ import type { Server } from "./types/Server";
 import * as koishi_1 from "koishi";
 import * as searchCard_1 from "./commands/searchCard";
 import * as searchEvent_1 from "./commands/searchEvent";
+import * as searchMonthlyRanking_1 from "./commands/searchMonthlyRanking";
 import * as searchSong_1 from "./commands/searchSong";
 import * as searchGacha_1 from "./commands/searchGacha";
 import * as cutoffDetail_1 from "./commands/cutoffDetail";
@@ -27,6 +28,7 @@ import * as utils_1 from "./utils";
 import * as remoteDB_1 from "./api/remoteDB";
 import * as fuzzySearch_1 from "./api/fuzzySearch";
 import * as topRateDetail_1 from "./commands/topRateDetail";
+import { registerMonthlyRankingCommands } from "./registerMonthlyRankingCommands";
 
 declare module 'koishi' {
     interface User {
@@ -141,7 +143,7 @@ export function apply(ctx: Context, config: Config) {
     ctx.middleware((session, next) => {
         if (config.noSpace) {
             // 查卡面 一定要放在 查卡 前面
-            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
@@ -427,6 +429,18 @@ export function apply(ctx: Context, config: Config) {
         const tsuguUserData = await observeUserTsugu(session);
         const displayedServerList = tsuguUserData.displayedServerList;
         const list = await (0, searchEvent_1.commandEvent)(config, displayedServerList, text);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("查月榜 <word:text>", "查月榜", cmdConfig)
+        .usage('根据关键词或月榜ID查询月榜信息')
+        .example('查月榜 17 :返回17号月榜的信息')
+        .action(async ({ session }, text) => {
+        if (text == undefined) {
+            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 查月榜`;
+        }
+        const tsuguUserData = await observeUserTsugu(session);
+        const displayedServerList = tsuguUserData.displayedServerList;
+        const list = await (0, searchMonthlyRanking_1.commandMonthlyRanking)(config, displayedServerList, text);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查曲 <word:text>", "查曲", cmdConfig)
@@ -737,6 +751,7 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, mode,options.cgEventId);
         return ((0, utils_1.paresMessageList)(list));
     });
+    registerMonthlyRankingCommands(ctx, config, observeUserTsugu, cmdConfig);
     /*
   ctx.on('command/before-execute', (argv) => {
     const { command, session } = argv;
@@ -745,7 +760,7 @@ export function apply(ctx: Context, config: Config) {
     async function getChannelData() {
       const channel_get = await ctx.database.get('channel', { id: now_channel });
       if (channel_get[0]?.tsugu_run === false) {
-        const keywords = ['查询玩家', '查卡面', '查玩家', '查卡', '查角色', '查活动', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查卡池', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+        const keywords = ['查询玩家', '查卡面', '查玩家', '查卡', '查角色', '查活动', '查月榜', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查卡池', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
         const messageContent = session.event.message.content;
         // 检查消息是否以数组中的任意一个词开始
         const startsWithKeyword = keywords.some(keyword => messageContent.startsWith(keyword));

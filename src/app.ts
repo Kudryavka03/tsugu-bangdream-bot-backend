@@ -36,6 +36,15 @@ import { canvasPool } from './image/text';
 import { teamBuildDetailRouter } from '@/routers/teamBuildDetail'
 import { calcResultRouter } from './routers/calcResult';
 import { searchCompositionRouter } from '@/routers/searchComposition';
+import { searchMonthlyRankingRouter } from '@/routers/searchMonthlyRanking';
+import { monthlyRankingCutoffDetailRouter } from '@/monthlyRanking/routers/monthlyRankingCutoffDetail';
+import { monthlyRankingCutoffListOfRecentRouter } from '@/monthlyRanking/routers/monthlyRankingCutoffListOfRecent';
+import { monthlyRankingCutoffAllRouter } from '@/monthlyRanking/routers/monthlyRankingCutoffAll';
+import { monthlyRankingTopRateDetailRouter } from '@/monthlyRanking/routers/monthlyRankingTopRateDetail';
+import { monthlyRankingTopRateRankingRouter } from '@/monthlyRanking/routers/monthlyRankingTopRateRanking';
+import { monthlyRankingTopTenMinuteSpeedRouter } from '@/monthlyRanking/routers/monthlyRankingTopTenMinuteSpeed';
+import { monthlyRankingTopSleepStatRouter } from '@/monthlyRanking/routers/monthlyRankingTopSleepStat';
+import { monthlyRankingTopRunningStatusRouter } from '@/monthlyRanking/routers/monthlyRankingTopRunningStatus';
 
 
 export var LagTimes:number
@@ -67,6 +76,15 @@ app.use('/fuzzySearch', fuzzySearchRouter);
 app.use('/calcLoseFire', calcLoseFireRouter);
 app.use('/topRateDetail', topRateDetailRouter);
 app.use('/searchComposition', searchCompositionRouter)
+app.use('/searchMonthlyRanking', searchMonthlyRankingRouter);
+app.use('/monthlyRankingCutoffDetail', monthlyRankingCutoffDetailRouter);
+app.use('/monthlyRankingCutoffListOfRecent', monthlyRankingCutoffListOfRecentRouter);
+app.use('/monthlyRankingCutoffAll', monthlyRankingCutoffAllRouter);
+app.use('/monthlyRankingTopRateDetail', monthlyRankingTopRateDetailRouter);
+app.use('/monthlyRankingTopRateRanking', monthlyRankingTopRateRankingRouter);
+app.use('/monthlyRankingTopTenMinuteSpeed', monthlyRankingTopTenMinuteSpeedRouter);
+app.use('/monthlyRankingTopSleepStat', monthlyRankingTopSleepStatRouter);
+app.use('/monthlyRankingTopRunningStatus', monthlyRankingTopRunningStatusRouter);
 app.use('/teamBuildDetail', teamBuildDetailRouter);
 app.use('/calcResult', calcResultRouter);
 

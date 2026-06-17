@@ -113,7 +113,7 @@ export function drawListTextWithImages({
 
 
 //画表格中的一行
-export async function drawList({
+export function drawList({
     key,
     text,
     content,
@@ -125,7 +125,7 @@ export async function drawList({
     RoundedRectColor = '#5b5b5b',
     RoundedRectTextColor = "#ffffff",
 
-}: ListOptions): Promise<Canvas> {
+}: ListOptions): Canvas {
     const xmax = maxWidth - 40
     const keyImage = drawRoundedRectWithText({
         text: key,
@@ -136,7 +136,7 @@ export async function drawList({
     var isNeedToRelease = false
     var textImage: Canvas
     if (typeof text == "string") {
-        textImage = await drawText({ text, maxWidth: xmax, lineHeight });
+        textImage =  drawText({ text, maxWidth: xmax, lineHeight });
         isNeedToRelease = true
     }
     else if (content != undefined) {
