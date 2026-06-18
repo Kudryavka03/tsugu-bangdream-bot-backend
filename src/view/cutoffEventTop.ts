@@ -1325,11 +1325,13 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
                     console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
                 }
-                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioToTotalConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
+                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13) 且 
+                    // 这个是给刚入局的用的。例如中途加入了某个车。与规则3互相形成互补。
+                    // 因过于宽松26-06-18起调整倍率为与sameRoomRatio一致。原倍率sameRoomRatioToTotalConfidence暂时不用
                     possibleAtSameRoomTemp.push(tempUidList[i])
                     possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
-                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioToTotalConfidence} / 规则2`)
+                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} / 规则2`)
                 }
                 // 如果当前查询UID变动小于待查UID变动呢？
                 else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
