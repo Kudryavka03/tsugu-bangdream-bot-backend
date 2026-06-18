@@ -74,6 +74,8 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const t1PrevScore = new Map<number, number>();
     const tierPrevScore = new Map<number, number>();
     const latestUpdateTime = new Map<number, number>();
+        const tierFirstSameScore = new Map<number, number>();
+    const t1FirstSameScore = new Map<number, number>()
     const chartEntries: CutoffSongChartEntry[] = [];
 
     for (const song of songList) {
@@ -97,12 +99,19 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
                 .reverse()
                 .find(x => x.ep < lastTier.ep)
                 ?.ep;
-
+        let firstSamePointTier = [...tierList]
+                .find(x => x.ep == lastTier.ep)
+                ?.time;
+        let firstSamePointT1 = [...t1List]
+                .find(x => x.ep == lastT1.ep)
+                ?.time;
         t1Score.set(Number(songId), lastT1.ep);
         tierScore.set(Number(songId), lastTier.ep);
         t1PrevScore.set(Number(songId), prevT1);
         tierPrevScore.set(Number(songId), prevTier);
         latestUpdateTime.set(Number(songId), lastTier.time);
+        tierFirstSameScore.set(Number(songId),firstSamePointTier)
+        t1FirstSameScore.set(Number(songId),firstSamePointT1)
         chartEntries.push({
             song,
             t1List,
@@ -148,11 +157,14 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
         //list.push(await drawList({ key: '歌曲', text: `${song.musicTitle[mainServer]} (${song.songId})` }));
         list.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${indexFlags}`, [mainServer], false));
-        //list.push(line);
-        list.push(drawListMerge([
-            await drawList({ key: '最新分数', text: latest.toString() + ` (+${latest - prev})` }),
-            await drawList({ key: '占比', text: ratio })
-        ]));
+        let timeTips = '现在'
+        if (latestUpdateTime.get(songId) != tierFirstSameScore.get(songId)){
+            timeTips = `${changeTimePeriodFormat(latestUpdateTime.get(songId) - tierFirstSameScore.get(songId),false)}前`
+        }
+        list.push(line)
+        list.push(await drawList({ key: '最新分数', text: latest.toString() + ` (${timeTips} +${latest - prev})` }))
+        list.push(line);
+        list.push(await drawList({ key: '占比T1', text: ratio }));
         list.push(line);
         indexFlags++
     }
