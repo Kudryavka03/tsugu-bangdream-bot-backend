@@ -652,19 +652,39 @@ export function apply(ctx: Context, config: Config) {
             return '抽卡功能已关闭';
         }
     });
-    ctx.command('查岗 <playerId:string> [serverName:string]', '查询前十车速（为空则为查时速表）', cmdConfig)
+    ctx.command('查岗 <playerId:string> [limit:string] [eventId] [serverName:string]', '查询前十车速', cmdConfig)
         .option('count', '-c <count:number> 指定显示最近的几次分数变化，默认20次')
-        .option('cgEventId', '-e <count:number> 指定活动编号')
-        .action(async ({ session, options }, playerId, serverName) => {
+        .option('day', '-d <day:number> 指定活动开始的第几天的分数变动详情')
+        .action(async ({ session, options }, playerId, limit, eventId, serverName) => {
         var mode = 0;
         const tsuguUserData = await observeUserTsugu(session);
         let mainServer = tsuguUserData.mainServer;
+        var tier;
+        let cgLimit;
+        let cgEventId;
+        const optionalArgs = [limit, eventId, serverName].filter(arg => arg != undefined);
+        for (const arg of optionalArgs) {
+            const text = String(arg);
+            const normalizedLimit = text.trim()
+                .replace(/＞/g, '>')
+                .replace(/＜/g, '<')
+                .replace(/＝/g, '=')
+                .replace(/\s/g, '');
+            if (/^>\d+$/.test(normalizedLimit) || /^<\d+$/.test(normalizedLimit) || /^>=\d+$/.test(normalizedLimit) || /^<=\d+$/.test(normalizedLimit) || /^\d+-\d+$/.test(normalizedLimit)) {
+                cgLimit = text;
+            }
+            else if (/^\d+$/.test(text)) {
+                cgEventId = Number(text);
+            }
+            else {
+                serverName = text;
+            }
+        }
         if (playerId == undefined) {
             mode = 1;
-            const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, mode);
+            const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, mode, cgEventId, options.day, cgLimit);
             return ((0, utils_1.paresMessageList)(list));
         }
-        var tier;
         if (isNaN(parseInt(playerId))) {
             if (playerId[0] == 't' && !isNaN(parseInt(playerId.slice(1)))) {
                 tier = parseInt(playerId.slice(1));
@@ -684,7 +704,7 @@ export function apply(ctx: Context, config: Config) {
             }
             mainServer = serverFromServerNameFuzzySearch;
         }
-        const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, 0,options.cgEventId);
+        const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, 0, cgEventId, options.day, cgLimit);
         return ((0, utils_1.paresMessageList)(list));
     });
     ctx.command('查变动 <playerId:string> [serverName:string]', '查询任意Top10玩家的分数变动统计情况', cmdConfig)

@@ -17,10 +17,22 @@ import { stackImage } from '@/components/utils';
 import { logger } from '@/logger';
 import { drawText } from '@/image/text';
 import { drawTips } from '@/components/tips';
-import { changeTimePeriodFormat, changeTimefomant, formatSeconds } from '@/components/list/time';
+import { changeTimePeriodFormat, changeTimefomant, formatSeconds, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 import mainAPI, { TopRateSpeed } from '@/types/_Main';
 import array from 'ref-array-di';
 import { min } from 'moment';
+
+type TopRateLimit = {
+    min?: number,
+    max?: number,
+    minInclusive?: boolean,
+    maxInclusive?: boolean
+}
+
+type PlayerRatingChange = {
+    time: number,
+    score: number
+}
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
@@ -74,7 +86,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     return [buffer];
 }
 
-export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean, day?: number, limit?: TopRateLimit): Promise<Array<Buffer | string>> {
     if (playerId == 1 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
     if (playerId == 3 ) return drawTopRateSleep(eventId,1007987242,tier,maxCount,mainServer,compress)
     if (playerId == 4 ) return drawTopRateChanged(eventId,1004512554,tier,maxCount,mainServer,compress)
@@ -141,6 +153,22 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             return [`玩家当前不在${serverNameFullList[mainServer]}: 活动${eventId}前十名里`]
     }
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId)
+    const hasLimit = limit != undefined && (limit.min != undefined || limit.max != undefined)
+    const changeRange = day && day > 0 ? getEventDayRange(cutoffEventTop.startAt, mainServer, day) : undefined
+    const changeBegin = changeRange?.begin
+    const changeEnd = changeRange?.end
+    const playerRatingChanges = getPlayerRatingChanges(playerRating, changeBegin, changeEnd, limit)
+    const filterTips = []
+    if (day && day > 0) {
+        filterTips.push(`第${day}天`)
+    }
+    if (limit?.min != undefined) {
+        filterTips.push(`变动${limit.minInclusive ? '>=' : '>'}${limit.min}`)
+    }
+    if (limit?.max != undefined) {
+        filterTips.push(`变动${limit.maxInclusive ? '<=' : '<'}${limit.max}`)
+    }
+    const filterTipsText = filterTips.length > 0 ? `${filterTips.join('，')}` : '无'
     //最近maxCount次分数变化
     {
         const list = [], imageList = []
@@ -160,23 +188,18 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             gap: 10,
             color: "#a8a8a8"
         })
-        for (let i = 0; i + 1 < playerRating.length; i += 1) {
-            if (playerRating[i + 1].value == -1) {
-                break
-            }
+        for (const change of playerRatingChanges) {
             if (count == maxCount) {
                 break
             }
-            if (playerRating[i].value != playerRating[i + 1].value) {
-                count += 1
-                const mid = new Date((playerRating[i + 1].time + playerRating[i].time) / 2), score = playerRating[i].value - playerRating[i + 1].value
-                const timeChangeImage = drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${score}`})], widthMax / 2)
-                const ctx = timeChangeImage.getContext('2d')
-                ctx.font = "18px old,Microsoft Yahei"
-                ctx.fillText(`${mid.getMonth()+1}.${mid.getDate()}`, 45, 13)
-                imageList.push(timeChangeImage)
-                // list.push(line)
-            }
+            count += 1
+            const mid = new Date(change.time)
+            const timeChangeImage = drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${change.score}`})], widthMax / 2)
+            const ctx = timeChangeImage.getContext('2d')
+            ctx.font = "18px old,Microsoft Yahei"
+            ctx.fillText(`${mid.getMonth()+1}.${mid.getDate()}`, 45, 13)
+            imageList.push(timeChangeImage)
+            // list.push(line)
         }
         if (count == 0) {
             list.push(await drawList( {text: '数据不足'} ))
@@ -200,7 +223,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
         // CP Traces
-    if (mainAPI["events"][eventId.toString()]["eventType"]=="challenge" &&  playerRating.length > 70){
+    if (!hasLimit && mainAPI["events"][eventId.toString()]["eventType"]=="challenge" &&  playerRating.length > 70){
 
     
     // 根据t10的习惯，一般是先清火再计算CP。以3火一把的协力为基准，作为CP200的值（通常情况下）。
@@ -454,45 +477,33 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         const list = [], now = Date.now()
         list.push(drawListMerge([await drawList({ key: '时间' }), await drawList({ key: '分数变动次数' }), await drawList({ key: '平均时间间隔' }), await drawList({ key: '平均分数' })], widthMax))
         for (const a of timeList) {
-            const begin = now - a * 60 * 60 * 1000
-            const st = new Date(begin), ed = new Date(now)
+            const begin = changeBegin ?? now - a * 60 * 60 * 1000
+            const end = changeEnd ?? now
+            const st = new Date(begin), ed = new Date(end)
             const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}`})
-            const offset = Math.floor((now / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((begin / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
+            const offset = Math.floor((end / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((begin / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             // console.log(st.getTimezoneOffset())
             if (offset > 0) {
                 const ctx = timeImage.getContext('2d')
                 ctx.font = "18px old,Microsoft Yahei"
                 ctx.fillText(`-${offset}`, 30, 13)
             }
-            let flag = 0, count = 0, sumScore = 0, timestamps = []
-            for (let i = 0; i + 1 < playerRating.length; i += 1) {
-                if (playerRating[i + 1].value == -1) {
-                    flag = 1
-                    break
-                }
-                if (playerRating[i].value != playerRating[i + 1].value) {
-                    timestamps.push(playerRating[i].time)
-                    if (playerRating[i + 1].time < begin)
-                        break
-                    count += 1
-                    sumScore += playerRating[i].value - playerRating[i + 1].value
-                }
-                if (playerRating[i + 1].time < begin)
-                    break
-            }
-            if (flag) {
-                list.push(drawListMerge([timeImage, await drawList({ text: '数据不足' })], widthMax))
-            }
-            else {
-                const averageTime = getAverageTime(timestamps)
-                list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax))
-            }
+            const rangeChanges = playerRatingChanges.filter(change => change.time >= begin && change.time < end)
+            const count = rangeChanges.length
+            const sumScore = rangeChanges.reduce((sum, change) => sum + change.score, 0)
+            const timestamps = rangeChanges.map(change => change.time)
+            const averageTime = getAverageTime(timestamps)
+            list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax))
             list.push(line)
+            if (changeBegin != undefined && changeEnd != undefined) {
+                break
+            }
         }
         list.pop()
         all.push(await drawDatablock({ list, topLeftText: `近期统计数据`}))
     }
     all.push(await drawEventDatablock(new Event(eventId), [mainServer]))
+    all.push(await drawTips({text:'筛选条件：'+filterTipsText}))
     // list.push(new Canvas(800, 50))
 
     // //折线图
@@ -1420,4 +1431,62 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     }
     //console.log(finalResultOut)
     return finalResultOut
+}
+
+function getPlayerRatingChanges(playerRating: Array<{
+    time: number,
+    value: number
+}>, begin?: number, end?: number, limit?: TopRateLimit): PlayerRatingChange[] {
+    const result: PlayerRatingChange[] = []
+    for (let i = 0; i + 1 < playerRating.length; i += 1) {
+        if (playerRating[i].value == -1 || playerRating[i + 1].value == -1) {
+            continue
+        }
+        if (playerRating[i].value == playerRating[i + 1].value) {
+            continue
+        }
+        const score = playerRating[i].value - playerRating[i + 1].value
+        if (limit?.min != undefined && (limit.minInclusive ? score < limit.min : score <= limit.min)) {
+            continue
+        }
+        if (limit?.max != undefined && (limit.maxInclusive ? score > limit.max : score >= limit.max)) {
+            continue
+        }
+        const time = (playerRating[i + 1].time + playerRating[i].time) / 2
+        if (begin != undefined && time < begin) {
+            continue
+        }
+        if (end != undefined && time >= end) {
+            continue
+        }
+        result.push({ time, score })
+    }
+    return result
+}
+
+function getEventDayRange(startAt: number, server: Server, day: number): { begin: number, end: number } {
+    const offsetMs = getServerUtcOffset(server) * 60 * 60 * 1000
+    const eventStartAtTime = normalizeTimestamp(startAt)
+    const serverStartTime = eventStartAtTime + offsetMs
+    const startDate = new Date(serverStartTime)
+
+    const firstDayEndServerTime =
+        serverStartTime +
+        ((86400000 + 4 * 60 * 60 * 1000)
+            - startDate.getUTCHours() * 60 * 60 * 1000
+            - startDate.getUTCMinutes() * 60 * 1000
+            - startDate.getUTCSeconds() * 1000
+            - startDate.getUTCMilliseconds())
+
+    const firstDayEndTime = firstDayEndServerTime - offsetMs
+    if (day <= 1) {
+        return {
+            begin: eventStartAtTime,
+            end: firstDayEndTime,
+        }
+    }
+    return {
+        begin: firstDayEndTime + (day - 2) * 86400000,
+        end: firstDayEndTime + (day - 1) * 86400000,
+    }
 }
