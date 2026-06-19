@@ -26,6 +26,7 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     var player = new Player(playerId, mainServer)
     //尽可能不使用缓存查询。若等待时间过长，则使用缓存查询
     await player.initFull(false, 2)
+
     if (player.initError) {
         //result.push(`错误: 查询玩家时发生错误: ${playerId}, 正在使用可用缓存`)
         result.push(`错误: 查询玩家时发生错误, 正在使用可用缓存`)
@@ -35,6 +36,8 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
         if (player.initError || !player.isExist) {
             return [`错误: 查询玩家时发生错误: ${playerId}`]
         }
+    }else if (player.cache){
+        result.push(`接口繁忙，正在返回可用缓存；如需获取最新数据，请再查一次。`)
     }
 
     //检查玩家信息是否存在

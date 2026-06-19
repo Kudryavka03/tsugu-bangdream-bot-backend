@@ -26,6 +26,7 @@ if (!isMainThread && parentPort) {
   }
 let mainAPI: object = {}//main对象,用于存放所有api数据,数据来源于Bestdori网站
 const fuzzySearchDebug = false
+export const appStartTime = new Date().getTime()
 export let TopRateSpeed = null
  let TopRateSpeedCacheTime
 export let cardsCNfix, skillCNfix, areaItemFix, eventCharacterParameterBonusFix = {}, songNickname,eventNickname,playerNumber

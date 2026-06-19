@@ -10,7 +10,7 @@ import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
-import mainAPI, { loadMainAPINow } from '@/types/_Main';
+import mainAPI, { appStartTime, loadMainAPINow } from '@/types/_Main';
 import { switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
 import { clearMeasureCache } from '@/image/text';
 import { getApiDataCacheSize, getPD_Size } from '@/api/downloader';
@@ -20,6 +20,7 @@ import { getGachaDataCacheSize } from '@/types/Gacha';
 import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
 import { compareSameDataArray } from '@/view/cutoffEventTop';
 import { drawCutoffSongsDetail } from '@/view/cutoffSong';
+import { changeTimePeriodFormat } from '@/components/list/time';
 
 const router = express.Router();
 
@@ -61,8 +62,9 @@ router.post(
             return 
         }
         if (text == "6364636"){
+            const nowtime = new Date().getTime()  - appStartTime
             const m = process.memoryUsage();
-            var str = '[Tsugu Runtime Memory Infomation]\n'
+            var str = '[Tsugu Runtime Memory Infomation]\n' + '已运行' + changeTimePeriodFormat(nowtime)+'\n'
             console.log(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
             str+=(`[MEM] rss=${(m.rss/1024/1024).toFixed(1)}MB, heapUsed=${(m.heapUsed/1024/1024).toFixed(1)}MB, heapTotal=${(m.heapTotal/1024/1024).toFixed(1)}MB, ext=${(m.external/1024/1024).toFixed(1)}MB`);
             try {
