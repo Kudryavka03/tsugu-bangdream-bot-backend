@@ -630,8 +630,11 @@ export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId1:number,
         highDiff = diffId2; lowDiff = diffId1
     }
 
-    const titleHigh = (highSong.musicTitle && highSong.musicTitle[mainServer]) || 'Unknown'
-    const titleLow = (lowSong.musicTitle && lowSong.musicTitle[mainServer]) || 'Unknown'
+    const isSameSong = song1.songId === song2.songId || song1.musicTitle[mainServer] == song2.musicTitle[mainServer]
+    const titleHigh = isSameSong ? (difficultyNameList[highDiff]?.toUpperCase() || 'Unknown') : ((highSong.musicTitle && highSong.musicTitle[mainServer]) || 'Unknown')
+    const titleLow = isSameSong ? (difficultyNameList[lowDiff]?.toUpperCase() || 'Unknown') : ((lowSong.musicTitle && lowSong.musicTitle[mainServer]) || 'Unknown')
+    const song1Title = isSameSong ? (difficultyNameList[diffId1]?.toUpperCase() || 'Unknown') : ((song1.musicTitle && song1.musicTitle[mainServer]) || 'Unknown')
+    const song2Title = isSameSong ? (difficultyNameList[diffId2]?.toUpperCase() || 'Unknown') : ((song2.musicTitle && song2.musicTitle[mainServer]) || 'Unknown')
 
     // Guard: identical or non-positive meta
     if (highMeta <= 0 || lowMeta <= 0 || Math.abs(highMeta - lowMeta) < 1e-9) {
@@ -681,12 +684,12 @@ export function calcLoseFire(song1:Song,song2:Song,fever:boolean,diffId1:number,
 
     if (totalScoreSong1PreRound<totalScoreSong2PreRound){
         let lose = (totalScoreSong2PreRound - totalScoreSong1PreRound) / (5*meta2)
-        tips.push(`严格一个周回内，${song1.musicTitle[mainServer]} 相较于 ${song2.musicTitle[mainServer]} 会亏约 ${lose.toFixed(2)} 火`)
-        tips.push(`严格一个周回内，${song1.musicTitle[mainServer]} 相较于 ${song2.musicTitle[mainServer]} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
+        tips.push(`严格一个周回内，${song1Title} 相较于 ${song2Title} 会亏约 ${lose.toFixed(2)} 火`)
+        tips.push(`严格一个周回内，${song1Title} 相较于 ${song2Title} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
     }else{
         let lose = (totalScoreSong1PreRound - totalScoreSong2PreRound) / (5*meta1)
-        tips.push(`严格一个周回内，${song2.musicTitle[mainServer]} 相较于 ${song1.musicTitle[mainServer]} 会亏约 ${lose.toFixed(2)} 火`)
-        tips.push(`严格一个周回内，${song2.musicTitle[mainServer]} 相较于 ${song1.musicTitle[mainServer]} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
+        tips.push(`严格一个周回内，${song2Title} 相较于 ${song1Title} 会亏约 ${lose.toFixed(2)} 火`)
+        tips.push(`严格一个周回内，${song2Title} 相较于 ${song1Title} 会少打 ${Math.abs(song1CountPerRoundStrict - song2CountPerRoundStrict)} 把`)
     }
 
     return {
