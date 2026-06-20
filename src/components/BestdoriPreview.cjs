@@ -9,6 +9,7 @@ const path = require('path');
 
 const DISPLAY_NOTE_TYPES = new Set(['Single', 'SingleOff', 'Skill', 'Flick', 'Directional', 'Long']);
 const NOTE_LINE_TYPES = new Set(['Single', 'SingleOff', 'Flick', 'Long', 'Skill', 'Tick', 'Directional']);
+const NOTE_LINE_TYPES_BEATS = new Set(['Single',  'Flick', 'Long', 'Skill', 'Tick', 'Directional']);
 const SIM_BASE_TYPES = new Set(['Single', 'Flick', 'Skill', 'Long', 'Directional']);
 
 let noteAssetsPromise = null;
@@ -121,7 +122,7 @@ async function DrawPreview ({ meta, chartData }) {
         notes.forEach(v => {
             if (v.beat === beat && v.lane === lane) return
             if (SIM_BASE_TYPES.has(v.type) && v.beat === beat)
-                notes.push({ type: "Sim", time, lane: [v.lane, lane].sort((a, b) => a - b) })
+                notes.push({ type: "Sim", time, lane: [v.lane, lane].sort((a, b) => a - b), beat:v.beat })
         })
     }
     chart.forEach(n => {
@@ -132,23 +133,23 @@ async function DrawPreview ({ meta, chartData }) {
                 const tick = n.connections[i]
                 const time = tick.time
                 if (i === 0) {
-                    notes.push({ ...tick, type: tick.skill ? "Skill" : "Long", time })
+                    notes.push({ ...tick, type: tick.skill ? "Skill" : "Long", time, beat:tick.beat })
                     barTime.push(time)
                     lane.push(tick.lane)
                     generateSim(tick.beat, time, tick.lane)
                 } else if (i === n.connections.length - 1) {
                     barTime.push(time)
                     lane.push(tick.lane)
-                    notes.push({ type: "Bar", time: [barTime[0], barTime[1]], lane: [lane[0], lane[1]]})
-                    notes.push({ ...tick, type: tick.flick ? "Flick" : tick.skill ? "Skill" : "Long", time })
+                    notes.push({ type: "Bar", time: [barTime[0], barTime[1]], lane: [lane[0], lane[1]], beat:tick.beat})
+                    notes.push({ ...tick, type: tick.flick ? "Flick" : tick.skill ? "Skill" : "Long", time, beat:tick.beat })
                     generateSim(tick.beat, time, tick.lane)
                 } else {
                     barTime.push(time)
                     lane.push(tick.lane)
-                    notes.push({ type: "Bar", time: [barTime[0], barTime[1]], lane: [lane[0], lane[1]] })
+                    notes.push({ type: "Bar", time: [barTime[0], barTime[1]], lane: [lane[0], lane[1]], beat:tick.beat })
                     lane.shift()
                     barTime.shift()
-                    if (!tick.hidden) notes.push({ ...tick, type: "Tick", time })
+                    if (!tick.hidden) notes.push({ ...tick, type: "Tick", time, beat:tick.beat })
                 }
             }
         } else if (n.type === "BPM") {
@@ -180,7 +181,7 @@ async function DrawPreview ({ meta, chartData }) {
         if (a.time !== b.time) return a.time - b.time
         return a.lane - b.lane
     })
-
+    console.log(notes)
     const offset = 8;
     const infoAreaWidth = 240;
     const laneWidth = 32; // 轨道宽度需要包括分割线宽度；分割线平均占用其左右两侧轨道的空间。
@@ -285,6 +286,7 @@ async function DrawPreview ({ meta, chartData }) {
         8 + coverWidth,
         128)
     ctx.restore();
+    
     /*
     // 写标题、艺术家、作者和版权信息
     ctx.save();
@@ -345,7 +347,7 @@ async function DrawPreview ({ meta, chartData }) {
         const nextTime = array[index + 1] ? array[index + 1]['time'] : chartLength;
         do {
             ctx.save()
-            ctx.strokeStyle = (beat % 1 === 0) ? 'rgba(17, 72, 74, 0.75)' : 'rgba(17, 72, 74, 0.4)';
+            ctx.strokeStyle = (beat % 1 === 0) ? 'rgba(17, 72, 74, 0.85)' : 'rgba(17, 72, 74, 0.7)';
             if (beat % 1 !== 0) ctx.setLineDash([5, 5]);
             const currentTime = BPM.time + beat * (60 / BPM.bpm);
             const drawCol = Math.floor(currentTime / secondsPerCol);
@@ -357,7 +359,7 @@ async function DrawPreview ({ meta, chartData }) {
             ctx.moveTo(x, y)
             ctx.lineTo(x + w, y)
             ctx.stroke();
-            beat += 0.5;
+            beat += 0.25;    // beat: 更改为16分
             ctx.restore()
         } while (BPM.time + beat * (60 / BPM.bpm) < nextTime && BPM.time + beat * (60 / BPM.bpm) >= previousTime)
     })
@@ -380,19 +382,39 @@ async function DrawPreview ({ meta, chartData }) {
             y);
     }
     ctx.restore()
-
+    var beatFlags = ''
+    let beatDebug = false
+    //let beatValues = 0
     // 画音符位置线和BPM线 // 如果不提前画，会覆盖住某些双押的音符
     for (let i = 0, n = 0; i < notes.length; i++) {
         //const noteType = ['Single', 'SingleOff', 'Flick', 'Long', 'Skill', 'Tick', 'Directional'];
         const noteType = NOTE_LINE_TYPES
         const note = notes[i];
-
         const drawCol = Math.floor(note.time / secondsPerCol);
         const x = infoAreaWidth + drawCol * originalWidth + blockDistance;
         const w = 7 * laneWidth;
         const y = height - (note.time * heightPerSecond) % height;
-
+        
         if (noteType.has(note.type)) {
+           if (i >= 2 && i<notes.length -2){
+                let beatFlagsNext = ''
+                let beatFlagsPrev = ''
+                for(let temp = i+1;temp<notes.length;temp++){    // 往后查找不重叠的第一个note
+                    if (notes[temp].beat!= notes[i].beat && noteType.has(notes[temp].type)){
+                        beatFlagsNext = checkBeats(notes[temp].beat,notes[i].beat) 
+                        break
+                    }
+                }
+                for(let temp = i-1;temp>2;temp--){    // 往后查找不重叠的第一个note
+                    if (notes[temp].beat!= notes[i].beat && noteType.has(notes[temp].type)){
+                        beatFlagsPrev = checkBeats(notes[i].beat,notes[temp].beat)    // 当前beats 减去上一个note的beats 
+                        break
+                    }
+                }
+                // 比较
+                getBeatsLevel(beatFlagsNext) > getBeatsLevel(beatFlagsPrev) ? beatFlags = beatFlagsPrev : beatFlags = beatFlagsNext
+
+           }
             n++;
             if (n % 50 === 0) {
                 ctx.font = '18px "Arial"';
@@ -404,6 +426,18 @@ async function DrawPreview ({ meta, chartData }) {
                 ctx.fillStyle = '#FFF';
                 adaptText(18, y);
                 ctx.fillText(`${n}`, x + w + 8, y);
+            }else {
+                ctx.font = '12px "Arial"';
+                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+                ctx.textAlign = 'left';
+
+                ctx.fillRect(x, y - 1, w, 2);
+
+                ctx.fillStyle = '#FFF';
+                adaptText(18, y);
+                let text = beatDebug?`${beatFlags} ${beatDebug}`:`${beatFlags}`
+                ctx.fillText(`${text}`, x + w + 8, y);
+                //beatValues = beatFlags
             }
         } else if (note.type === 'BPM') {
             // TODO: 把这玩意儿移出去单独画！！！还有小节线呢（瘫
@@ -518,4 +552,45 @@ async function loadImageFromPath(path) {
     //const buf: Buffer = await pool.run(path, { name: 'readFiles'});
     //const buffer = new Buffer()
     return await Canvas.loadImage(await fs.promises.readFile(path));
+}
+
+function checkBeats(n,m){     // 按顺序传入2个不同beats值的note，判断最后note的beats究竟是多少。其中m为当前note，n为下一个note
+    function check(a){
+        a = Math.abs(a)
+        const maxDenominator = 48
+        const gcd = (x, y) => {
+            while (y) {
+                const temp = y
+                y = x % y
+                x = temp
+            }
+            return x
+        }
+
+        let bestNumerator = 0
+        let bestDenominator = 1
+        let bestDiff = Infinity
+
+        for (let denominator = 1; denominator <= maxDenominator; denominator++) {
+            const numerator = Math.round(a * denominator)
+            const diff = Math.abs(a - numerator / denominator)
+            if (diff < bestDiff) {
+                bestNumerator = numerator
+                bestDenominator = denominator
+                bestDiff = diff
+            }
+        }
+
+        const divisor = gcd(bestNumerator, bestDenominator)
+        return `${bestNumerator / divisor}/${bestDenominator / divisor}`
+    }
+    let result = check(n-m)
+    //console.log('compare',n,m,n-m,result)
+    return result
+}
+
+function getBeatsLevel(text){
+    let num = text.split('/')
+    if (num.length!=2) return 1
+    return num[0]/num[1]
 }
