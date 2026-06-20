@@ -181,7 +181,6 @@ async function DrawPreview ({ meta, chartData }) {
         if (a.time !== b.time) return a.time - b.time
         return a.lane - b.lane
     })
-    console.log(notes)
     const offset = 8;
     const infoAreaWidth = 240;
     const laneWidth = 32; // 轨道宽度需要包括分割线宽度；分割线平均占用其左右两侧轨道的空间。
