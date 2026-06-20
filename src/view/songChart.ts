@@ -41,7 +41,7 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
         cover: song.getSongJacketImageURL(displayedServerList)
     }, songChart as any)
     */
-   var chartData = songChart as any;
+   var chartData = cloneChartData(songChart as any);
    if (mirror) mirrorCharts(chartData)
    const {buffer } = await BestdoriPreviewPool.run({
     meta:{id: song.songId,
@@ -66,6 +66,9 @@ export async function drawSongChart(songId: number, difficultyId: number, displa
     //return [buffer]
 }
 const totalCountsLane =  7 - 1
+function cloneChartData(chartData){
+    return JSON.parse(JSON.stringify(chartData))
+}
 function mirrorCharts(chartData){
     function mirrorLane(data){
         if (!data || typeof data !== 'object') {
