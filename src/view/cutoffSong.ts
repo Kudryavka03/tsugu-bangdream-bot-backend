@@ -139,8 +139,10 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
         chartEntries.push({
             song,
             t1List,
+            t10List,
             tierList,
             currentT1: lastT1.ep,
+            currentT10: lastT10.ep
         });
     }
 
