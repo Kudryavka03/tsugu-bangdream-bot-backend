@@ -17,6 +17,7 @@ import { drawTips } from '@/components/tips';
 import path from 'path';
 import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
+import { getTop10AvgScore } from './cutoffDetail';
 
 export async function drawCutoffListOfRecentEvent(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     //检查
@@ -55,7 +56,18 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         })()
         cutoffPromise.push(cop)
     }
-    var cutoffPromiseR:Cutoff[] = await Promise.all(cutoffPromise)
+    // 获得T10分数
+    var cutoffT10AvgScoreWorkGroup = []
+    var cutoffT10Record = new Map<number,number>()
+    let dupRecordEvent = new Set<number>()
+    for(let t = 0;t<eventList.length;t++){
+        if (!dupRecordEvent.has(eventList[t].eventId)){
+            cutoffT10AvgScoreWorkGroup.push(getTop10AvgScore(eventList[t],mainServer,cutoffT10Record))
+            dupRecordEvent.add(eventList[t].eventId)
+        }
+    }
+    let dataPreparing =  await Promise.all([await Promise.all(cutoffPromise),await Promise.all(cutoffT10AvgScoreWorkGroup)])
+    var cutoffPromiseR:Cutoff[] =dataPreparing[0]
     for(var cor of cutoffPromiseR){
         if (cor.latestCutoff)cutoffList.push(cor)
     }
@@ -109,6 +121,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                 }
                 cutoffContent.push(`当前分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
             }
+            cutoffContent.push(`当期顶配: ${Math.round(cutoffT10Record.get(cutoff.eventId))}\n`)
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}`)
             cutoffContent.push('\n')
@@ -116,6 +129,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         else if (cutoff.status == 'ended') {
             //console.log(cutoff)
             const playerNumberTips = mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']?` | 总${mainAPI['events'][tempEvent.eventId.toString()]['totalPlayerDataCN']}人`:''
+            cutoffContent.push(`当期顶配: ${Math.round(cutoffT10Record.get(cutoff.eventId))}\n`)
             cutoffContent.push(`最终分数线: ${cutoff.latestCutoff.ep.toString()}${playerNumberTips}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}`)
             cutoffContent.push('\n')

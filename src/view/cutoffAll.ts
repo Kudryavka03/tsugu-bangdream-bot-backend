@@ -11,6 +11,8 @@ import { drawCutoffChart } from '@/components/chart/cutoffChart'
 import { serverNameFullList, tierListOfServer } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { statusName } from '@/config';
+import { drawTips } from '@/components/tips';
+import { getTop10AvgScore } from './cutoffDetail';
 
 export async function drawCutoffAll(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
     var event = new Event(eventId)
@@ -49,10 +51,6 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
         })()
         cutoffPromise.push(cop)
     }
-
-
-
-
 
 
     var cutoffPromiseR = await Promise.all(cutoffPromise)
@@ -114,6 +112,12 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     all.push(await drawTitle('档线列表', `${serverNameFullList[mainServer]}`))
     all.push(await bannerImageBox)
     all.push(listImage)
+        // 检查当前活动是否已经开始
+    const nowTime = new Date().getTime()
+    const isEndEvent = (nowTime - event.endAt[mainServer] > 0)    // true为已举办
+    if (isEndEvent) all.push(await drawTips({
+            text: `当期顶配：${Math.round(await getTop10AvgScore(event,mainServer,null))}`
+        }))
     /*
     all.push(drawTips({
         text: '想给我们提供数据?\n可以在群聊238052000中提供数据\n也可以通过扫描右侧二维码进行上传\n手机可以长按图片扫描二维码\n我们会尽快将数据上传至服务器',

@@ -21,6 +21,7 @@ import { changeTimePeriodFormat, changeTimefomant, formatSeconds, getServerUtcOf
 import mainAPI, { TopRateSpeed } from '@/types/_Main';
 import array from 'ref-array-di';
 import { min } from 'moment';
+import { getTop10AvgScore } from './cutoffDetail';
 
 type TopRateLimit = {
     min?: number,
@@ -41,7 +42,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
         logger('drawEventDatablock error:', err);
         return null;
     });
-    await cutoffEventTop.initFull();
+    await cutoffEventTop.initFull(0);
     if (!cutoffEventTop.isExist) {
         return [`错误: ${serverNameFullList[mainServer]} 活动不存在或数据不足`];
     }
@@ -80,7 +81,9 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     var listImage = await drawDatablock({ list });
     all.push(await drawEventDatablockPromise)
     all.push(listImage);
-
+    all.push(await drawTips({
+        text: `当期顶配：${Math.round(await getTop10AvgScore(event,mainServer,null))}`
+    }))
     var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
 
     return [buffer];

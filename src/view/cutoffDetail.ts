@@ -17,8 +17,8 @@ import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
 import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
 import { CutoffEventTop } from '@/types/CutoffEventTop';
-import { isNumber } from 'util';
 import { Band } from '@/types/Band';
+import { now } from 'moment';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
@@ -28,8 +28,16 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         return [`错误: ${serverNameFullList[mainServer]} 活动或档线不存在`]
     }
     cutoffGroup.push(cutoff.initFull())
-
+    // 获取T10分数
     var event = new Event(eventId)
+    var cutoffT10AvgScoreWorkGroup = []
+    var cutoffT10Record = new Map<number,number>()
+    // 检查当前活动是否已经开始
+    const nowTime = new Date().getTime()
+    const isEndEvent = (nowTime - event.endAt[mainServer] > 0)    // true为已举办
+    if (isEndEvent) cutoffGroup.push(getTop10AvgScore(event,mainServer,cutoffT10Record))
+
+
     const drawPromise = await drawEventDatablock(event, [mainServer]).catch(err => {
         logger('drawEventDatablock error:', err);
         return null;
@@ -153,8 +161,12 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             key: '最终分数线',
             text: cutoff.latestCutoff.ep.toString()
         }))
+        Line2List.push(await drawList({
+            key: '当期顶配',
+            text: Math.round(cutoffT10Record.get(cutoff.eventId)).toString()
+        }))
         if (mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']) Line2List.push(await drawList({
-            key: '国服 总参与人数',
+            key: '总参与人数',
             text:  `${mainAPI['events'][event.eventId.toString()]['totalPlayerDataCN']}`
         }))
         list.push(drawListMerge(Line2List))
@@ -484,12 +496,17 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
 
 }
 
-async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,number>):Promise<number>{
-    if (event.eventType=='challenge') return 0
-    const t10Cutoff = new CutoffEventTop(event.eventId, mainServer)
+export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,number>,tempCutoffs?:CutoffEventTop):Promise<number>{
+    if (event && event.eventType=='challenge') return 0
+    const t10Cutoff = tempCutoffs?tempCutoffs:new CutoffEventTop(event.eventId, mainServer)
     await t10Cutoff.initFull(0)
     var userInRankings = t10Cutoff.getLatestRanking();
+    if (userInRankings.length<10){
+        if (record)record.set(event.eventId,0)
+        return 0
+    }
     let playerId = userInRankings[0].uid
+    
     let scorePoint = []
     let scoreChange:number[]  = []
     for(let d of t10Cutoff.points){
@@ -497,7 +514,13 @@ async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,
             if ( scorePoint.length==0 ||  d.value != scorePoint[scorePoint.length-1][1]) scorePoint.push([d.time,d.value])
         }
     }
-    for(let i = Math.round(scorePoint.length * 0.3);i<Math.round(scorePoint.length * 0.7);i++){ // 避免异常数据
+    let leftIndex =  Math.round(scorePoint.length * 0.3)
+    let rightIndex = Math.round(scorePoint.length * 0.7)
+    if (rightIndex - leftIndex < 4){
+        if (record)record.set(event.eventId,0)
+        return 0
+    }
+    for(let i = leftIndex;i<rightIndex;i++){ // 避免异常数据
         if (scorePoint[i+1][0] - scorePoint[i][0] < 7*60*1000)    // 简单防炸
         scoreChange.push(scorePoint[i+1][1]-scorePoint[i][1])
     }
@@ -508,6 +531,6 @@ async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,
     }
     if (scoreChange.length == 0) return 0
     const result:number = avgScore/ scoreChange.length
-    record.set(event.eventId,result)
+    if (record)record.set(event.eventId,result)
     return result
 }
