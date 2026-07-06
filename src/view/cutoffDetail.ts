@@ -19,6 +19,7 @@ import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
 import { CutoffEventTop } from '@/types/CutoffEventTop';
 import { Band } from '@/types/Band';
 import { now } from 'moment';
+import { start } from 'repl';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
@@ -472,6 +473,19 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }))
         list.push(drawListMerge(Line2List))
         list.push(line)
+        if(cutoff.status == 'in_progress'){     // 如果主ycx为正在进行状态
+            let precent = (cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)
+            let tpEP:TimePresentEP = getTimePresentEP(cutoffGroupResult[i],precent,compareEventRateOfFirstEvent[i],cutoff)
+            if (tpEP.value!=0){
+                list.push(await drawList({
+                    key: '同一时刻对比',
+                    text: `原始：${tpEP.value} / 补偿后: ${tpEP.valueWithRatio}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
+                }))
+                list.push(line)
+            }
+
+        }
+
         const tempList = []
         //console.log(cutoff2.dailyIncrement)
         tempList.push((await drawList({
@@ -533,4 +547,99 @@ export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<
     const result:number = avgScore/ scoreChange.length
     if (record)record.set(event.eventId,result)
     return result
+}
+
+export interface TimePresentEP {
+    value: number;
+    valueWithRatio: number;
+    time: number;
+}
+// 取得特定百分比时候的EP
+export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutoff2:Cutoff){    // 接受cutoff数据，百分比，比值
+    console.log(present)
+      let debugflags = false
+    if (!cutoff || cutoff.cutoffs.length < 1){
+        return {value:0,valueWithRatio:0,time:cutoff.endAt} as TimePresentEP
+    }
+    if (!cutoff2 || cutoff2.cutoffs.length < 1){
+        return {value:0,valueWithRatio:0,time:cutoff.endAt} as TimePresentEP
+    }
+    let startTime = cutoff.startAt
+    // 修正startTime，对齐主预测先
+    let mainCutoffHours = new Date(cutoff2.startAt).getHours()
+    startTime = new Date(startTime).setHours(mainCutoffHours)
+    let endTime = cutoff.endAt
+    mainCutoffHours = new Date(cutoff2.endAt).getHours()
+    if (new Date(endTime).getHours()!= mainCutoffHours){
+        if (debugflags) console.log('debug',new Date(endTime).getHours())
+        endTime = new Date(endTime).setHours(mainCutoffHours)
+    if (debugflags) console.log('debug',new Date(endTime).getHours())
+    }
+    let length = endTime - startTime
+    console.log('cutoff1 length',length)
+    console.log('cutoff2 length',cutoff2.endAt - cutoff2.startAt)
+    let targetLength = startTime + length * present
+    // 寻找最符合目标的时间
+    let data = cutoff.cutoffs
+    let index = Math.round((cutoff.cutoffs.length)/2)
+    let index1 = 0
+    let findLeft = true // 是否往左找
+    let stopFlags = false
+  
+    while (!stopFlags){
+        if(debugflags)console.log('index:',index,'index1',index1)
+        if (index > data.length-1){
+            return {value:data[data.length-1].ep,valueWithRatio:Math.round(data[data.length-1].ep * ratio),time:data[data.length-1].time} as TimePresentEP
+        }
+        if (index < 0){
+            return {value:data[0].ep,valueWithRatio:Math.round(data[0].ep * ratio),time:data[0].time} as TimePresentEP
+        }
+        if (((data[index].time - startTime) / length) > present){
+            if(debugflags)console.log('>',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) > present))
+            //console.log('<',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) < present))
+            findLeft = true // 往左找
+        }
+        if (((data[index].time - startTime) / length) < present){
+            //console.log('>',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) > present))
+            if(debugflags)console.log('<',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) < present))
+            findLeft = false    // 往右找
+        }
+        if (((data[index].time - startTime)/ length) == present){
+            return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
+        }
+
+        let count = Math.abs(index - index1)
+        if (count <=1){
+            stopFlags = true
+            if (count==1){
+                let indexPresent = (data[index].time - startTime) / length
+                let index1Present =(data[index1].time - startTime) / length
+                if (Math.abs(present - indexPresent) > Math.abs(present - index1Present)){
+                    if(debugflags)console.log('找到 index:',index1,'找到百分比',index1Present,'目标百分比差值',Math.abs(present - index1Present))
+                    return {value:data[index1].ep,valueWithRatio:Math.round(data[index1].ep * ratio),time:data[index1].time} as TimePresentEP
+                }
+                else{
+                    if(debugflags)console.log('找到 index:',index,'找到百分比',indexPresent,'目标百分比差值',Math.abs(present - indexPresent))
+                    return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
+                }
+            }
+        }else if (count==0){
+            //let indexPresent = data[index].time / length
+            return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
+        }
+        if (findLeft === true){  // 如果往左边找 
+            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'targetNum',present,'往左边找',index - Math.ceil(Math.abs(index1-index)/2))
+                //console.log(Math.floor(Math.abs(index1-index)/2))
+            let history = index1
+            index1 = index      // 假定index当前是中间，那么往左边找中间点继续判断，index1代表上一个中间点
+            index = index - Math.ceil(Math.abs(history-index)/2) // 把index定位到0,index中间
+        }
+        if (findLeft === false){ // 如果往右边找
+            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'targetNum',present,'往右边找，目标Index',index +Math.ceil(Math.abs(index1-index)/2))
+            let history = index1
+            index1 = index      // 假定index当前是中间，那么往右边找中间点继续判断，index1代表上一个中间点
+            index = index +Math.ceil(Math.abs(history-index)/2) // 把index定位到index,data终点
+        }
+    }
+    // Ohno我写了个什么万一出来
 }
