@@ -109,6 +109,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
         if (cutoff.status == 'in_progress') {
             cutoff.predict()
             let predictText: string
+            cutoffContent.push(`当期顶配: ${Math.round(cutoffT10Record.get(cutoff.eventId))}\n`)
             if (cutoff.predictEP == null || cutoff.predictEP == 0) {
                 predictText = '?'
                 cutoffContent.push(`当前预测线: 数据不足\n`)
@@ -121,7 +122,7 @@ export async function drawCutoffListOfRecentEvent(eventId: number, tier: number,
                 }
                 cutoffContent.push(`当前分数线: ${cutoff.latestCutoff.ep.toString()}\n`)
             }
-            cutoffContent.push(`当期顶配: ${Math.round(cutoffT10Record.get(cutoff.eventId))}\n`)
+
             cutoffContent.push(`更新时间:${changeTimefomant(cutoff.latestCutoff.time,cutoff.server)}\n`)
             cutoffContent.push(`日增: ${cutoff.dailyIncrement.join('/')}`)
             cutoffContent.push('\n')
