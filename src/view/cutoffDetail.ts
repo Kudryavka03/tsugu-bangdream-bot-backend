@@ -557,7 +557,7 @@ export interface TimePresentEP {
 // 取得特定百分比时候的EP
 export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutoff2:Cutoff){    // 接受cutoff数据，百分比，比值
     console.log(present)
-      let debugflags = false
+      let debugflags = true
     if (!cutoff || cutoff.cutoffs.length < 1){
         return {value:0,valueWithRatio:0,time:cutoff.endAt} as TimePresentEP
     }
@@ -585,7 +585,10 @@ export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutof
     let index1 = 0
     let findLeft = true // 是否往左找
     let stopFlags = false
-  
+    let presentNearest = 99999
+    let presentNearestIndex = 99999
+    let absPresent = 9999999
+    let curPresent = 888888888
     while (!stopFlags){
         if(debugflags)console.log('index:',index,'index1',index1)
         if (index > data.length-1){
@@ -594,52 +597,51 @@ export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutof
         if (index < 0){
             return {value:data[0].ep,valueWithRatio:Math.round(data[0].ep * ratio),time:data[0].time} as TimePresentEP
         }
+        curPresent = (data[index].time - startTime) / length
+        absPresent = Math.abs(curPresent-present)
         if (((data[index].time - startTime) / length) > present){
-            if(debugflags)console.log('>',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) > present))
+            if(debugflags)console.log('>',curPresent,present,(((data[index].time - startTime) / length) > present))
             //console.log('<',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) < present))
+            if (absPresent <= presentNearest){
+                presentNearest = absPresent
+                presentNearestIndex = index
+                if (debugflags) console.log('找到更好的present：',curPresent,'差值',absPresent)
+            }
             findLeft = true // 往左找
         }
         if (((data[index].time - startTime) / length) < present){
             //console.log('>',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) > present))
-            if(debugflags)console.log('<',((data[index].time - startTime) / length),present,(((data[index].time - startTime) / length) < present))
+            if(debugflags)console.log('<',curPresent,present,(((data[index].time - startTime) / length) < present))
+            if (absPresent <= presentNearest){
+                presentNearest = absPresent
+                presentNearestIndex = index
+                if (debugflags) console.log('找到更好的present：',curPresent,'差值',absPresent)
+            }
             findLeft = false    // 往右找
         }
         if (((data[index].time - startTime)/ length) == present){
             return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
         }
-
         let count = Math.abs(index - index1)
         if (count <=1){
             stopFlags = true
-            if (count==1){
-                let indexPresent = (data[index].time - startTime) / length
-                let index1Present =(data[index1].time - startTime) / length
-                if (Math.abs(present - indexPresent) > Math.abs(present - index1Present)){
-                    if(debugflags)console.log('找到 index:',index1,'找到百分比',index1Present,'目标百分比差值',Math.abs(present - index1Present))
-                    return {value:data[index1].ep,valueWithRatio:Math.round(data[index1].ep * ratio),time:data[index1].time} as TimePresentEP
-                }
-                else{
-                    if(debugflags)console.log('找到 index:',index,'找到百分比',indexPresent,'目标百分比差值',Math.abs(present - indexPresent))
-                    return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
-                }
-            }
-        }else if (count==0){
-            //let indexPresent = data[index].time / length
-            return {value:data[index].ep,valueWithRatio:Math.round(data[index].ep * ratio),time:data[index].time} as TimePresentEP
+
         }
         if (findLeft === true){  // 如果往左边找 
-            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'targetNum',present,'往左边找',index - Math.ceil(Math.abs(index1-index)/2))
+            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'当钱present',curPresent,'targetNum',present,'往左边找',index - Math.ceil(Math.abs(index1-index)/2))
                 //console.log(Math.floor(Math.abs(index1-index)/2))
             let history = index1
             index1 = index      // 假定index当前是中间，那么往左边找中间点继续判断，index1代表上一个中间点
             index = index - Math.ceil(Math.abs(history-index)/2) // 把index定位到0,index中间
         }
         if (findLeft === false){ // 如果往右边找
-            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'targetNum',present,'往右边找，目标Index',index +Math.ceil(Math.abs(index1-index)/2))
+            if(debugflags)console.log('当前Index',index,'当前数据',data[index],'当钱present',curPresent,'targetNum',present,'往右边找，目标Index',index +Math.ceil(Math.abs(index1-index)/2))
             let history = index1
             index1 = index      // 假定index当前是中间，那么往右边找中间点继续判断，index1代表上一个中间点
             index = index +Math.ceil(Math.abs(history-index)/2) // 把index定位到index,data终点
         }
     }
+    if (debugflags) console.log('选择点Index',presentNearestIndex,'选择点Present',presentNearest,'target',present,'差值',Math.abs(presentNearest-present))
+    return {value:data[presentNearestIndex].ep,valueWithRatio:Math.round(data[presentNearestIndex].ep * ratio),time:data[presentNearestIndex].time} as TimePresentEP
     // Ohno我写了个什么万一出来
 }
