@@ -557,7 +557,7 @@ export interface TimePresentEP {
 // 取得特定百分比时候的EP
 export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutoff2:Cutoff){    // 接受cutoff数据，百分比，比值
     console.log(present)
-      let debugflags = true
+      let debugflags = false
     if (!cutoff || cutoff.cutoffs.length < 1){
         return {value:0,valueWithRatio:0,time:cutoff.endAt} as TimePresentEP
     }
