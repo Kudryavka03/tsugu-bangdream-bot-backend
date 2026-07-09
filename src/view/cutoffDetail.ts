@@ -36,7 +36,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
     // 检查当前活动是否已经开始
     const nowTime = new Date().getTime()
     const isEndEvent = (nowTime - event.endAt[mainServer] > 0)    // true为已举办
-    if (isEndEvent) cutoffGroup.push(getTop10AvgScore(event,mainServer,cutoffT10Record))
+    if (isEndEvent) cutoffGroup.push(await getTop10AvgScore(event,mainServer,cutoffT10Record))
 
 
     const drawPromise = await drawEventDatablock(event, [mainServer]).catch(err => {
@@ -103,7 +103,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         tempImageList.push(finalCutoffImage)
         tempImageList.push(await drawList({
             key: '数据来源',
-            text: `${cutoff.useHHWX?"HHWX":"Bestdori"}`
+            text: `${cutoff.dataSourceName}`
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
@@ -359,7 +359,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         tempImageList.push(finalCutoffImage)
         tempImageList.push(await drawList({
             key: '数据来源',
-            text: `${cutoff.useHHWX?"HHWX":"Bestdori"}`
+            text: `${cutoff.dataSourceName}`
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
@@ -511,7 +511,10 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
 }
 
 export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,number>,tempCutoffs?:CutoffEventTop):Promise<number>{
-    if (event && event.eventType=='challenge') return 0
+    if (event && event.eventType=='challenge') {
+        record.set(event.eventId,0)
+        return 0
+    }
     const t10Cutoff = tempCutoffs?tempCutoffs:new CutoffEventTop(event.eventId, mainServer)
     await t10Cutoff.initFull(0)
     var userInRankings = t10Cutoff.getLatestRanking();

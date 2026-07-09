@@ -1,7 +1,6 @@
 import { Server } from "@/types/Server";
 import { Event } from '@/types/Event';
-import { callAPIAndCacheResponse } from "@/api/getApi";
-import { Bestdoriurl } from "@/config";
+import { getCutoffEventTopData } from "@/api/cutoffDataSource";
 
 
 export class CutoffEventTop{
@@ -12,6 +11,7 @@ export class CutoffEventTop{
     status: 'not_start' | 'in_progress' | 'ended';
     isInitfull: boolean = false;
     isExist = false;
+    dataSourceName = 'Bestdori';
     points:{
         time:number,
         uid:number,
@@ -58,25 +58,20 @@ export class CutoffEventTop{
         if(this.isInitfull){
             return;
         }
-        let topData = null;
-        if (this.status == 'ended'){
-            topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,1/0,1,true,1);
-            let pointsData = topData['points'] as {
-                time:number,
-                uid:number,
-                value:number
-            }[];
-            console.log(this.endAt,pointsData[pointsData.length-1].time)
-            if (this.endAt -  pointsData[pointsData.length-1].time > 60*3*1000){
-                topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,0,3,false);
-            }
-        }else{
-            topData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/eventtop/data?server=${<number>this.server}&event=${this.eventId}&mid=0&interval=${interval}`,0,3,false);
-        }
-        if(topData == undefined){
+        const result = await getCutoffEventTopData({
+            server: this.server,
+            eventId: this.eventId,
+            interval,
+            forceReadCache: this.status == 'ended',
+            validateFreshness: this.status == 'ended',
+            endAt: this.endAt,
+        })
+        if(!result || result.data == undefined){
             this.isExist = false;
             return;
         }
+        this.dataSourceName = result.sourceName
+        const topData = result.data
         this.isExist = true;
         this.points = topData['points'] as {
             time:number,
