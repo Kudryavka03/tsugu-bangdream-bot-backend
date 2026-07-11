@@ -512,7 +512,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
 
 export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<number,number>,tempCutoffs?:CutoffEventTop):Promise<number>{
     if (event && event.eventType=='challenge') {
-        record.set(event.eventId,0)
+        if (record) record.set(event.eventId,0)
         return 0
     }
     const t10Cutoff = tempCutoffs?tempCutoffs:new CutoffEventTop(event.eventId, mainServer)
