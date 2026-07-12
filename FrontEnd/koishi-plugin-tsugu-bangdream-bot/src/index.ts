@@ -129,7 +129,7 @@ export function apply(ctx: Context, config: Config) {
     //判断是否为车牌
     ctx.middleware(async (session, next) => {
         const number = (0, utils_1.checkLeftDigits)(session.content);
-        if (number != 0 && false) {
+        if (number != 0 ) {
             await session.observeUser(['tsugu']);
             const tsuguUserData = await observeUserTsugu(session);
             await (0, roomNumber_1.roomNumber)(config, session, tsuguUserData, number, session.content);
