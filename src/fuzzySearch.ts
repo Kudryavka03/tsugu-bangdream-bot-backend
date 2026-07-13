@@ -365,9 +365,17 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
             }
             if (!match&& mt){  // 如果仍然无结果，则尝试空格拆分，使用歌曲的第一个字进行搜索
               var cmpstr =  splitSpaceAndConcatFirstLetter(mt)
-              if (cmpstr && include(cmpstr, matchValueReplaceSpace)) {
+              if(!cmpstr) break;
+              if (cmpstr[0] == cmpstr[1] && include(cmpstr[0], matchValueReplaceSpace)) {
                 match = true;
                 break;
+              }else{
+                for(let c of cmpstr){
+                  if (include(c, matchValueReplaceSpace)){
+                    match = true;
+                    break;
+                  }
+                }
               }
             }
             /*
@@ -405,7 +413,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
   return match;
 }
 
-function splitSpaceAndConcatFirstLetter(str:string){
+function splitSpaceAndConcatFirstLetterBak(str:string){
   if (!str) return null
   var arr = str.split(' ')
   if (arr.length <= 1) return null
@@ -416,6 +424,26 @@ function splitSpaceAndConcatFirstLetter(str:string){
   //console.log(result)
   return result
 }
+
+function splitSpaceAndConcatFirstLetter(str:string){
+  if (!str) return null
+  var arr = str.split(' ')
+  if (arr.length <= 1) return null
+  var result = ''
+  var resultWithChnJpnKon = ''
+  for (var s of arr){
+    if (checkIfIsChnJpnKon(s)){
+      result+=s.slice(0,1)
+      resultWithChnJpnKon+=s
+    }else{
+      resultWithChnJpnKon+=s.slice(0,1)
+      result+=s.slice(0,1)
+    }
+  }
+  //console.log(result)
+  return [result,resultWithChnJpnKon]
+}
+
 
 
 // 以下为数字与范围函数
@@ -455,4 +483,7 @@ export function checkRelationList(num: number, _relationStrList: string[]): bool
   }
   return false;
 }
-
+// 如果要匹配 夏空 SUN SUN SEVEN
+export function checkIfIsChnJpnKon(str:string):boolean{
+    return /[\uac00-\ud7ff]|[\u4e00-\u9fa5]/g.test(str)
+}

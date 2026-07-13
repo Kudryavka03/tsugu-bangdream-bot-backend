@@ -137,9 +137,16 @@ export async function queryRoomNumberFromBandoriStation() {
 }
 function decodeUrl(text) {
     if (text == undefined) {
-        return '';
+        return ''
     }
-    return (0, querystring_1.unescape)(text.replace(/\%u/g, "%u"));
+    let testStr = text.replace(/\%u/g, "%u")
+    try{
+        return decodeURIComponent(testStr)   // 当车包含诸如150%之类的字符是会导致decodeURIComponent失败。
+    }
+    catch{
+        return testStr                       // 回退
+    }
+    //return (0, querystring_1.unescape)(text.replace(/\%u/g, "%u"));   // 不用这个
 }
 //提交房间号
 export async function submitRoomNumber({ number, rawMessage, source, userId, time, userName, bandoriStationToken, avatarUrl }, userpPlayerInList) {
