@@ -332,6 +332,7 @@ export class Cutoff {
         }
         if (UTCMin == 45 && UTCHour == 3) lengthLimit++
         let curEventDays = this.getDaysOfEvent(lastCutoffTime)
+        //console.log(curEventDays)
         if (!days) days = curEventDays-1    // 如果没有传入任何参数，则是跟昨日进行对比
         if (days == -1){
             let maxIncrementDays = -1;
@@ -357,11 +358,22 @@ export class Cutoff {
         if (days == 0) return null
         let lastCutoffEp = this.cutoffs[this.cutoffs.length-(usePrevPoint?2:1)].ep
         const dateNow = getDateByServerTimezone(lastCutoffTime, this.server)
-        const lastestUtcHour = dateNow.getUTCHours()
+        const lastestUtcHour = dateNow.getUTCHours()    // 给予补偿，时区问题。
         const lastestUtcMinutes = dateNow.getUTCMinutes()
+        const faultTolerant = (ftd:Date,h:number,m:number)=>{
+            let h1 = ftd.getUTCHours()
+            let m1 = ftd.getUTCMinutes()
+            if (h1==h && m1 == m) return true
+            let timeFtd = h1*3600 + m1*60
+            let queryTime = h *3600 + m*60
+            if (Math.abs(timeFtd - queryTime) > 6*60) return true
+        }
         // 当传入days参数后，只提取对应的那一段
-        let daysEndRecord = new Map<number,number>()
-        let daysCurRecord = new Map<number,number>()
+        let daysEndRecord = new Map<number,number>()    // 上一天的3:45
+        let daysCurRecord = new Map<number,number>()    // 这一天的日增
+        let daysEndRecordBestResult = new Map<number,number>()    // 上一天的3:45
+        let daysCurRecordBestResult = new Map<number,number>()    // 这一天的日增
+        /*
         for (const c of this.cutoffs) {
             let allowPushFlag = false
             const timestamp = normalizeTimestamp(c.time)
@@ -373,14 +385,60 @@ export class Cutoff {
                 allowPushFlag = true
             }
             const date = getDateByServerTimezone(timestamp, this.server)
-            if (allowPushFlag && (this.server == Server.cn || this.server == Server.tw || this.server == Server.jp) && date.getUTCHours() === 3 && date.getUTCMinutes() === 45) {
+            if (allowPushFlag && (this.server == Server.cn || this.server == Server.tw || this.server == Server.jp) &&faultTolerant(date,3,45)) {
                 daysEndRecord.set(d,c.ep)
             }
-            if (allowPushFlag && (this.server == Server.cn || this.server == Server.tw || this.server == Server.jp) && date.getUTCHours() === lastestUtcHour && date.getUTCMinutes() === lastestUtcMinutes) {
+            if (allowPushFlag && (this.server == Server.cn || this.server == Server.tw || this.server == Server.jp) &&faultTolerant(date,lastestUtcHour,lastestUtcMinutes)) {
                 daysCurRecord.set(d,c.ep)
             }
         }
-        
+            */
+        for (const c of this.cutoffs){
+            // 如果curEventDays是昨天呢？
+            const timestamp = normalizeTimestamp(c.time)
+            const d = this.getDaysOfEvent(timestamp)
+            const date = getDateByServerTimezone(timestamp, this.server)
+            if (d == days || d == curEventDays){     // 如果是对比天数
+                let h1 = date.getUTCHours()
+                let m1 = date.getUTCMinutes()
+                let total =  Math.abs((lastestUtcHour*3600+(lastestUtcMinutes*60))-(h1*3600+m1*60))
+                if (daysCurRecordBestResult.has(d)){
+                    if (daysCurRecordBestResult.get(d)>= total){
+                        daysCurRecordBestResult.set(d,total)
+                        daysCurRecord.set(d,c.ep)
+                    }
+                }else{
+                    daysCurRecordBestResult.set(d,total)
+                }
+            }
+            if (d == days-1 || d == curEventDays-1){
+                let h1 = date.getUTCHours()
+                let m1 = date.getUTCMinutes()
+                let total =  Math.abs((3*3600+(45*60))-(h1*3600+m1*60))
+                if (daysEndRecordBestResult.has(d)){
+                    if (daysEndRecordBestResult.get(d)>= total){
+                        daysEndRecordBestResult.set(d,total)
+                        daysEndRecord.set(d,c.ep)
+                    }
+                }else{
+                    daysEndRecordBestResult.set(d,total)
+                }
+            }
+        }
+        /*
+        console.log(daysEndRecord)
+        console.log(daysCurRecord)
+        console.log(daysEndRecordBestResult)
+        console.log(daysCurRecordBestResult)
+        */
+        let warnFlags = false
+        // 判断是否需要标记时间不准确
+        let warnValue = 8*60    // 警告阈值8分钟
+        if (daysEndRecordBestResult.get(days-1) > warnValue || daysEndRecordBestResult.get(curEventDays-1) > warnValue || 
+            daysCurRecordBestResult.get(days) >warnValue || daysCurRecordBestResult.get(curEventDays) > warnValue
+        ){
+            warnFlags = true
+        }
         // 此时score里边应该会有两个数据，一个是昨日3:45，一个是今日3:45的数据
         let TodaysIncrement = daysEndRecord.get(curEventDays-1)?(lastCutoffEp - daysEndRecord.get(curEventDays-1)):null
         let PreCmpDaysIncrement = (daysEndRecord.get(days-1) && daysCurRecord.get(days))?( daysCurRecord.get(days) - daysEndRecord.get(days-1) ):null
@@ -388,7 +446,7 @@ export class Cutoff {
         let rate:number = PreCmpDaysIncrement!=0?TodaysIncrement / PreCmpDaysIncrement:1
         let tips = '昨日'   
         if (days != curEventDays-1) tips = `Day${days+1}`     // days是从0开始的
-        let result =  `${tips}同时刻日增${Math.round((PreCmpDaysIncrement)/10000)} 现在是${tips}的${Math.round(rate * 100)}%${rate*100>=100?'↑':'↓'}`
+        let result =  `${tips}同时刻日增${Math.round((PreCmpDaysIncrement)/10000)} 现在是${tips}的${Math.round(rate * 100)}%${rate*100>=100?'↑':'↓'}${warnFlags?' !':''}`
         //console.log(result)
         return result
     }
