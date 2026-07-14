@@ -442,8 +442,8 @@ export class Cutoff {
         // 此时score里边应该会有两个数据，一个是昨日3:45，一个是今日3:45的数据
         let TodaysIncrement = daysEndRecord.get(curEventDays-1)?(lastCutoffEp - daysEndRecord.get(curEventDays-1)):null
         let PreCmpDaysIncrement = (daysEndRecord.get(days-1) && daysCurRecord.get(days))?( daysCurRecord.get(days) - daysEndRecord.get(days-1) ):null
-        if (!TodaysIncrement || !PreCmpDaysIncrement ) return null
-        let rate:number = PreCmpDaysIncrement!=0?TodaysIncrement / PreCmpDaysIncrement:1
+        if (TodaysIncrement == null || PreCmpDaysIncrement == null ) return null
+        let rate:number = TodaysIncrement / PreCmpDaysIncrement
         let tips = '昨日'   
         if (days != curEventDays-1) tips = `Day${days+1}`     // days是从0开始的
         let result =  `${tips}同时刻日增${Math.round((PreCmpDaysIncrement)/10000)} 现在是${tips}的${Math.round(rate * 100)}%${rate*100>=100?'↑':'↓'}${warnFlags?' !':''}`
