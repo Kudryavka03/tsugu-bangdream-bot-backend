@@ -458,6 +458,97 @@ export class Cutoff {
         //this.pCutoffData = this.pCutoffs
         
     }
+    getAnyCutoffSpeedByTime(ts:number=0){
+        // 如果ts有明确的时间戳的，则以ts作为时间，查找该时间往前1小时的两个时间戳。
+        if (this.cutoffs.length == 0) return 0
+        
+        let lastCutoffTime = ts?ts:this.cutoffs[this.cutoffs.length-1].time
+        let targetIndex = ts?this.checkIfTsExist(lastCutoffTime):this.cutoffs.length-1
+        // 如果ts存在就看一下他的坐标是什么。如果不存在就直接就是cutoff的最后一个坐标
+        if (!targetIndex) return 0  // 检查这个时间戳是否存在，不存在就直接返回0
+        let lastCutoffEp = this.cutoffs[targetIndex].ep
+        let preCmpTime = this.cutoffs[targetIndex].time // 传入的时间
+        let timePrevHour = (preCmpTime - 3600000)
+        let prevHourIndex = this.findNearestTsIndex(timePrevHour)
+        let prevHourEp = this.cutoffs[prevHourIndex].ep
+        let prevHourTime = this.cutoffs[prevHourIndex].time
+        if (prevHourIndex == 0 || ((lastCutoffTime - prevHourTime) > (3600000 *2))){
+            // callback to old calc func
+            console.log('callback to old logic')
+            let currenetTs = this.findNearestTsIndex(ts)
+            let EP_Old =  this.cutoffs[currenetTs].ep - this.cutoffs[currenetTs-1].ep
+            let Time_Old =  this.cutoffs[currenetTs].time - this.cutoffs[currenetTs-1].time
+            let Speed_Old = Math.round(EP_Old / Time_Old)
+            return Speed_Old
+        }
+        console.log(timePrevHour)
+        
+        let EP = lastCutoffEp - prevHourEp
+        let Time = (preCmpTime - prevHourTime) / (1000 * 3600)
+        let Speed = Math.round(EP / Time)
+        console.log('prevHourTime:',prevHourTime,'prevHourEp',prevHourEp,'lastCutoffTime',lastCutoffTime,'lastCutoffEp',lastCutoffEp)
+        return Speed
+    }
+    checkIfTsExist(ts:number):number{
+        if (this.cutoffs.length == 0) return 0;
+        let left = 0
+        let right = this.cutoffs.length-1
+        while (left <= right) {
+            let middle = Math.floor(left + ((right - left) / 2))
+            if (ts < this.cutoffs[middle].time){
+                // 需要往右边查找
+                right = middle-1
+            }else if (ts > this.cutoffs[middle].time){
+                // 往左边找
+                left = middle +1
+            }else if (ts == this.cutoffs[middle].time){
+                return middle //  这里直接返回middle，方便后续对比
+            }
+        }
+        return 0
+    }
+    findNearestTsIndex(ts:number):number{   // 找最相似的
+        if (this.cutoffs.length == 0) return -1;
+        if (this.cutoffs.length == 1) return 0;
+        let left = 0
+        let right = this.cutoffs.length-1
+        //console.log(right)
+        let findIndex = -1
+        //let findTs = this.cutoffs[this.cutoffs.length-1].time
+        while (left <= right) {
+            //if (left == right) return left  这个貌似不是最优，，，
+            let middle = Math.floor(left + ((right - left) / 2))
+            //console.log('middle:',middle)
+            if (ts == this.cutoffs[middle].time){
+                return middle // 相同的直接返回，虽然 概率不大
+            }
+            else if (ts < this.cutoffs[middle].time){
+                // 需要往左边查找
+                right = middle-1
+            }else if (ts > this.cutoffs[middle].time){
+                // 往右边找
+                left = middle +1
+            }
+            //console.log('left:',left,'right',right)
+
+        }
+        // 结束后，比较left与right哪个更接近
+        if (right<0) return 0
+        if (left >= this.cutoffs.length) return this.cutoffs.length-1
+        let absLeft = Math.abs(this.cutoffs[left].time - ts)
+        let absRight = Math.abs(this.cutoffs[right].time - ts)
+        
+        if (absLeft < absRight){
+            return left
+        }else if(absLeft > absRight){
+            return right
+        }else if (absLeft == absRight){
+            return left
+        }
+        return findIndex
+
+        // 最喜欢天音了最喜欢天音了最喜欢天音了
+    }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
             return [];

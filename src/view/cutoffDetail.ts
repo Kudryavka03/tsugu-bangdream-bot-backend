@@ -84,7 +84,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             }),
             await drawList({
                 key: '线性外推',
-                text: (cutoffs[cutoffs.length - 1])?Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
+                text: (cutoffs[cutoffs.length - 1])?Math.round(cutoff.getAnyCutoffSpeedByTime() * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
             await drawList({
                 key: '预测线2',
@@ -107,7 +107,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
-            text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
+            text: `${cutoff.getAnyCutoffSpeedByTime()} pt/h`
         }))
 
 
@@ -341,7 +341,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
             }),
             await drawList({
                 key: '线性外推',
-                text: (cutoffs[cutoffs.length - 1])?Math.round(((cutoff.latestCutoff.ep - lastep) / timeSpan) * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
+                text: (cutoffs[cutoffs.length - 1])?Math.round(cutoff.getAnyCutoffSpeedByTime() * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
             await drawList({
                 key: '预测线2',
@@ -363,7 +363,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
-            text: `${Math.round((cutoff.latestCutoff.ep - lastep) / timeSpan)} pt/h`
+            text: `${cutoff.getAnyCutoffSpeedByTime()} pt/h`
         }))
 
         list.push(drawListMerge(tempImageList)) //合并两个list
@@ -477,9 +477,10 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
             let precent = (cutoff.latestCutoff.time - cutoff.startAt)/(cutoff.endAt - cutoff.startAt)
             let tpEP:TimePresentEP = getTimePresentEP(cutoffGroupResult[i],precent,compareEventRateOfFirstEvent[i],cutoff)
             if (tpEP.value!=0){
+                let speedCmp = cutoffGroupResult[i].getAnyCutoffSpeedByTime(tpEP.time)
                 list.push(await drawList({
                     key: '同一时刻对比',
-                    text: `原始：${tpEP.value} / 补偿后: ${tpEP.valueWithRatio}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
+                    text: `原始分：${tpEP.value} / 补偿分: ${tpEP.valueWithRatio}\n原始时速：${speedCmp} / 补偿时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp)}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
                 }))
                 list.push(line)
             }
