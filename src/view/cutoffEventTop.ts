@@ -82,7 +82,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     all.push(await drawEventDatablockPromise)
     all.push(listImage);
     all.push(await drawTips({
-        text: `当期顶配：${Math.round(await getTop10AvgScore(event,mainServer,null))}`
+        text: `当期顶配：${Math.round(await getTop10AvgScore(event,mainServer,null,cutoffEventTop))}`
     }))
     var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
 

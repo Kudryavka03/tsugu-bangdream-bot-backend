@@ -28,7 +28,7 @@ interface cutoffSongsDetail {
     ep: number;
 }
 const eventTypes: string[] = ['versus', 'challenge', 'medley'];
-const T1_ABNORMAL_THRESHOLD = 0.995;
+const T1_ABNORMAL_THRESHOLD = 0.977;
 const T1_ABNORMAL_COLOR = '#dc3545';
 
 export async function drawCutoffSongsDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {

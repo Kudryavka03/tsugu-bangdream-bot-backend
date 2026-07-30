@@ -65,6 +65,13 @@ interface FetchFromCutoffDataSourcesOptions<T> {
 
 const cutoffDataSources: CutoffDataSourceDefinition[] = [
     {
+        name: 'StarFX',
+        baseUrl: StarFx_Url,
+        supportedServers: [Server.cn,Server.jp],
+        supportedKinds: ['tracker'],
+        //supportedKinds: ['tracker', 'eventTop'],
+    },
+    {
         name: 'HHWX',
         baseUrl: HHWX_Url,
         supportedServers: [Server.cn],
@@ -74,13 +81,7 @@ const cutoffDataSources: CutoffDataSourceDefinition[] = [
         name: 'Bestdori',
         baseUrl: Bestdoriurl,
         supportedKinds: ['tracker', 'eventTop'],
-    },
-    {
-        name: 'StarFX',
-        baseUrl: StarFx_Url,
-        supportedServers: [Server.cn,Server.jp],
-        supportedKinds: ['tracker', 'eventTop'],
-    },
+    }
 ];
 
 function isReportableDataSourceError(e: any) {
