@@ -114,8 +114,8 @@ async function callAPIAndCacheResponseF(url: string, cacheTime: number = 0, retr
     } catch (e) {
       
       //console.log(e.response.status )
-      if (e && e.response.status === 404){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404
-        logger(`API`, `Failed to get JSON from "${url}". Server returned 404 err code. No more retries will be made.`);
+      if (e && (e.response.status === 404|| e.response.status === 422)){ // 找不到就是找不到，不需要重试了。如果是访问上限，错误码不会是404/422
+        logger(`API`, `Failed to get JSON from "${url}". Server returned ${e.response.status} err code. No more retries will be made.`);
         throw e;
       }
       

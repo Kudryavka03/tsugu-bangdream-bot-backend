@@ -75,6 +75,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
         //预测线和时速
         const cutoffs = cutoff.cutoffs
+        const speed = cutoff.getAnyCutoffSpeedByTime()
         const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
         const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         list.push(drawListMerge([
@@ -84,7 +85,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             }),
             await drawList({
                 key: '线性外推',
-                text: (cutoffs[cutoffs.length - 1])?Math.round(cutoff.getAnyCutoffSpeedByTime() * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
+                text: (cutoffs[cutoffs.length - 1])?Math.round(speed * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
             await drawList({
                 key: '预测线2',
@@ -107,7 +108,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
-            text: `${cutoff.getAnyCutoffSpeedByTime()} pt/h`
+            text: `${speed} pt/h`
         }))
 
 
@@ -331,6 +332,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }
 
         //预测线和时速
+        const speed = cutoff.getAnyCutoffSpeedByTime()
         const cutoffs = cutoff.cutoffs
         const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
         const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
@@ -341,7 +343,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
             }),
             await drawList({
                 key: '线性外推',
-                text: (cutoffs[cutoffs.length - 1])?Math.round(cutoff.getAnyCutoffSpeedByTime() * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
+                text: (cutoffs[cutoffs.length - 1])?Math.round(speed * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
             await drawList({
                 key: '预测线2',
@@ -363,7 +365,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }))
         tempImageList.push(await drawList({
             key: '当前时速',
-            text: `${cutoff.getAnyCutoffSpeedByTime()} pt/h`
+            text: `${speed} pt/h`
         }))
 
         list.push(drawListMerge(tempImageList)) //合并两个list
@@ -517,7 +519,7 @@ export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<
         return 0
     }
     const t10Cutoff = tempCutoffs?tempCutoffs:new CutoffEventTop(event.eventId, mainServer)
-    await t10Cutoff.initFull(0)
+    if (!t10Cutoff.isInitfull) await t10Cutoff.initFull(0)
     var userInRankings = t10Cutoff.getLatestRanking();
     if (userInRankings.length<10){
         if (record)record.set(event.eventId,0)

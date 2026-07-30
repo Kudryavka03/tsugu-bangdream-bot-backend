@@ -37,7 +37,7 @@ export const BandoriStationurl: string = 'https://api.bandoristation.com/'; //Ba
 export const HHWX_Url: string = 'https://hhwx.org'; //HHWX网站的url
 export const StarFx_Url: string = 'https://grp-speed-backend.starfreedomx.top'; //StarFx网站的url
 export const cutoffDataSourcePriority = ['HHWX','Bestdori','StarFX' ]
-export var preferredCutoffDataSourceName = 'HHWX'
+export var preferredCutoffDataSourceName = 'StarFX'
 export var USE_HHWX_SOURCE_PREFER = preferredCutoffDataSourceName == 'HHWX'
 export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
 
