@@ -105,7 +105,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     list.push(new Canvas(800, 50))
 
     //折线图
-    list.push(await drawCutoffChart(cutoffList))
+    list.push(await drawCutoffChart(cutoffList,undefined,undefined,undefined,false))
 
     //创建最终输出数组
     var listImage = await drawDatablock({ list })

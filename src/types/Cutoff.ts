@@ -564,10 +564,15 @@ export class Cutoff {
         // 在访问 this.cutoffs[0].time 之前检查 this.cutoffs 是否存在且长度大于0
         let tempTime = this.cutoffs && this.cutoffs.length > 0 ? this.cutoffs[0].time : null;
         // 如果 tempTime 为 null，则后续逻辑应当考虑这种情况以避免错误
-
+        let ep = -1
         for (let i = 0; i < this.cutoffs.length; i++) {
             const element = this.cutoffs[i];
-            if (setStartToZero) {
+            if (element.ep>=ep){ // 260730: 不记录比上一次ep少的数据
+                ep = element.ep
+            }else{
+                continue
+            }
+            if (setStartToZero) { 
                 // 确保 tempTime 不为 null 才执行减法操作
                 chartData.push({ x: tempTime ? new Date(element.time - this.startAt) : new Date(0), y: element.ep });
             } else {

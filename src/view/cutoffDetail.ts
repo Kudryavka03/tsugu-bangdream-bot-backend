@@ -519,6 +519,7 @@ export async function getTop10AvgScore(event:Event,mainServer:Server,record:Map<
         return 0
     }
     const t10Cutoff = tempCutoffs?tempCutoffs:new CutoffEventTop(event.eventId, mainServer)
+    //console.log(tempCutoffs.isInitfull)
     if (!t10Cutoff.isInitfull) await t10Cutoff.initFull(0)
     var userInRankings = t10Cutoff.getLatestRanking();
     if (userInRankings.length<10){

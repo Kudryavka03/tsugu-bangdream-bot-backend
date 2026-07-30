@@ -103,6 +103,7 @@ export class CutoffEventTop{
                 }
             }
         }
+        this.isInitfull = true
     }
     getChartData(setStartToZero = false,playerId?:number):{[key:number]:{x:Date,y:number}[]}{
         if (this.isExist == false) {
