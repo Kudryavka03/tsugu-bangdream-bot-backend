@@ -100,7 +100,7 @@ export class Cutoff {
             }
             var pCutoffDataTmps = await this.readPredict2Data(this.tier)
             //console.log(cutoffResult)
-            pCutoffData = pCutoffDataTmps==null?cutoffData:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
+            pCutoffData = pCutoffDataTmps==null?[]:JSON.parse(pCutoffDataTmps)    // 只针对千线进行预测
         }
         else {
             cutoffData = await this.getFinalCutoffsData(true)
@@ -153,9 +153,14 @@ export class Cutoff {
         let start_ts = Math.floor(event.startAt[this.server] / 1000)
         let end_ts = Math.floor(event.endAt[this.server] / 1000)
         let cutoff_ts: { time: number, ep: number }[] = []
+        let maxEP = 0
         for (let i = 0; i < this.cutoffs.length; i++) {
             const element = this.cutoffs[i];
-            cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep })
+            if (element.ep>=maxEP){
+                cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep })
+                maxEP = element.ep
+            }
+           
         }
         try {
             var result = predict(cutoff_ts, start_ts, end_ts, this.rate)
@@ -569,7 +574,8 @@ export class Cutoff {
             const element = this.cutoffs[i];
             if (element.ep>=ep){ // 260730: 不记录比上一次ep少的数据
                 ep = element.ep
-            }else{
+            }else if (element.ep<ep){
+                //console.log('EP异常：上一个EP是',ep,'现在EP是',element.ep,'差值',ep-element.ep)
                 continue
             }
             if (setStartToZero) { 
@@ -586,6 +592,7 @@ export class Cutoff {
         if (this.isExist == false) {
             return [];
         }
+        if (!this.pCutoffs) return []
         let chartData: { x: Date, y: number }[] = [];
         if (setStartToZero) {
             let startTime = getDateByServerTimezone(this.server,this.startAt).getUTCHours()
