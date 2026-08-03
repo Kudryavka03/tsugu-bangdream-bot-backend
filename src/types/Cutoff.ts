@@ -185,6 +185,13 @@ export class Cutoff {
             return null;
         }
     }
+    checkCanBePredict(timestamp:number){   // 只允许15/45分的数据被用于预测。
+        let tempDateMin = new Date(timestamp).getMinutes()
+        if (tempDateMin == 15 || tempDateMin == 45){
+            return true
+        }
+        return false
+    }
     getPredictionHistory(): { time: number, ep: number }[] {
         if (this.isExist == false || !this.cutoffs) {
             return []
@@ -192,11 +199,15 @@ export class Cutoff {
         const event = new Event(this.eventId)
         const start_ts = Math.floor(event.startAt[this.server] / 1000)
         const end_ts = Math.floor(event.endAt[this.server] / 1000)
-        const cutoff_ts: { time: number, ep: number }[] = []
+        const cutoff_ts: { time: number, ep: number,index:number }[] = []
+        // 精简PredictionHistory，加快计算速度。
         for (let i = 0; i < this.cutoffs.length; i++) {
-            const element = this.cutoffs[i]
-            cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep })
+            if (this.checkCanBePredict(this.cutoffs[i].time) || i==0){
+                const element = this.cutoffs[i]
+                cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep,index:i })
+            }
         }
+
         const history: { time: number, ep: number }[] = []
         for (let i = 0; i < cutoff_ts.length; i++) {
             let result
@@ -206,7 +217,7 @@ export class Cutoff {
                 continue
             }
             if (result && result.ep && !isNaN(result.ep) && result.ep !== 0) {
-                history.push({ time: this.cutoffs[i].time, ep: Math.floor(result.ep) })
+                history.push({ time: this.cutoffs[cutoff_ts[i].index].time, ep: Math.floor(result.ep) })
             }
         }
         return history
