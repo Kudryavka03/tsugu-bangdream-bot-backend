@@ -11,15 +11,13 @@ import { drawCutoffChart } from '@/components/chart/cutoffChart'
 import { assetsRootPath, serverNameFullList } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { statusName } from '@/config';
-import { drawTips } from '@/components/tips';
-import path from 'path';
+//import { drawTips } from '@/components/tips';
+//import path from 'path';
 import { logger } from '@/logger';
 import mainAPI from '@/types/_Main';
-import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
+//import { drawCutoffHistoryChart } from '@/components/chart/cutoffHistoryChart';
 import { CutoffEventTop } from '@/types/CutoffEventTop';
 import { Band } from '@/types/Band';
-import { now } from 'moment';
-import { start } from 'repl';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
@@ -76,8 +74,9 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         //预测线和时速
         const cutoffs = cutoff.cutoffs
         const speed = cutoff.getAnyCutoffSpeedByTime()
-        const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
-        const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
+        //const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
+        //const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
+        const showYcx2 = (tier ==1000||tier==500)
         list.push(drawListMerge([
             await drawList({
                 key: '预测线1',
@@ -87,9 +86,12 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
                 key: '线性外推',
                 text: (cutoffs[cutoffs.length - 1])?Math.round(speed * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
-            await drawList({
+            showYcx2?await drawList({
                 key: '预测线2',
                 text: predictText2
+            }):await drawList({
+                key: '与上一点变化',
+                text: `+${getPrevDifference(cutoff)}`
             }),
         ]))
         list.push(line)
@@ -334,8 +336,9 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         //预测线和时速
         const speed = cutoff.getAnyCutoffSpeedByTime()
         const cutoffs = cutoff.cutoffs
-        const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
-        const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
+        const showYcx2 = (tier ==1000||tier==500)
+        //const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
+        //const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         list.push(drawListMerge([
             await drawList({
                 key: '预测线1',
@@ -345,9 +348,12 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
                 key: '线性外推',
                 text: (cutoffs[cutoffs.length - 1])?Math.round(speed * ((cutoff.endAt - cutoffs[cutoffs.length - 1].time) / 3600000) + cutoffs[cutoffs.length - 1].ep).toString():'无数据'
             }),
-            await drawList({
+            showYcx2?await drawList({
                 key: '预测线2',
                 text: predictText2
+            }):await drawList({
+                key: '与上一点变化',
+                text: `+${getPrevDifference(cutoff)}`
             }),
         ]))
         list.push(line)
@@ -651,4 +657,22 @@ export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutof
     if (debugflags) console.log('选择点Index',presentNearestIndex,'选择点Present',presentNearest,'target',present,'差值',Math.abs(presentNearest-present))
     return {value:data[presentNearestIndex].ep,valueWithRatio:Math.round(data[presentNearestIndex].ep * ratio),time:data[presentNearestIndex].time} as TimePresentEP
     // Ohno我写了个什么万一出来
+}
+export function getPrevDifference(cutoff:Cutoff){
+    let cutoffs =  cutoff.cutoffs
+    let lastest = cutoffs.at(-1).ep
+    let continueFlags = true
+    let index = -2
+    while(continueFlags){
+        let prevPoint = cutoffs.at(index).ep
+        if (prevPoint!=lastest){
+            continueFlags = false
+            return lastest - prevPoint
+        } if (index > (-cutoffs.length)){
+            index--
+        }else{
+            return 0
+        }
+    }
+    return 0
 }

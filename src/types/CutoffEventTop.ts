@@ -51,7 +51,7 @@ export class CutoffEventTop{
             this.status = 'in_progress';
         }
     }
-    async initFull(interval = 3600000){
+    async initFull(interval = 0){
         if (!this.isExist){
             return
         }
@@ -174,5 +174,26 @@ export class CutoffEventTop{
             }
         }
         return;
+    }
+    getUserAvgScoreById(id:number):number{
+        if (!this.isInitfull) return 0
+        let userRankingTable = this.points.filter(x=>x.uid==id).sort((a, b) => a.time - b.time)
+        //console.log(userRankingTable.length)
+        // 取25%~65%之间的分数
+        let x = Math.round(userRankingTable.length * 0.25)
+        let y = Math.round(userRankingTable.length * 0.65)
+        let z = 0;
+        let totalPoint = 0;
+        for(let i =x;i<y;i++){
+            let value = (userRankingTable[i].value - userRankingTable[i-1].value)
+            
+            if (((userRankingTable[i].time - userRankingTable[i-1].time) <= 2*60*1000) && value!=0 ){   // 反炸
+                z++
+                totalPoint+=value
+            }
+        }
+        //console.log(totalPoint,z,Math.round(totalPoint / z))
+        //console.log(Math.round(totalPoint / z))
+        return Math.round(totalPoint / z)
     }
 }

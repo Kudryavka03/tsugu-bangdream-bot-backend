@@ -63,7 +63,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
         var color = i % 2 == 0 ? 'white' : '#f1f1f1';
         var user = cutoffEventTop.getUserByUid(userInRankings[i].uid);
         //var playerRankingImage = await drawPlayerRankingInList(user, color, mainServer);
-        drawPlayerRankingInListPromise.push(drawPlayerRankingInList(user, color, mainServer))
+        drawPlayerRankingInListPromise.push(drawPlayerRankingInList(user, color, mainServer,undefined,undefined,cutoffEventTop))
 
     }
     var drawPlayerRankingInListResult = await Promise.all(drawPlayerRankingInListPromise)

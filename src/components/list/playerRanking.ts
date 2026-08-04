@@ -8,6 +8,7 @@ import { Degree } from '@/types/Degree';
 import { drawText, releaseCanvas } from '@/image/text';
 import { downloadFileCache } from '@/api/downloadFileCache';
 import { Bestdoriurl } from "@/config"
+import { CutoffEventTop } from '@/types/CutoffEventTop';
 
 interface User {
     uid: number,
@@ -21,7 +22,7 @@ interface User {
     currentPt: number
 }
 
-export async function drawPlayerRankingInList(user: User, backgroudColor: string = 'white', server: Server,w:number=800,h:number=110): Promise<Canvas> {
+export async function drawPlayerRankingInList(user: User, backgroudColor: string = 'white', server: Server,w:number=800,h:number=110,cutoffEventTop?:CutoffEventTop): Promise<Canvas> {
     var canvas = new Canvas(w, h);
     var ctx = canvas.getContext('2d');
     ctx.fillStyle = backgroudColor;
@@ -120,9 +121,9 @@ export async function drawPlayerRankingInList(user: User, backgroudColor: string
 
     //pt
     var ptImage = await drawText({
-        text: user.currentPt.toString() + '分',
+        text: cutoffEventTop?user.currentPt.toString() + '分' + ` (${cutoffEventTop.getUserAvgScoreById(user.uid)})`:user.currentPt.toString() + '分',
         textSize: 23,
-        maxWidth: 150
+        maxWidth: 250
     });
     
     ctx.drawImage(ptImage, w-10- ptImage.width, 70);
