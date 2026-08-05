@@ -226,11 +226,15 @@ export async function getCutoffTrackerData(params: {
         isForceUseCache: forceReadCache,
         rtLevel: 1,
         validate: data => data != null && data.result !== false,
-        shouldReportProblem: data => {
+        shouldReportProblem: (data, source) => {
             const latestTime = getLatestTime(data.cutoffs);
             if (!latestTime) return Boolean(params.endAt);
-            if (params.endAt && params.endAt - latestTime > maxEndLagMs) return true;
-            if (!params.validateFreshness || params.server != Server.cn) return false;
+
+            const sourceMaxEndLagMs = source.name === 'StarFX' ? 120000 : maxEndLagMs;
+            if (params.endAt && params.endAt - latestTime > sourceMaxEndLagMs) return true;
+
+            if (!params.validateFreshness && !forceReadCache) return false;
+            if (params.server != Server.cn) return false;
             return now - latestTime >= maxStaleMs;
         },
         selectBetter: (current, next) => getLatestTime(next.data.cutoffs) > getLatestTime(current.data.cutoffs) ? next : current,

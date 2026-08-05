@@ -24,7 +24,8 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development koishi start -r esbuild-register -r yml-register",
     "start": "koishi start",
-    "build": "tsc -b tsconfig.json --force"
+    "build": "tsc -b tsconfig.json --force",
+    "test": "npm run build && node --test tests/*.test.js"
   },
   "keywords": [
     "chatbot",

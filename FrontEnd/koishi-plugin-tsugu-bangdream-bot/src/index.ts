@@ -23,6 +23,7 @@ import * as songChart_1 from "./commands/songChart";
 import * as eventStage_1 from "./commands/eventStage";
 import * as songRandom_1 from "./commands/songRandom";
 import * as calcLoseFire_1 from "./commands/calcLoseFire";
+import * as calcFullFire_1 from "./commands/calcFullFire";
 import * as config_1 from "./config";
 import * as utils_1 from "./utils";
 import * as remoteDB_1 from "./api/remoteDB";
@@ -143,7 +144,7 @@ export function apply(ctx: Context, config: Config) {
     ctx.middleware((session, next) => {
         if (config.noSpace) {
             // 查卡面 一定要放在 查卡 前面
-            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
@@ -526,6 +527,15 @@ export function apply(ctx: Context, config: Config) {
         const mainServer = tsuguUserData.mainServer;
         const list = await (0, calcLoseFire_1.commandCalcLoseFire)(config, mainServer, parsed.song1, parsed.song2, parsed.diff1, parsed.diff2);
         return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command('满火计算 <text:text>', '计算火完全回复满的时间', cmdConfig)
+        .alias('满火')
+        .alias('mhjs')
+        .alias('mh')
+        .alias('何时满火')
+        .usage('输入当前火值、可选的下一火剩余时间和服务器名。时间默认为 30:00，服务器默认为 cn。\n示例：\n满火计算 23 1:00 cn\n满火计算 8 jp\n满火计算 0 0130')
+        .action(({ session }, text) => {
+        return (0, calcFullFire_1.commandCalcFullFire)(text);
     });
 	ctx.command("查试炼 [origin:string] [index:number]", "查试炼", cmdConfig)
 		.usage("查询当前服务器当前活动试炼信息\n可以自定义活动ID和日期")
