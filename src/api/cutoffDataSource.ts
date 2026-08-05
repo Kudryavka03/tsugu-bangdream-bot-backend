@@ -233,7 +233,7 @@ export async function getCutoffTrackerData(params: {
             const sourceMaxEndLagMs = source.name === 'StarFX' ? 120000 : maxEndLagMs;
             if (params.endAt && params.endAt - latestTime > sourceMaxEndLagMs) return true;
 
-            if (!params.validateFreshness && !forceReadCache) return false;
+            if (!params.validateFreshness) return false;
             if (params.server != Server.cn) return false;
             return now - latestTime >= maxStaleMs;
         },
