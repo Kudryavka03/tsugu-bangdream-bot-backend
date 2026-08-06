@@ -100,9 +100,9 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     }
 
 
-    var drawSongDataBlockPromise:Promise<Canvas>[] = []
+    //var drawSongDataBlockPromise:Promise<Canvas>[] = []
     //顶部歌曲信息框
-    drawSongDataBlockPromise.push(drawSongDataBlock(song))  // 理论不存在IO等待时间问题
+    //drawSongDataBlockPromise.push(drawSongDataBlock(song))  // 理论不存在IO等待时间问题
     const drawSongMetaListDataBlockL = await Promise.all(drawSongMetaListDataBlockPromise);
 
 

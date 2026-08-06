@@ -434,8 +434,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
         all.push(gachaImageList[i])
     }
    
-    var BGimage = await event.getEventBGImage()
-        BGimage = BGImageResult[0]
+    //var BGimage = await event.getEventBGImage()
+    var BGimage = BGImageResult[0]
 
     var buffer = await outputFinalBuffer({
         imageList: all,

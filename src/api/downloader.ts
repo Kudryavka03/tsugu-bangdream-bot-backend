@@ -256,16 +256,18 @@ export async function getJsonAndSave(url: string, directory?: string, fileName?:
             const cached = memoryCache.get(cacheFilePath);
             if (cached == undefined) console.log('undefined detected!')
             tempJsonObj = cached
-        }
+          }
           //const cachedData = await fs.promises.readFile(cacheFilePath, 'utf-8');
           //const cachedJson = callWorker<any>('readJson',cacheFilePath); //因为上一级函数就是await，因此这里不再需要await
+          else{
+            const cachedJson = await loadJson(cacheFilePath);
+            memoryCache.set(cacheFilePath, cachedJson);
+            //console.log('ready to return ')
+            //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+            //logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
+            tempJsonObj = cachedJson
+          }
 
-          const cachedJson = await loadJson(cacheFilePath);
-          memoryCache.set(cacheFilePath, cachedJson);
-          //console.log('ready to return ')
-          //if(showDownloadLog) logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
-          //logger('getJsonAndSave','API: '+url + ' Bestdori is require client to using Cached data.')
-          tempJsonObj = cachedJson
         } else {
           throw error;
         }

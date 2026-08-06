@@ -148,27 +148,32 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
 
 
-    const list: Array<Image | Canvas> = [];
+    const summaryList: Array<Image | Canvas> = [];
 
-    list.push(new Canvas(800, 30));
-    list.push(await drawList({ key: '活动名称', text: event.eventName[mainServer] || '' }));
-    list.push(line);
+    summaryList.push(new Canvas(800, 30));
+    summaryList.push(await drawList({ key: '活动名称', text: event.eventName[mainServer] || '' }));
 
     const now = Date.now();
-    const remainingText = event.endAt[mainServer] != null
-        ? changeTimePeriodFormat(Math.max(0, event.endAt[mainServer] - now), false)
-        : '未知';
-    const latestTimeStamp = Math.max(...Array.from(latestUpdateTime.values(), v => v || 0));
-    //console.log(now,latestTimeStamp,changeTimePeriodFormat(now - latestTimeStamp, true))
-    const updateText = latestTimeStamp > 0
-        ? `${changeTimePeriodFormat(now - latestTimeStamp, true)}前`
-        : '未知';
+    const startAt = event.startAt[mainServer];
+    const endAt = event.endAt[mainServer];
+    const hasEnded = endAt != null && now >= endAt;
+    if (!hasEnded) {
+        const remainingText = endAt != null
+            ? changeTimePeriodFormat(Math.max(0, endAt - now), false)
+            : '未知';
+        const latestTimeStamp = Math.max(...Array.from(latestUpdateTime.values(), v => v || 0));
+        const updateText = latestTimeStamp > 0
+            ? `${changeTimePeriodFormat(now - latestTimeStamp, true)}前`
+            : '未知';
 
-    list.push(drawListMerge([
-        await drawList({ key: '活动剩余时间', text: remainingText }),
-        await drawList({ key: '更新时间', text: updateText })
-    ]));
-    list.push(line);
+        summaryList.push(line);
+        summaryList.push(drawListMerge([
+            await drawList({ key: '活动剩余时间', text: remainingText }),
+            await drawList({ key: '更新时间', text: updateText })
+        ]));
+    }
+
+    const songDataBlockPromises: Promise<Canvas>[] = [];
     let indexFlags  = 1
     for (const song of songList) {
         const songId = song.songId;
@@ -185,40 +190,41 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
         const ratio = ratioBase === 0 ? 'N/A' : `${((latest / ratioBase) * 100).toFixed(2)}%`;
         const incrementText = prev == null ? '+0' : `+${latest - prev}`;
 
-        //list.push(await drawList({ key: '歌曲', text: `${song.musicTitle[mainServer]} (${song.songId})` }));
-        list.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${indexFlags}`, [mainServer], false));
-        let timeTips = '现在'
-        if (latestUpdateTime.get(songId) != tierFirstSameScore.get(songId)){
-            timeTips = `${changeTimePeriodFormat(latestUpdateTime.get(songId) - tierFirstSameScore.get(songId),false)}前`
-        }
-        list.push(line)
-        list.push(await drawList({ key: '最新分数', text: latest.toString() + ` (${timeTips} ${incrementText})` }))
-        list.push(line);
-        list.push(await drawList({ key: isT1Abnormal ? '占比T10' : '占比T1', text: ratio }));
-        if (isT1Abnormal) {
-            list.push(await drawList({
-                key: '⚠T1分数异常',
-                RoundedRectColor: T1_ABNORMAL_COLOR
-            }));
-        }
-        list.push(line);
+        const songIndex = indexFlags;
+        songDataBlockPromises.push((async () => {
+            const songDetailList: Array<Image | Canvas> = [];
+            songDetailList.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${songIndex}`, [mainServer], false));
+            let timeTips = '现在'
+            if (latestUpdateTime.get(songId) != tierFirstSameScore.get(songId)){
+                timeTips = `${changeTimePeriodFormat(latestUpdateTime.get(songId) - tierFirstSameScore.get(songId),false)}前`
+            }
+            songDetailList.push(line)
+            songDetailList.push(await drawList({ key: '最新分数', text: latest.toString() + ` (${timeTips} ${incrementText})` }))
+            songDetailList.push(line);
+            songDetailList.push(await drawList({ key: isT1Abnormal ? '占比T10' : '占比T1', text: ratio }));
+            if (isT1Abnormal) {
+                songDetailList.push(await drawList({
+                    key: '⚠T1分数异常',
+                    RoundedRectColor: T1_ABNORMAL_COLOR
+                }));
+            }
+            return drawDatablock({ list: songDetailList });
+        })());
         indexFlags++
     }
-    list.pop()
-    if (list.length === 0) {
+    const songDataBlocks = await Promise.all(songDataBlockPromises);
+    if (songDataBlocks.length === 0) {
         return ['错误: 歌曲信息加载失败'];
     }
 
-    const listImage = await drawDatablock({ list });
     const all: Array<Image | Canvas> = [];
     all.push(await drawTitle('查询', `歌榜 T${tier}`));
     const eventBannerCanvas = await drawEventDatablockP;
 
     all.push(eventBannerCanvas);
-    all.push(listImage);
+    all.push(await drawDatablock({ list: summaryList }));
+    all.push(...songDataBlocks);
 
-    const startAt = event.startAt[mainServer];
-    const endAt = event.endAt[mainServer];
     if (startAt != null && endAt != null && chartEntries.length > 0) {
         all.push(await drawDatablock({list:[await drawCutoffSongChart(chartEntries, tier, startAt, endAt, mainServer)]}));
     }
