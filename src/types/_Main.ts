@@ -13,8 +13,7 @@ import { genMetaRankCache } from '@/view/songMetaList'
 import { manualLoadFuzzyConfig } from '@/fuzzySearch'
 import { clearMeasureCache } from '@/image/text'
 import { getPD_Size } from '@/api/downloader'
-import { CreateBGPure } from '@/image/BG'
-import { genEasyBGCache } from '@/image/output'
+
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
       parentPort!.postMessage({

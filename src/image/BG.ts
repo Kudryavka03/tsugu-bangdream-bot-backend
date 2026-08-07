@@ -75,23 +75,50 @@ function getScaledDimensions(image: Image, targetWidth: number, targetHeight: nu
 var star: Image[] = [];
 
 var defaultBGTexture: Image;
+let defaultBGTexturePromise: Promise<Image> | undefined;
+
+function getDefaultBGTexture(): Promise<Image> {
+  if (defaultBGTexture) {
+    return Promise.resolve(defaultBGTexture);
+  }
+
+  if (!defaultBGTexturePromise) {
+    defaultBGTexturePromise = loadImageFromPath(path.join(assetsRootPath, "/BG/bg_object_big.png"))
+      .then((image) => {
+        defaultBGTexture = image;
+        return image;
+      })
+      .catch((error) => {
+        // Allow a later request to retry if the initial preload failed.
+        defaultBGTexturePromise = undefined;
+        throw error;
+      });
+  }
+
+  return defaultBGTexturePromise;
+}
+
 async function loadImageOnce() {
-  star.push(await loadImageFromPath(path.join(assetsRootPath, "/BG/star1.png")));
-  star.push(await loadImageFromPath(path.join(assetsRootPath, "/BG/star2.png")));
-  defaultBGTexture = await loadImageFromPath(path.join(assetsRootPath, "/BG/bg_object_big.png"));
+  const [star1, star2] = await Promise.all([
+    loadImageFromPath(path.join(assetsRootPath, "/BG/star1.png")),
+    loadImageFromPath(path.join(assetsRootPath, "/BG/star2.png")),
+    getDefaultBGTexture(),
+  ]);
+  star.push(star1, star2);
 }
 loadImageOnce()
 
 export async function CreateBGEazy({
   width, height
 }) {
+  const texture = defaultBGTexture ?? await getDefaultBGTexture();
   const bgColor = '#fef3ef'
   const canvas: Canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
   if (width < 2000) {
-    var ratio = defaultBGTexture.width / width
+    var ratio = texture.width / width
   }
   else {
     ratio = 1
@@ -99,31 +126,113 @@ export async function CreateBGEazy({
   //将图片等比例缩放并重复铺满整个画布
   let x = 0,
     y = 0;
-  const defaultValue = 0 - (Math.random() * defaultBGTexture.width * ratio);
+  const defaultValue = 0 - (Math.random() * texture.width * ratio);
   while (y < height) {
     x = defaultValue
     while (x < width) {
-      ctx.drawImage(defaultBGTexture, x, y, defaultBGTexture.width * ratio, defaultBGTexture.height * ratio);
-      x += defaultBGTexture.width * ratio;
+      ctx.drawImage(texture, x, y, texture.width * ratio, texture.height * ratio);
+      x += texture.width * ratio;
     }
-    y += defaultBGTexture.height * ratio;
+    y += texture.height * ratio;
   }
   return (canvas)
 }
+
+interface BGEazyOptOptions {
+  width: number;
+  height: number;
+  /** Draw directly onto an existing final canvas to avoid a full-size temporary canvas. */
+  canvas?: Canvas;
+  /** Skip the solid-color fill when the target canvas has already been initialized. */
+  backgroundAlreadyFilled?: boolean;
+  /** Optional deterministic horizontal offset in the range [0, 1). */
+  offsetRatio?: number;
+}
+
+/**
+ * High-performance version of CreateBGEazy.
+ *
+ * It uses one native Skia pattern fill instead of a JavaScript tiling loop and
+ * can draw directly onto the final canvas, avoiding an extra full-canvas copy.
+ */
+export async function CreateBGEazyOpt({
+  width,
+  height,
+  canvas,
+  backgroundAlreadyFilled = false,
+  offsetRatio,
+}: BGEazyOptOptions): Promise<Canvas> {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    throw new RangeError(`Invalid background size: ${width}x${height}`);
+  }
+
+  const texture = defaultBGTexture ?? await getDefaultBGTexture();
+  const target = canvas ?? new Canvas(width, height);
+  const ctx = target.getContext('2d');
+
+  ctx.save();
+  try {
+    // The legacy background canvas uses smoothing by default. Preserve that
+    // appearance when drawing onto output.ts, whose context disables it.
+    ctx.imageSmoothingEnabled = true;
+
+    if (!backgroundAlreadyFilled) {
+      ctx.fillStyle = '#fef3ef';
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    const scale = width < 2000 ? texture.width / width : 1;
+    const pattern = ctx.createPattern(texture, 'repeat');
+    if (!pattern) {
+      throw new Error('Failed to create the easy-background texture pattern');
+    }
+
+    const normalizedOffset = offsetRatio == null
+      ? Math.random()
+      : ((offsetRatio % 1) + 1) % 1;
+    pattern.setTransform(scale, 0, 0, scale, -normalizedOffset * texture.width * scale, 0);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, height);
+  }
+  finally {
+    ctx.restore();
+  }
+
+  return target;
+}
 export async function CreateBGPure({  // 只画一点点()
-  width, height
+  width,height,canvas
 }) {
-  const bgColor = '#fef3ef'
-  const canvas: Canvas = new Canvas(width, height);
+  //const bgColor = '#fef3ef'
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = bgColor;
+  const texture = defaultBGTexture ?? await getDefaultBGTexture();
+  //ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
-  var ratio = 1
+  /*
+  if (width < 2000) {
+    var ratio = texture.width / width
+  }
+  else {
+    ratio = 1
+  }
+    */
+   var ratio = 1
   //只绘制上半部分
   let x = 0,
     y = 0;
-  const defaultValue = 0 - (Math.random() * width * ratio);
-  ctx.drawImage(defaultBGTexture?defaultBGTexture:await loadImageFromPath(path.join(assetsRootPath, "/BG/bg_object_big.png")), defaultValue, y, width * ratio, height * ratio);
+  // 检查原始输入的width，然后确定尽可能的多团
+  let lessWidth = canvas.width - texture.width
+  console.log(canvas.width,texture.width)
+  
+  var defaultValue = 0
+  if (lessWidth <=0){
+    // 当贴图宽度大于 实际输出宽度
+    defaultValue = 0 - (Math.random() * Math.abs(lessWidth) * ratio)
+  } else if (lessWidth>0){
+    defaultValue = Math.round(lessWidth) * Math.random()
+  }
+  //const defaultValue = 0 - (Math.random() * texture.width * ratio);
+  ctx.drawImage(texture, defaultValue, y, texture.width * ratio, texture.height * ratio);
   return (canvas)
 }
 

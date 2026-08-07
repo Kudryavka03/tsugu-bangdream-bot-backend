@@ -1,5 +1,5 @@
 import { Canvas, Image } from 'skia-canvas';
-import { CreateBG, CreateBGEazy, CreateBGPure } from '@/image/BG';
+import { CreateBG, CreateBGEazyOpt, CreateBGPure } from '@/image/BG';
 import { assetsRootPath } from '@/config';
 import * as path from 'path';
 import { loadImageFromPath } from '@/image/utils';
@@ -15,12 +15,7 @@ async function loadImageOnce() {
             })
                 */
 }
-export async function genEasyBGCache() {
-    BGImageCache = await CreateBGPure({
-                width: 1334,
-                height: 1002
-            })
-}
+
 
 loadImageOnce()
 
@@ -68,7 +63,12 @@ export var outputFinalCanv = async function ({ imageList,
     if (useEasyBG) {
         //if ((maxW * allH) < 5000000) ctx.drawImage(BGImageCache, 0, 0)
         
-        
+        await CreateBGPure({
+            width: maxW,
+            height: allH,
+            canvas: tempcanv,
+        })
+            
     }
     else {
         ctx.drawImage(await CreateBG({

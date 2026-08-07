@@ -42,7 +42,7 @@ export function drawRoundedRect({
   ctx.quadraticCurveTo(0, 0, radius[0], 0);
   ctx.closePath();
 
-  ctx.globalAlpha = opacity;
+  if (opacity!=1)ctx.globalAlpha = opacity;
   ctx.fillStyle = color;
   ctx.fill();
 

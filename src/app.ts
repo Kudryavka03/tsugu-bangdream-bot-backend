@@ -45,6 +45,8 @@ import { monthlyRankingTopRateRankingRouter } from '@/monthlyRanking/routers/mon
 import { monthlyRankingTopTenMinuteSpeedRouter } from '@/monthlyRanking/routers/monthlyRankingTopTenMinuteSpeed';
 import { monthlyRankingTopSleepStatRouter } from '@/monthlyRanking/routers/monthlyRankingTopSleepStat';
 import { monthlyRankingTopRunningStatusRouter } from '@/monthlyRanking/routers/monthlyRankingTopRunningStatus';
+import { Canvas } from 'skia-canvas';
+
 
 
 export var LagTimes:number

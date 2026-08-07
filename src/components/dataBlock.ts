@@ -14,7 +14,7 @@ export async function drawDatablock({
     list,
     BG = true,
     topLeftText,
-    opacity = 0.9,
+    opacity = 1,    // 0.9
     maxWidth
 }: datablockOptions): Promise<Canvas> {
     const topLeftTextHeight = 70
