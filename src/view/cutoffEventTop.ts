@@ -564,7 +564,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
             break
         }
     }
-    LastHour = LastHourInCutoffT10
+    
     //LastHour = thisHour - 3600000
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
@@ -609,8 +609,12 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 lastScore = playerRating[j].value
             }
         }
+                //rankBetweenLastTick.push()
+        rankChangeCount.push(countChange)   // 分数变动次数
         //console.log(new Date(LastHour).getHours(),new Date(LastHour).getMinutes(),new Date(LastHour).getSeconds())
         // 前后空白
+        // 改成starfx的bot同样的下限取值方式，后面再给他改过来，，，
+        LastHour = LastHourInCutoffT10
         let tmpScore = playerRating[0].value == -1?0:playerRating[0].value
         let tmpTime = thisHour
         let isPrev = false
@@ -660,8 +664,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         if (!pushPrev) prevNull.push(1/0)
         if (!pushNext) nextNull.push(1/0)
         
-        //rankBetweenLastTick.push()
-        rankChangeCount.push(countChange)   // 分数变动次数
+
 
         if(lastScore >0 ){
             rankBetweenLastTick.push(nowScore - lastScore)// 与上一时刻相比相差了多少
@@ -675,8 +678,9 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         }
         else rankBetween.push(rank[i-1] - nowScore  )  // 与上一名的分数差距
     }
-
+    // 改回来。
     LastHour = thisHour - 3600000 - new Date(thisHour).getMilliseconds()
+    
     for (let h = 0; h < rankBetweenLastTick.length; h++) {
         let rank = 1;
         for (let g = 0; g < rankBetweenLastTick.length; g++) {
