@@ -555,16 +555,19 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 
     var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
     
-    var LastHour = thisHour - 3600000
+    var LastHour = new Date(thisHour - 3600000).setSeconds(0)
+    LastHour = new Date(LastHour).setMilliseconds(0)
+    var LastHourBackup = LastHour
     var LastHourInCutoffT10 = 0
     for(let i = cutoffEventTop.points.length -1;i>0;i--){   // 找出LastHour的上一个时间点
         if (cutoffEventTop.points[i].time < LastHour){
             //console.log(cutoffEventTop.points[i].time,LastHour)
-            LastHourInCutoffT10 = cutoffEventTop.points[i].time
+            LastHourInCutoffT10 = cutoffEventTop.points[i].time 
             break
         }
     }
-    
+    //LastHourInCutoffT10--
+    //LastHour = LastHourInCutoffT10
     //LastHour = thisHour - 3600000
     //console.log(LastHour)
     // thisHour是当前小时如16:37就返回16:00
@@ -614,9 +617,10 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         //console.log(new Date(LastHour).getHours(),new Date(LastHour).getMinutes(),new Date(LastHour).getSeconds())
         // 前后空白
         // 改成starfx的bot同样的下限取值方式，后面再给他改过来，，，
-        LastHour = LastHourInCutoffT10
+        //LastHour = LastHourInCutoffT10
         let tmpScore = playerRating[0].value == -1?0:playerRating[0].value
         let tmpTime = thisHour
+        let tmpScore2 = 0
         let isPrev = false
         let pushPrev = false
         let pushNext = false
@@ -640,22 +644,30 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
                 }
             }
             if (isPrev){
+                
                 if (playerRating[j].time >=LastHour && playerRating[j].value!= tmpScore){
                     tmpScore = playerRating[j].value
-                    tmpTime = playerRating[j].time
+                    tmpTime = playerRating[j-1].time
                 }
                 if (playerRating[j].time <LastHour){
                     if (playerRating[j].value!= tmpScore){
-                        if (Math.round((tmpTime - LastHour) / (60000)) <= 30){
-                            prevNull.push(Math.round((tmpTime - LastHour +60000) / (60000)))
+
+                        /*if (playerRating[j] != playerRating[j-1]){
+                            prevNull.push(0)
                             pushPrev = true
-                            //console.log((Math.round((tmpTime - LastHour+60000) / (60000))),nextNull.at(-1))
-                        } 
-                        else{
-                            prevNull.push(1/0)
-                            pushPrev = true
-                            //console.log(1/0,nextNull.at(-1))
                         }
+                    else*/ if (Math.round((tmpTime - LastHour) / (60000)) <= 30){
+                                //let tmpTime1 = new Date(tmpTime).getMinutes()
+                                //let LastHour = new Date(tmpTime).getMinutes()
+                                prevNull.push(Math.round((tmpTime - LastHour)/60000))
+                                pushPrev = true
+                                //console.log((Math.round((tmpTime - LastHour+60000) / (60000))),nextNull.at(-1))
+                            } 
+                            else{
+                                prevNull.push(1/0)
+                                pushPrev = true
+                                //console.log(1/0,nextNull.at(-1))
+                            }
 
                     }
                 }
@@ -663,7 +675,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         }
         if (!pushPrev) prevNull.push(1/0)
         if (!pushNext) nextNull.push(1/0)
-        
+        //LastHour = LastHourBackup
 
 
         if(lastScore >0 ){
@@ -679,7 +691,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         else rankBetween.push(rank[i-1] - nowScore  )  // 与上一名的分数差距
     }
     // 改回来。
-    LastHour = thisHour - 3600000 - new Date(thisHour).getMilliseconds()
+    //LastHour = thisHour - 3600000 - new Date(thisHour).getMilliseconds()
     
     for (let h = 0; h < rankBetweenLastTick.length; h++) {
         let rank = 1;
@@ -1244,6 +1256,57 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
 // 首先取出要猜UID（参数UID）出现变动时，跟着一起变的用户
 // 然后对于整个小时数据而言，出现总数量相同，且变动数量相同的用户，则可以百分百确认时同一个房间的
 // 对于变动稍有出入的用户来说，允许设置一定的偏移去应对可能出现的掉线等情况从而无法记录。
+function inferSureRoomsByScoreChange(valueChangeData: number[][],uid: number,dupUid: number[] = []){
+    // 首先，将当前uid发生变动的提取出来
+    var currentUidChange = []   // 这个array的length就是代表当前uid总变动次数
+    for(let uidArray of valueChangeData){
+        if (uidArray.includes(uid) && uidArray.length < 11) currentUidChange.push(uidArray)
+    }
+    var tempUidList = []    // 临时uidList，用于标记与当前查询uid分数一起变动的其他uid列表
+    var tempUidListAppearCount = [] // 临时uidList中的uid在pointData中出现的总次数
+    var tempUidListAppearCountInCurrentUidChange = [] // 临时uidList中的uid在currentUidChange中出现的总次数
+
+    for(let uidArray of currentUidChange){  // 标记所有一同更改过的uid
+        for(let uid2 of uidArray){
+            if (!tempUidList.includes(uid2))tempUidList.push(uid2)
+        }
+    }
+    for(let i =0;i<tempUidList.length;i++){ // 遍历tempUidList，将出现次数增加进入tempUidListAppearCount
+        let appearCount = 0
+        for(let uidArray of valueChangeData){
+            if (uidArray.includes(tempUidList[i])) {
+                appearCount++
+            }
+        }
+        tempUidListAppearCount.push(appearCount)
+    }
+    for(let i =0;i<tempUidList.length;i++){ // 遍历currentUidChange，将出现次数增加进入tempUidListAppearCount
+        let appearCount = 0
+        for(let uidArray of currentUidChange){
+            if (uidArray.includes(tempUidList[i])) {
+                appearCount++
+            }
+        }
+        tempUidListAppearCountInCurrentUidChange.push(appearCount)
+    }
+    var sureAtSameRoom = [] // 完全确认是在同一个房间的
+    // 先把最有可能时同一个房间的uid加起来
+    for(let i = 0;i<tempUidList.length;i++){    // 严格模式下。优先添加
+        // 参数UID与待查UID占整个时段的变动次数，取大
+        var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
+        // 参数UID与待查UID占整个时段的变动次数，取小
+        var smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
+        // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
+        var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+        // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
+        var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+        if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5 && !dupUid.includes(tempUidList[i])){
+            sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的
+        }
+    }
+    return sureAtSameRoom
+}
+
 function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSort?: number[]){
     //console.log('test')
     //console.log(valueChangeData)
@@ -1265,7 +1328,17 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     }
     //console.log(totalChangeCount)
     const strictMode = totalChangeCount>=strictCount ?true:false
+    // 为了在后来的结算中排除这些已经高度绑定的结果
+    var sureAtSameRoomUidList = []
     if (uidSort) uidTotalList = uidSort
+    for(let uid of uidTotalList){
+        var sureSameUidList = inferSureRoomsByScoreChange(valueChangeData,uid)
+        if (sureSameUidList.length > 1){
+            for(let sureSameUid of sureSameUidList){
+                if (!sureAtSameRoomUidList.includes(sureSameUid)) sureAtSameRoomUidList.push(sureSameUid)
+            }
+        }
+    }
     for(let utl = 0;utl<uidTotalList.length;utl++){
         if (dupUid.includes(uidTotalList[utl])) continue  // 掩耳盗铃，但是确实可以避免一些问题
         var finalResultIn = []
@@ -1303,28 +1376,15 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             }
             tempUidListAppearCountInCurrentUidChange.push(appearCount)
         }
-        var sureAtSameRoom = [] // 完全确认是在同一个房间的
+        var sureAtSameRoom = inferSureRoomsByScoreChange(valueChangeData,uid,dupUid) // 完全确认是在同一个房间的
         var possibleAtSameRoom = [] // 可能在同一个房间的Uid
         var possibleAtSameRoomRatio = [] // 可能在同一个房间的可能概率
-        // 先把最有可能时同一个房间的uid加起来
-        for(let i = 0;i<tempUidList.length;i++){    // 严格模式下。优先添加
-            // 参数UID与待查UID占整个时段的变动次数，取大
-            var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
-            // 参数UID与待查UID占整个时段的变动次数，取小
-            var smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
-            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
-            var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
-            var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-            if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5 && !dupUid.includes(tempUidList[i])){
-                sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的   
-            }
-        }
         let possibleAtSameRoomTemp = []
         let possibleAtSameRoomRatioTemp = []
         const roomLeft = 5 - sureAtSameRoom.length
         let skipCompare = false
         for(let i = 0;i<tempUidList.length;i++){
+            if (sureAtSameRoomUidList.includes(tempUidList[i]))continue
             if (sureAtSameRoom.includes(tempUidList[i]))continue
             //if (sureAtSameRoom.length>=5)break
             if (strictMode)break
@@ -1361,6 +1421,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         }
         if (skipCompare == true && possibleAtSameRoomTemp.length <1) continue
         if (roomLeft > 0 && possibleAtSameRoomTemp.length >roomLeft){
+            // 交换函数
             const swap = function (arr: number[],lNumber:number,rNumber:number){
                 if(lNumber == rNumber) return
                 let old = arr[lNumber]
