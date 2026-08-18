@@ -59,7 +59,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const SongTierUrl = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=${tier}`;
     const SongT1Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=1`;
     const SongT10Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=10`;
-    if(event.eventType == 'versus'){
+    if(event.eventType == 'versus' && false){
         isVersus = true
             var [vTier1, vTierN, vTier10] = await Promise.all([
             callAPIAndCacheResponse(SongT1Url, 0, 1, false, 2),
@@ -192,6 +192,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
         const songIndex = indexFlags;
         songDataBlockPromises.push((async () => {
+           // debugger
             const songDetailList: Array<Image | Canvas> = [];
             songDetailList.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${songIndex}`, [mainServer], false));
             let timeTips = '现在'
