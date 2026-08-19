@@ -22,6 +22,9 @@ import mainAPI, { TopRateSpeed } from '@/types/_Main';
 import array from 'ref-array-di';
 import { min } from 'moment';
 import { getTop10AvgScore } from './cutoffDetail';
+import { Cutoff } from '@/types/Cutoff';
+import { drawT10CutoffSummary } from '@/view/t10CutoffSummary';
+import { getTopTierCutoffs } from '@/types/TrackerTop';
 
 type TopRateLimit = {
     min?: number,
@@ -49,6 +52,23 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
     var all = [];
     all.push(await drawTitle('档线', `${serverNameFullList[mainServer]} 10档线`));
     var list: Array<Image | Canvas> = [];
+
+    const t10Cutoffs = getTopTierCutoffs(cutoffEventTop.points);
+    if (t10Cutoffs.length == 0) {
+        return [`错误: ${serverNameFullList[mainServer]} ${eventId} 前十数据不足`];
+    }
+    const t10Cutoff = new Cutoff(eventId, mainServer, 10, {
+        startAt: cutoffEventTop.startAt,
+        endAt: cutoffEventTop.endAt,
+        eventType: event.eventType,
+        dataSourceName: cutoffEventTop.dataSourceName,
+    });
+    await t10Cutoff.initFull({
+        cutoffs: t10Cutoffs,
+        dataSourceName: cutoffEventTop.dataSourceName,
+    });
+    list.push(...await drawT10CutoffSummary(t10Cutoff));
+    list.push(line);
 
 
     // all.push(await drawEventDatablock(event, [mainServer]));

@@ -45,6 +45,8 @@ import { monthlyRankingTopRateRankingRouter } from '@/monthlyRanking/routers/mon
 import { monthlyRankingTopTenMinuteSpeedRouter } from '@/monthlyRanking/routers/monthlyRankingTopTenMinuteSpeed';
 import { monthlyRankingTopSleepStatRouter } from '@/monthlyRanking/routers/monthlyRankingTopSleepStat';
 import { monthlyRankingTopRunningStatusRouter } from '@/monthlyRanking/routers/monthlyRankingTopRunningStatus';
+import { monthlyRankingTop10Router } from '@/routers/monthlyRankingTop10';
+import { songTop10Router } from '@/routers/songTop10';
 import { Canvas } from 'skia-canvas';
 
 
@@ -87,6 +89,8 @@ app.use('/monthlyRankingTopRateRanking', monthlyRankingTopRateRankingRouter);
 app.use('/monthlyRankingTopTenMinuteSpeed', monthlyRankingTopTenMinuteSpeedRouter);
 app.use('/monthlyRankingTopSleepStat', monthlyRankingTopSleepStatRouter);
 app.use('/monthlyRankingTopRunningStatus', monthlyRankingTopRunningStatusRouter);
+app.use('/monthlyRankingTop10', monthlyRankingTop10Router);
+app.use('/songTop10', songTop10Router);
 app.use('/teamBuildDetail', teamBuildDetailRouter);
 app.use('/calcResult', calcResultRouter);
 

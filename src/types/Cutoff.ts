@@ -8,6 +8,21 @@ import * as fs from 'fs';
 import path from 'path'
 import { getDateByServerTimezone, GetProbablyTimeDifference, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 
+export type ManualCutoffOptions = {
+    startAt: number;
+    endAt: number;
+    eventType?: string;
+    dataSourceName?: string;
+};
+
+export type ManualCutoffData = {
+    cutoffs: { time: number, ep: number }[];
+    startAt?: number;
+    endAt?: number;
+    dataSourceName?: string;
+    dailyIncrementDivisor?: number;
+};
+
 export class Cutoff {
     eventId: number;
     server: Server;
@@ -31,7 +46,30 @@ export class Cutoff {
     currentGetDataTime
     //useHHWX = USE_HHWX_SOURCE_PREFER
     dataSourceName = USE_HHWX_SOURCE_PREFER ? 'HHWX' : 'Bestdori'
-    constructor(eventId: number, server: Server, tier: number) {
+    constructor(eventId: number, server: Server, tier: number, manualOptions?: ManualCutoffOptions) {
+        if (manualOptions != undefined) {
+            this.eventId = eventId;
+            this.server = server;
+            this.tier = tier;
+            this.eventType = manualOptions.eventType ?? 'event';
+            this.startAt = manualOptions.startAt;
+            this.endAt = manualOptions.endAt;
+            this.startAtAll = [this.startAt];
+            this.endAtAll = [this.endAt];
+            this.currentGetDataTime = new Date().getTime();
+            this.dataSourceName = manualOptions.dataSourceName ?? this.dataSourceName;
+            if (this.currentGetDataTime < this.startAt) {
+                this.status = 'not_start';
+            }
+            else if (this.currentGetDataTime > this.endAt) {
+                this.status = 'ended';
+            }
+            else {
+                this.status = 'in_progress';
+            }
+            this.isExist = true;
+            return;
+        }
         const tempEventData = new Event(eventId)
         //如果活动不存在，直接返回
         if (!tempEventData.isExist) {
@@ -81,7 +119,39 @@ export class Cutoff {
         //this.useHHWX = result.sourceName == 'HHWX'
         return result.data
     }
-    async initFull() {
+    async initFull(manualData?: ManualCutoffData) {
+        if (manualData != undefined) {
+            if (this.isInitfull || this.isExist == false) {
+                return;
+            }
+            if (manualData.startAt != undefined) this.startAt = manualData.startAt;
+            if (manualData.endAt != undefined) this.endAt = manualData.endAt;
+            if (manualData.dataSourceName != undefined) this.dataSourceName = manualData.dataSourceName;
+            this.cutoffs = (manualData.cutoffs ?? [])
+                .map(cutoff => ({ time: normalizeTimestamp(cutoff.time), ep: Number(cutoff.ep) }))
+                .sort((a, b) => a.time - b.time);
+            this.pCutoffs = [];
+            if (this.cutoffs.length == 0) {
+                this.latestCutoff = { time: this.startAt, ep: 0 };
+            }
+            else {
+                this.latestCutoff = this.cutoffs[this.cutoffs.length - 1];
+            }
+            this.currentGetDataTime = new Date().getTime();
+            if (this.currentGetDataTime < this.startAt) {
+                this.status = 'not_start';
+            }
+            else if (this.currentGetDataTime > this.endAt) {
+                this.status = 'ended';
+            }
+            else {
+                this.status = 'in_progress';
+            }
+            this.getDailyIncrement(manualData.dailyIncrementDivisor);
+            this.isExist = true;
+            this.isInitfull = true;
+            return;
+        }
         if (this.isInitfull) {
             return
         }
@@ -254,7 +324,8 @@ export class Cutoff {
             return Math.ceil((timestamp - firstDayEndTime) / 86400000)
         }
     }
-    getDailyIncrement(){
+    getDailyIncrement(divisor: number = 10000){
+        if (!Number.isFinite(divisor) || divisor <= 0) divisor = 10000
         let score:number[] = []
         let time:number[] = []
         if (!this.cutoffs || this.cutoffs.length === 0){
@@ -323,10 +394,10 @@ export class Cutoff {
         }
         for (var i = 0;i<scoreFinal.length;i++){   // 计算增量
             if (i == 0){
-                dailyIncrement.push(`${Math.round(scoreFinal[i]/10000)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}`) 
+                    dailyIncrement.push(`${Math.round(scoreFinal[i]/divisor)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}`)
             }
             else{
-                dailyIncrement.push(`${Math.round((scoreFinal[i] - scoreFinal[i-1])/10000)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}` )
+                    dailyIncrement.push(`${Math.round((scoreFinal[i] - scoreFinal[i-1])/divisor)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}` )
             }
         }
         this.dailyIncrement = dailyIncrement
@@ -476,7 +547,7 @@ export class Cutoff {
     }
     getAnyCutoffSpeedByTime(ts:number=0){
         // 如果ts有明确的时间戳的，则以ts作为时间，查找该时间往前1小时的两个时间戳。
-        if (this.cutoffs.length == 0) return 0
+        if (!this.cutoffs || this.cutoffs.length < 2) return 0
         
         let lastCutoffTime = ts?ts:this.cutoffs[this.cutoffs.length-1].time
         let targetIndex = ts?this.checkIfTsExist(lastCutoffTime):this.cutoffs.length-1
@@ -491,10 +562,12 @@ export class Cutoff {
         if (prevHourIndex == 0 || ((lastCutoffTime - prevHourTime) > (3600000 *2))){
             // callback to old calc func
             console.log('callback to old logic')
-            let currenetTs = this.findNearestTsIndex(ts)
+            let currenetTs = ts ? this.findNearestTsIndex(ts) : this.cutoffs.length - 1
+            if (currenetTs <= 0) currenetTs = 1
             let EP_Old =  this.cutoffs[currenetTs].ep - this.cutoffs[currenetTs-1].ep
             let Time_Old =  this.cutoffs[currenetTs].time - this.cutoffs[currenetTs-1].time
-            let Speed_Old = Math.round(EP_Old / Time_Old)
+            if (Time_Old <= 0) return 0
+            let Speed_Old = Math.round(EP_Old / (Time_Old / (1000 * 3600)))
             return Speed_Old
         }
         console.log(timePrevHour)

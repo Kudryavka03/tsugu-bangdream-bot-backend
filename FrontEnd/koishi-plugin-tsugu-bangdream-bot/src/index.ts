@@ -9,6 +9,7 @@ import * as searchSong_1 from "./commands/searchSong";
 import * as searchGacha_1 from "./commands/searchGacha";
 import * as cutoffDetail_1 from "./commands/cutoffDetail";
 import * as cutoffSong_1 from "./commands/cutoffSong";
+import * as songTop10_1 from "./commands/songTop10";
 import * as searchPlayer_1 from "./commands/searchPlayer";
 import * as cutoffListOfRecentEvent_1 from "./commands/cutoffListOfRecentEvent";
 import * as cutoffAll_1 from "./commands/cutoffAll";
@@ -144,10 +145,13 @@ export function apply(ctx: Context, config: Config) {
     ctx.middleware((session, next) => {
         if (config.noSpace) {
             // 查卡面 一定要放在 查卡 前面
-            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
+            if (session.content === 'mycx10' || session.content.startsWith('mycx10 ')) {
+                return next();
+            }
             const keyword = keywords.find(keyword => session.content.startsWith(keyword));
             if (keyword) {
                 if (session.content[keyword.length] === ' ') {
@@ -631,9 +635,10 @@ export function apply(ctx: Context, config: Config) {
     });
     ctx.command("歌榜 <tiers:string> [eventId:integer] [serverName]", "查询歌榜档位分数", cmdConfig)
     .alias('查歌榜').alias('gb').alias('cgb')
+        .option('song', '-s <songId:integer> 指定歌曲ID，仅歌榜T10可用')
         .usage(`查询歌榜活动指定档位的分数线。如果没有服务器名的话, 服务器为用户的默认服务器。如果没有活动ID的话, 活动为当前活动\n可用档线: 1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000`)
         .example('歌榜 1000 :返回默认服务器当前活动1000档位的歌榜分数').example('歌榜 1000 300 jp:返回日服300号活动1000档位的歌榜分数')
-        .action(async ({ session }, tiers, eventId, serverName) => {
+        .action(async ({ session, options }, tiers, eventId, serverName) => {
         const validTiers = [1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000];
         let tier:number = Number(tiers.toLowerCase().replace('t',''))
         if (tier == undefined ||isNaN(tier)|| !validTiers.includes(tier)) {
@@ -648,9 +653,39 @@ export function apply(ctx: Context, config: Config) {
             }
             mainServer = serverFromServerNameFuzzySearch;
         }
+        if (options.song != undefined) {
+            if (tier != 10) {
+                return '错误: 歌曲ID筛选仅支持歌榜T10';
+            }
+            const list = await (0, songTop10_1.commandSongTop10)(config, mainServer, eventId, options.song);
+            return (0, utils_1.paresMessageList)(list);
+        }
         const list = await (0, cutoffSong_1.commandCutoffSong)(config, mainServer, tier, eventId);
         return (0, utils_1.paresMessageList)(list);
     });
+    ctx.command("歌榜T10 [eventId] [serverName]", "查询歌榜T10", cmdConfig)
+        .alias('查歌榜T10').alias('歌榜10').alias('查歌榜10').alias('歌榜前十').alias('gb10').alias('cgb10')
+        .option('song', '-s <songId:integer> 指定歌曲ID')
+        .usage('查询活动歌曲的T10；多歌曲活动需要使用 -s 指定歌曲ID。')
+        .example('歌榜T10 320 cn :返回国服320号活动歌曲767的T10')
+        .example('歌榜T10 320 cn -s 767 :只返回歌曲767的T10')
+        .action(async ({ session, options }, eventId, serverName) => {
+            if (eventId != undefined && isNaN(Number(eventId))) {
+                serverName = eventId;
+                eventId = undefined;
+            }
+            const tsuguUserData = await observeUserTsugu(session);
+            let mainServer = tsuguUserData.mainServer;
+            if (serverName) {
+                const serverFromServerNameFuzzySearch = await (0, fuzzySearch_1.serverNameFuzzySearchResult)(config, serverName);
+                if (serverFromServerNameFuzzySearch == -1) {
+                    return '错误: 服务器名未能匹配任何服务器';
+                }
+                mainServer = serverFromServerNameFuzzySearch;
+            }
+            const list = await (0, songTop10_1.commandSongTop10)(config, mainServer, eventId == undefined ? undefined : Number(eventId), options.song);
+            return (0, utils_1.paresMessageList)(list);
+        });
     ctx.command('抽卡模拟 [times:integer] [gachaId:integer]', cmdConfig)
         .usage('模拟抽卡, 如果没有卡池ID的话, 卡池为当前活动的卡池')
         .example('抽卡模拟:模拟抽卡10次').example('抽卡模拟 300 922 :模拟抽卡300次, 卡池为922号卡池')
@@ -800,7 +835,7 @@ export function apply(ctx: Context, config: Config) {
     async function getChannelData() {
       const channel_get = await ctx.database.get('channel', { id: now_channel });
       if (channel_get[0]?.tsugu_run === false) {
-        const keywords = ['查询玩家', '查卡面', '查玩家', '查卡', '查角色', '查活动', '查月榜', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查卡池', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+        const keywords = ['查询玩家', '查卡面', '查玩家', '查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', 'mycx10', '查月榜', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查卡池', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
         const messageContent = session.event.message.content;
         // 检查消息是否以数组中的任意一个词开始
         const startsWithKeyword = keywords.some(keyword => messageContent.startsWith(keyword));

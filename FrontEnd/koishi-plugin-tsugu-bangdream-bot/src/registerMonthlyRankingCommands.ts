@@ -5,6 +5,7 @@ import * as fuzzySearch_1 from "./api/fuzzySearch";
 import * as monthlyRankingCutoffDetail_1 from "./commands/monthlyRankingCutoffDetail";
 import * as monthlyRankingCutoffAll_1 from "./commands/monthlyRankingCutoffAll";
 import * as monthlyRankingCutoffListOfRecent_1 from "./commands/monthlyRankingCutoffListOfRecent";
+import * as monthlyRankingTop10_1 from "./commands/monthlyRankingTop10";
 // 依赖 Bestdori 月榜 top API，暂不可用
 // import * as monthlyRankingTopRateDetail_1 from "./commands/monthlyRankingTopRateDetail";
 // import * as monthlyRankingTopRateRanking_1 from "./commands/monthlyRankingTopRateRanking";
@@ -306,6 +307,30 @@ export function registerMonthlyRankingCommands(
                 mainServer = serverFromServerNameFuzzySearch;
             }
             const list = await monthlyRankingCutoffDetail_1.commandMonthlyRankingCutoffDetail(config, mainServer, tier, monthlyRankingId);
+            return utils_1.paresMessageList(list);
+        });
+
+    ctx.command("mycx10 [monthlyRankingId] [serverName]", "查询月榜T10", cmdConfig)
+        .alias('月榜T10')
+        .alias('月榜前十')
+        .usage('查询月榜T10。如果没有月榜ID，默认查询当前月榜。')
+        .example('mycx10 :返回默认服务器当前月榜T10')
+        .example('mycx10 19 cn :返回国服19号月榜T10')
+        .action(async ({ session }, monthlyRankingId, serverName) => {
+            if (monthlyRankingId != undefined && isNaN(Number(monthlyRankingId))) {
+                serverName = monthlyRankingId;
+                monthlyRankingId = undefined;
+            }
+            const tsuguUserData = await observeUserTsugu(session);
+            let mainServer = tsuguUserData.mainServer;
+            if (serverName) {
+                const serverFromServerNameFuzzySearch = await fuzzySearch_1.serverNameFuzzySearchResult(config, serverName);
+                if (serverFromServerNameFuzzySearch == -1) {
+                    return '错误: 服务器名未能匹配任何服务器';
+                }
+                mainServer = serverFromServerNameFuzzySearch;
+            }
+            const list = await monthlyRankingTop10_1.commandMonthlyRankingTop10(config, mainServer, monthlyRankingId == undefined ? undefined : Number(monthlyRankingId));
             return utils_1.paresMessageList(list);
         });
 

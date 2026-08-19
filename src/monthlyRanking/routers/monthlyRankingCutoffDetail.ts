@@ -6,6 +6,7 @@ import { listToBase64 } from '@/routers/utils';
 import { isServer, Server, getServerByServerId } from '@/types/Server';
 import { getPresentMonthlyRanking } from '@/types/MonthlyRanking';
 import { drawMonthlyRankingCutoffDetail } from '@/monthlyRanking/view/monthlyRankingCutoffDetail';
+import { drawMonthlyRankingTop10 } from '@/view/monthlyRankingTop10';
 import { isCnMonthlyServer } from '@/monthlyRanking/cn/cnMonthlyRanking';
 
 const router = express.Router();
@@ -38,12 +39,15 @@ export async function commandMonthlyRankingCutoffDetail(mainServer: Server, tier
     if (!tier) {
         return ['请输入排名'];
     }
-    if (!monthlyRankingId) {
+    if (monthlyRankingId == undefined) {
         const presentMonthlyRanking = getPresentMonthlyRanking(mainServer);
         if (!presentMonthlyRanking) {
             return [`错误: ${mainServer} 当前没有可用月榜`];
         }
         monthlyRankingId = presentMonthlyRanking.monthlyRankingId;
+    }
+    if (Number(tier) === 10) {
+        return await drawMonthlyRankingTop10(Number(monthlyRankingId), mainServer, compress ?? false);
     }
     if (typeof(monthlyRankingId) == 'string') {
         return await drawMonthlyRankingCutoffDetail(Number(monthlyRankingId), tier, mainServer, compress);
