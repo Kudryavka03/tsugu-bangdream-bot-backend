@@ -58,6 +58,7 @@ export function getTopTierCutoffs(
 
     }
     result.sort((a, b) =>a.time -b.time);
+    /*
     console.log(maxIndex)
     for(let a of result){
         let t = getDateByServerTimezone(a.time,Server.cn)
@@ -65,6 +66,7 @@ export function getTopTierCutoffs(
             console.log(a)
         }
     }
+        */
     return result;
     
 }
