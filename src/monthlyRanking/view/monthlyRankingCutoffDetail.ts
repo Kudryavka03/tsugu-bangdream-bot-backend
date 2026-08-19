@@ -16,7 +16,7 @@ export async function drawMonthlyRankingCutoffDetail(monthlyRankingId: number, t
         return ['月榜档线仅支持国服'];
     }
     if (!tier) return ['请输入排名'];
-    console.log(typeof(monthlyRankingId))
+    //console.log(typeof(monthlyRankingId))
     const cutoff = new MonthlyRankingCutoff(monthlyRankingId, mainServer, tier);
     if (cutoff.isExist == false) {
         return [`错误: ${ serverNameFullList[mainServer] } 月榜或档线不存在`];

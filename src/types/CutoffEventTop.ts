@@ -29,7 +29,7 @@ export class CutoffEventTop{
         currentPt:number
     }[];
     constructor(eventId:number,server:Server){
-        console.log(server)
+        //console.log(server)
         const event = new Event(eventId)
         if(!event.isExist){
             this.isExist = false;
