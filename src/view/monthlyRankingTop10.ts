@@ -48,12 +48,10 @@ async function drawMonthlyRankingTopDatablock(monthlyRanking: MonthlyRanking, se
             text: `ID: ${ monthlyRanking.monthlyRankingId } ${ monthlyRanking.monthlyRankingName[server] ?? '' }`,
         }),
         await drawList({
-            key: '开始时间',
-            text: changeTimefomant(monthlyRanking.startAt[server]),
+            text: '开始时间：'+changeTimefomant(monthlyRanking.startAt[server]),
         }),
         await drawList({
-            key: '结束时间',
-            text: changeTimefomant(monthlyRanking.endAt[server]),
+            text: '结束时间：'+changeTimefomant(monthlyRanking.endAt[server]),
         }),
     ]));
     return await drawDatablock({ list });

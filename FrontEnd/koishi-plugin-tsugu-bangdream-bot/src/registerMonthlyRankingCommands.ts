@@ -306,6 +306,10 @@ export function registerMonthlyRankingCommands(
                 }
                 mainServer = serverFromServerNameFuzzySearch;
             }
+            if (Number(tier) === 10) {
+                const list = await monthlyRankingTop10_1.commandMonthlyRankingTop10(config, mainServer, monthlyRankingId === undefined ? undefined : Number(monthlyRankingId));
+                return utils_1.paresMessageList(list);
+            }
             const list = await monthlyRankingCutoffDetail_1.commandMonthlyRankingCutoffDetail(config, mainServer, tier, monthlyRankingId);
             return utils_1.paresMessageList(list);
         });

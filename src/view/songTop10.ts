@@ -79,7 +79,7 @@ async function drawSongTopBlock(song: Song, trackerTop: TrackerTop10, mainServer
         dataSourceName: 'HHWX',
         dailyIncrementDivisor: 1,
     });
-    list.push(...await drawT10CutoffSummary(songCutoff));
+    list.push(...await drawT10CutoffSummary(songCutoff, false));
     list.push(line);
 
     const userInRankings = trackerTop.getLatestRanking();

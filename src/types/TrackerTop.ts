@@ -35,22 +35,21 @@ export function getTopTierCutoffs(
     tier: number = 10,
 ): { time: number, ep: number }[] {
     const pointGroups = new Map<number, Array<{ uid: number, value: number }>>();
-    for (const point of points ?? []) {
-        if (!point || point.uid == undefined || point.value == undefined) continue;
-        const time = normalizeTimestamp(point.time);
-        const uid = Number(point.uid);
-        const value = Number(point.value);
-        if (!Number.isFinite(time) || !Number.isFinite(uid) || !Number.isFinite(value)) continue;
-        if (!pointGroups.has(time)) pointGroups.set(time, []);
-        pointGroups.get(time).push({ uid, value });
-    }
+    let timeFlags = 0
     const result: { time: number, ep: number }[] = [];
-    for (const [time, group] of pointGroups.entries()) {
-        group.sort((a, b) => b.value - a.value);
-        if (group.length < tier) continue;
-        result.push({ time, ep: group[tier - 1].value });
+    for (let index = 1;index<points.length;index++){
+        if (points[index].time!=timeFlags){
+            result.push({time:points[index-1].time, ep:points[index-1].value })
+            timeFlags = points[index].time
+            continue
+        }
+        if (index == points.length-1){
+            result.push({time:points[index].time, ep:points[index].value })
+            continue
+        }
+
     }
-    result.sort((a, b) => a.time - b.time);
+    result.sort((a, b) => b.time - a.time);
     return result;
 }
 
