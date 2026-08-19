@@ -344,7 +344,6 @@ export class Cutoff {
                     time.push(timestamp)
                     nearest345Ts = []
                     daysFlags = -1
-                    console.log('find345:',timestamp,c.ep)
                     continue
                 }else{
                     if (utcmin > (45-5) &&  utcmin <(45+5)){    // 10分钟的容错
