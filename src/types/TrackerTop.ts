@@ -1,5 +1,5 @@
 import { getTrackerTopData, TrackerTopDataType } from '@/api/trackerTopData';
-import { normalizeTimestamp } from '@/components/list/time';
+import { getDateByServerTimezone, normalizeTimestamp } from '@/components/list/time';
 import { Server } from '@/types/Server';
 
 export type TrackerTopPoint = {
@@ -32,25 +32,41 @@ export type TrackerTop10Options = {
 /** Build a tier cutoff series from the complete ranking snapshots. */
 export function getTopTierCutoffs(
     points: Array<{ time: number, uid: number, value: number }>,
-    tier: number = 10,
+    tier: number = 10,  // 应该读取相同的第十位
 ): { time: number, ep: number }[] {
     const pointGroups = new Map<number, Array<{ uid: number, value: number }>>();
     let timeFlags = 0
     const result: { time: number, ep: number }[] = [];
+    let maxIndex = 10
+    let maxIndexFlags = 0
     for (let index = 1;index<points.length;index++){
         if (points[index].time!=timeFlags){
-            result.push({time:points[index-1].time, ep:points[index-1].value })
+            maxIndexFlags = 0
             timeFlags = points[index].time
+        }
+         maxIndexFlags++
+        if (maxIndexFlags == maxIndex){
+            result.push({time:points[index].time, ep:points[index].value })
+            index+=9
             continue
         }
+       
         if (index == points.length-1){
             result.push({time:points[index].time, ep:points[index].value })
             continue
         }
 
     }
-    result.sort((a, b) => b.time - a.time);
+    result.sort((a, b) =>a.time -b.time);
+    console.log(maxIndex)
+    for(let a of result){
+        let t = getDateByServerTimezone(a.time,Server.cn)
+        if (t.getUTCHours() == 3 && t.getUTCMinutes()==45){
+            console.log(a)
+        }
+    }
     return result;
+    
 }
 
 /** HHWX topdata representation used by the monthly and song T10 pages. */

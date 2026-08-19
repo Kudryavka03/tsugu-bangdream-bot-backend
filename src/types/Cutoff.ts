@@ -331,12 +331,59 @@ export class Cutoff {
         if (!this.cutoffs || this.cutoffs.length === 0){
             return
         }
+        let nearest345Ts: { score: number; time: number }[] = [];
+        let daysFlags = -1
         for (const c of this.cutoffs) {
             const timestamp = normalizeTimestamp(c.time)
             const date = getDateByServerTimezone(timestamp, this.server)
-            if ((this.server == Server.cn || this.server == Server.tw || this.server == Server.jp) && date.getUTCHours() === 3 && date.getUTCMinutes() === 45) {
-                score.push(c.ep)
-                time.push(timestamp)
+
+            if ((this.server == Server.cn || this.server == Server.tw || this.server == Server.jp)&&date.getUTCHours() === 3 ) {
+                let utcmin = date.getUTCMinutes()
+                if (utcmin ===45){
+                    score.push(c.ep)
+                    time.push(timestamp)
+                    nearest345Ts = []
+                    daysFlags = -1
+                    console.log('find345:',timestamp,c.ep)
+                    continue
+                }else{
+                    if (utcmin > (45-5) &&  utcmin <(45+5)){    // 10分钟的容错
+                        nearest345Ts.push({score:c.ep,time:timestamp})
+                        daysFlags = date.getUTCDay()
+                    }else if (utcmin > (45+10)){
+                        if (daysFlags!=-1 && nearest345Ts.length!=0){
+                            let absLess =Infinity
+                            let t345 = new Date(nearest345Ts[0].time).setUTCMinutes(45)
+                            let TimeFind = -1
+                            let ValueFind = -1
+                            t345 = new Date(t345).setUTCMilliseconds(0)
+                            if (nearest345Ts.length==0) daysFlags=-1
+                            if (nearest345Ts.length==1){
+                                score.push(nearest345Ts[0].score)
+                                time.push(nearest345Ts[0].time)
+                                nearest345Ts=[]
+                                daysFlags=-1
+                            }else if(daysFlags!=-1){
+                                //console.log(nearest345Ts)
+                                // 查找最接近3:45的
+                                nearest345Ts.forEach(x=>{
+                                    let t = Math.abs(t345-x.time)
+                                    if (t <=absLess){
+                                        TimeFind = x.time
+                                        ValueFind = x.score
+                                    }
+                                })
+                                //console.log(ValueFind,TimeFind)
+                                ValueFind>0?score.push(ValueFind):null
+                                TimeFind>0?time.push(TimeFind):null
+                                daysFlags=-1
+                                nearest345Ts=[]
+                            }
+                        }
+                        daysFlags=-1
+                    }
+                }
+
             }
         }
         let dailyIncrement = []
