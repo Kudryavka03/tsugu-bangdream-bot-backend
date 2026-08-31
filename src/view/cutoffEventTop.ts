@@ -1334,6 +1334,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     var uidTotalList: number[] = []
     var dupUid = []
     var totalChangeCount = 0    // 总变动次数，是否启用严格模式。处于严格模式下，只允许绝对确认
+    
     const strictCount = 305
     const sameRoomRatioConfidence = 0.86  // 同房倍率
     const sameRoomRatioToTotalConfidence = 0.76  // 同房 / 总出现次数 > 0.76
@@ -1350,14 +1351,19 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     const strictMode = totalChangeCount>=strictCount ?true:false
     // 为了在后来的结算中排除这些已经高度绑定的结果
     var sureAtSameRoomUidList = []
+    var sureAtSameRoomUidListFirst = []
     if (uidSort) uidTotalList = uidSort
     for(let uid of uidTotalList){
+        if (sureAtSameRoomUidList.includes(uid)) continue   // 性能优化
         var sureSameUidList = inferSureRoomsByScoreChange(valueChangeData,uid)
         if (sureSameUidList.length > 1){
             for(let sureSameUid of sureSameUidList){
                 if (!sureAtSameRoomUidList.includes(sureSameUid)) sureAtSameRoomUidList.push(sureSameUid)
+                if (!sureAtSameRoomUidListFirst.includes(uid))  sureAtSameRoomUidListFirst.push(uid)   // 吧同房的第一个uid push进去
             }
+        
         }
+        
     }
     for(let utl = 0;utl<uidTotalList.length;utl++){
         if (dupUid.includes(uidTotalList[utl])) continue  // 掩耳盗铃，但是确实可以避免一些问题
@@ -1409,27 +1415,64 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             //if (sureAtSameRoom.length>=5)break
             if (strictMode)break
             // 参数UID与待查UID占整个时段的变动次数，取大
-            var largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
+            let largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
             // 参数UID与待查UID占整个时段的变动次数，取小
-            var smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
+            let smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
-            var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            let largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
-            var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-
+            let smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
+            // 2026-08-31: 从绝对同房中寻找是否有更好的同房列表。例如跟当前跟同房A 同房B都符合条件，但是同房B的条件更加符合，因此跳过。
             if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
                 if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大变动次数 > sameRoomRatioConfidence比例
-                    possibleAtSameRoomTemp.push(tempUidList[i])
-                    possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
-                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
+                    let ratioValue = smallCountInPart /largeCountInTotal    // 记录当前的可能度
+                    let findGreaterResult = false
+                    for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
+                        let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
+                        if (index == -1) break
+                        let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
+                        let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
+                        let ratioValueOfSameRoomUid = smallCountInPartNew / largeCountInTotalNew
+                        if (ratioValueOfSameRoomUid > ratioValue){
+                            console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence}`)
+                            console.log(`G1: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 最小同房/最大变动次数：${smallCountInPartNew / largeCountInTotalNew} > ${sameRoomRatioConfidence}`)
+                            findGreaterResult = true
+                            break
+                        }
+                    }
+                    if (!findGreaterResult){
+                        possibleAtSameRoomTemp.push(tempUidList[i])
+                        possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
+                    }
+                    if (findGreaterResult) continue
                 }
                 else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13) 且 
                     // 这个是给刚入局的用的。例如中途加入了某个车。与规则3互相形成互补。
                     // 因过于宽松26-06-18起调整倍率为与sameRoomRatio一致。原倍率sameRoomRatioToTotalConfidence暂时不用
-                    possibleAtSameRoomTemp.push(tempUidList[i])
-                    possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
-                    console.log(`判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} / 规则2`)
+                    let ratioValue = smallCountInPart /largeCountInTotal    // 记录当前的可能度
+                    let findGreaterResult = false // 是否找到更好的结果
+                    for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
+                        let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
+                        if (index == -1) break
+                        if (tempUidListAppearCount[index] < currentUidChange.length && currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[index]){
+                            let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
+                            let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
+                            if ((smallCountInPartNew / largeCountInTotalNew) > ratioValue){
+                                findGreaterResult = true
+                                console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence}`)
+                                console.log(`G2: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[index] / tempUidListAppearCount[index]} > ${sameRoomRatioConfidence}`)
+                                break
+                            }
+                        }
+                    }
+                    if (!findGreaterResult){
+                        possibleAtSameRoomTemp.push(tempUidList[i])
+                        possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} / 规则2`)
+                    }
+                    if (findGreaterResult) continue
                 }
                 // 如果当前查询UID变动小于待查UID变动呢？
                 else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
@@ -1577,4 +1620,12 @@ function getEventDayRange(startAt: number, server: Server, day: number): { begin
         begin: firstDayEndTime + (day - 2) * 86400000,
         end: firstDayEndTime + (day - 1) * 86400000,
     }
+}
+function findIndexOfArray(arr:any[],value):number{
+    for(let e = 0;e<arr.length;e++){
+        if (arr[e]== value){
+            return e
+        }
+    }
+    return -1
 }
