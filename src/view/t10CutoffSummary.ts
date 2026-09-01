@@ -33,6 +33,15 @@ export async function drawT10CutoffSummary(cutoff: Cutoff, showDailyIncrement: b
         await drawList({ key: '更新时间', text: updateText }),
     ]));
     if (showDailyIncrement) {
+        list.push(line)
+        const tempDayIncrementList = []
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
+        tempDayIncrementList.push(await drawList({
+            key: '日均增',
+            text: `${CutoffAvgDailyIncrementVal}万`
+        }))
+        list.push(drawListMerge(tempDayIncrementList))
+        
         list.push(line);
         const dayCount = cutoff.getDaysOfEvent(latestTime) + 1;
         const eventLength = cutoff.endAt - cutoff.startAt;

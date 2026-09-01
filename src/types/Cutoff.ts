@@ -43,6 +43,7 @@ export class Cutoff {
     isInitfull: boolean = false;
     event:Event;
     dailyIncrement = []
+    dailyIncrementOriginData = []
     currentGetDataTime
     //useHHWX = USE_HHWX_SOURCE_PREFER
     dataSourceName = USE_HHWX_SOURCE_PREFER ? 'HHWX' : 'Bestdori'
@@ -467,6 +468,7 @@ export class Cutoff {
             }
         }
         this.dailyIncrement = dailyIncrement
+        this.dailyIncrementOriginData = scoreFinal
     }
     getYesterdayIncrementRate(days?:number){    // 从0开始。
         if (!this.cutoffs || this.cutoffs.length === 0){
@@ -703,6 +705,10 @@ export class Cutoff {
         return findIndex
 
         // 最喜欢天音了最喜欢天音了最喜欢天音了
+        // 呃呃，我不是音gachi但是我确实喜欢
+        // 天音真的是一个很努力的女生。你们不要黑她好吗，我很喜欢天音的努力，很喜欢他为Morfonica的努力付出
+        // 莲之空是什么不认识。
+        // 眩耀夜行我说真好听吧。
     }
     getChartData(setStartToZero = false): { x: Date, y: number }[] {
         if (this.isExist == false) {
@@ -768,28 +774,12 @@ export class Cutoff {
         return chartData;
     }
     getAvgDailyIncrement(){
-        let endAtCutoff = this.cutoffs.at(-1).time
-        if (this.cutoffs.at(-1).time > this.endAt){
-            endAtCutoff = this.endAt
-        }
-        let CutoffTotalTimeInRecord = endAtCutoff - this.startAt
-        let CutoffTotalScoreInRecord = this.cutoffs.at(-1).ep 
-        //console.log(this.getDaysOfEvent(this.cutoffs.at(0).time))
-        // 时间补偿
-        let date = new Date(this.startAt)
-        date.setHours(3)
-        date.setMinutes(45)
-        date.setSeconds(0)
-        CutoffTotalTimeInRecord +=(Math.abs(this.startAt - date.getTime()))
-        /*
-        // 补最后一天
-        date = new Date(this.endAt + (24*3600*1000))
-        date.setHours(3)
-        date.setMinutes(45)
-        date.setSeconds(0)
-        CutoffTotalTimeInRecord +=(Math.abs(date.getTime() - this.endAt))
-        */
-        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord )* (24*3600*1000)) /10000)
+
+        // 仅从第二天开始统计到倒数第二天结束
+        if (this.dailyIncrementOriginData.length <3) return 0
+        let len = this.dailyIncrementOriginData.length
+        let totalEp = this.dailyIncrementOriginData[len-2] - this.dailyIncrementOriginData[0]
+        let CutoffAvgDailyIncrementVal = Math.round((totalEp /(len-2) ) /10000)
         return CutoffAvgDailyIncrementVal
     }
 
