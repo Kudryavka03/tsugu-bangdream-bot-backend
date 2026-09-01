@@ -463,6 +463,17 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         }))
         list.push(drawListMerge(Line2List))
         list.push(line)
+                // 2026-08-29: @Sora 日均增能更好的反映活动热度
+        const tempDayIncrementList = []
+        // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
+        //console.log(CutoffTotalTimeInRecord,CutoffTotalScoreInRecord,CutoffAvgDailyIncrementVal)
+        tempDayIncrementList.push(await drawList({
+            key: '日均增',
+            text: `${CutoffAvgDailyIncrementVal}万`
+        }))
+        list.push(drawListMerge(tempDayIncrementList))
+        list.push(line)
         const tempList = []
         //console.log(cutoff.dailyIncrement)
         tempList.push((await drawList({
@@ -525,7 +536,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         // 2026-08-29: @Sora 日均增能更好的反映活动热度
         const tempDayIncrementList = []
         // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
-        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
+        let CutoffAvgDailyIncrementVal = cutoffGroupResult[i].getAvgDailyIncrement()
         //console.log(CutoffTotalTimeInRecord,CutoffTotalScoreInRecord,CutoffAvgDailyIncrementVal)
         tempDayIncrementList.push(await drawList({
             key: '日均增',
