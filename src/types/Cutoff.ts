@@ -636,7 +636,7 @@ export class Cutoff {
             let Speed_Old = Math.round(EP_Old / (Time_Old / (1000 * 3600)))
             return Speed_Old
         }
-        console.log(timePrevHour)
+        //console.log(timePrevHour)
         
         let EP = lastCutoffEp - prevHourEp
         let Time = (preCmpTime - prevHourTime) / (1000 * 3600)

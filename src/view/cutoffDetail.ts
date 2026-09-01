@@ -631,8 +631,8 @@ export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutof
     if (debugflags) console.log('debug',new Date(endTime).getHours())
     }
     let length = endTime - startTime
-    console.log('cutoff1 length',length)
-    console.log('cutoff2 length',cutoff2.endAt - cutoff2.startAt)
+    //console.log('cutoff1 length',length)
+    //console.log('cutoff2 length',cutoff2.endAt - cutoff2.startAt)
     let targetLength = startTime + length * present
     // 寻找最符合目标的时间
     let data = cutoff.cutoffs

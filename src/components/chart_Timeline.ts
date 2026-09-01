@@ -39,7 +39,7 @@ export async function drawTimeLineChart(
   // 7. 创建 skia-canvas 实例
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
-  console.log(start,end)
+  //console.log(start,end)
   // scales options
   let days = 0
   let xOptions = {}
