@@ -71,7 +71,7 @@ export async function drawMonthlyRankingTop10(
     }
 
     const monthlyRankingTime = getMonthlyRankingTime(monthlyRanking, mainServer);
-    const trackerTop = new TrackerTop10({
+    let trackerTop = new TrackerTop10({
         eventId: monthlyRankingId,
         server: mainServer,
         type: 'monthly',
@@ -80,7 +80,19 @@ export async function drawMonthlyRankingTop10(
     });
     await trackerTop.initFull();
     if (!trackerTop.isExist) {
-        return [`错误: ${ serverNameFullList[mainServer] } 月榜不存在或数据不足`];
+
+        trackerTop = new TrackerTop10({
+            eventId: --monthlyRankingId,
+            server: mainServer,
+            type: 'monthly',
+            startAt: monthlyRankingTime.startAt,
+            endAt: monthlyRankingTime.endAt,
+        });
+        await trackerTop.initFull();
+        if (!trackerTop.isExist){
+            return [`错误: ${ serverNameFullList[mainServer] } 月榜不存在或数据不足`];
+        }
+
     }
 
     const monthlyCutoff = new Cutoff(monthlyRankingId, mainServer, 10, {

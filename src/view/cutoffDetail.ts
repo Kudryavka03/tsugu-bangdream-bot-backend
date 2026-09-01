@@ -129,10 +129,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(drawListMerge(tempTimeList))
         list.push(line)
         const tempDayIncrementList = []
-        // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
-        let CutoffTotalTimeInRecord = cutoff.cutoffs.at(-3).time - cutoff.cutoffs.at(0).time
-        let CutoffTotalScoreInRecord = cutoff.cutoffs.at(-3).ep - cutoff.cutoffs.at(0).ep
-        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord )* (24*3600*1000)) /10000)
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
         tempDayIncrementList.push(await drawList({
             key: '日均增',
             text: `${CutoffAvgDailyIncrementVal}万`
@@ -189,9 +186,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         list.push(line)
         const tempDayIncrementList = []
         // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
-        let CutoffTotalTimeInRecord = cutoff.cutoffs.at(-3).time - cutoff.cutoffs.at(0).time
-        let CutoffTotalScoreInRecord = cutoff.cutoffs.at(-3).ep - cutoff.cutoffs.at(0).ep
-        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord )* (24*3600*1000)) /10000)
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
         tempDayIncrementList.push(await drawList({
             key: '日均增',
             text: `${CutoffAvgDailyIncrementVal}万`
@@ -414,10 +409,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         list.push(line)
         // 2026-08-29: @Sora 日均增能更好的反映活动热度
         const tempDayIncrementList = []
-        // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
-        let CutoffTotalTimeInRecord = cutoff.cutoffs.at(-3).time - cutoff.cutoffs.at(0).time
-        let CutoffTotalScoreInRecord = cutoff.cutoffs.at(-3).ep - cutoff.cutoffs.at(0).ep
-        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord )* (24*3600*1000)) /10000)
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
         tempDayIncrementList.push(await drawList({
             key: '日均增',
             text: `${CutoffAvgDailyIncrementVal}万`
@@ -533,10 +525,8 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         // 2026-08-29: @Sora 日均增能更好的反映活动热度
         const tempDayIncrementList = []
         // 由于每个时段不一样，因此日均增应该作为大概数值参考，以w为单位
-        let CutoffTotalTimeInRecord = cutoffGroupResult[i].cutoffs.at(-3).time - cutoffGroupResult[i].cutoffs.at(0).time
-        let CutoffTotalScoreInRecord = cutoffGroupResult[i].cutoffs.at(-3).ep - cutoffGroupResult[i].cutoffs.at(0).ep
-        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord)* (24*3600*1000)) /10000)
-        console.log(CutoffTotalTimeInRecord,CutoffTotalScoreInRecord,CutoffAvgDailyIncrementVal)
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
+        //console.log(CutoffTotalTimeInRecord,CutoffTotalScoreInRecord,CutoffAvgDailyIncrementVal)
         tempDayIncrementList.push(await drawList({
             key: '日均增',
             text: `${CutoffAvgDailyIncrementVal}万`

@@ -7,7 +7,8 @@ import { Cutoff } from '@/types/Cutoff';
 export async function drawT10CutoffSummary(cutoff: Cutoff, showDailyIncrement: boolean = true): Promise<Array<Image | Canvas>> {
     const list: Array<Image | Canvas> = [];
     const now = Date.now();
-    const latestTime = cutoff.latestCutoff?.time ?? cutoff.startAt;
+    let latestTime = cutoff.latestCutoff?.time ?? cutoff.startAt;
+    if (latestTime > cutoff.endAt) latestTime = cutoff.endAt
     const latestScore = cutoff.latestCutoff?.ep ?? 0;
     const speed = cutoff.cutoffs?.length > 1 ? cutoff.getAnyCutoffSpeedByTime() : 0;
 

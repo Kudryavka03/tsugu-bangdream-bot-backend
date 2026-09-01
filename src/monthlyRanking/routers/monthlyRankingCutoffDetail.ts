@@ -46,7 +46,7 @@ export async function commandMonthlyRankingCutoffDetail(mainServer: Server, tier
         }
         monthlyRankingId = presentMonthlyRanking.monthlyRankingId;
     }
-    if (Number(tier) === 10) {
+    if (Number(tier) === 10 ||  tier ==10 ) {
         return await drawMonthlyRankingTop10(Number(monthlyRankingId), mainServer, compress ?? false);
     }
     if (typeof(monthlyRankingId) == 'string') {

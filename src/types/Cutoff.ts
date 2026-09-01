@@ -324,7 +324,26 @@ export class Cutoff {
             return Math.ceil((timestamp - firstDayEndTime) / 86400000)
         }
     }
+    preProcessCutoff(){ // 数据预处理
+        if (this.status == "ended"){
+            let finalValue = this.cutoffs.at(-1).ep
+            for(let i = this.cutoffs.length-1;i>0;i--){
+                if (this.cutoffs[i].time > this.endAt){
+                    this.cutoffs.pop()
+                    continue
+                }
+                if (this.cutoffs[i].ep > finalValue){
+                    this.cutoffs[i].ep = finalValue
+                    continue
+                }
+                if (this.cutoffs[i].ep <= finalValue){
+                    break
+                }
+            }
+        }
+    }
     getDailyIncrement(divisor: number = 10000){
+        this.preProcessCutoff()
         if (!Number.isFinite(divisor) || divisor <= 0) divisor = 10000
         let score:number[] = []
         let time:number[] = []
@@ -333,6 +352,7 @@ export class Cutoff {
         }
         let nearest345Ts: { score: number; time: number }[] = [];
         let daysFlags = -1
+        
         for (const c of this.cutoffs) {
             const timestamp = normalizeTimestamp(c.time)
             const date = getDateByServerTimezone(timestamp, this.server)
@@ -746,6 +766,31 @@ export class Cutoff {
             tempTime = element.time;
         }
         return chartData;
+    }
+    getAvgDailyIncrement(){
+        let endAtCutoff = this.cutoffs.at(-1).time
+        if (this.cutoffs.at(-1).time > this.endAt){
+            endAtCutoff = this.endAt
+        }
+        let CutoffTotalTimeInRecord = endAtCutoff - this.startAt
+        let CutoffTotalScoreInRecord = this.cutoffs.at(-1).ep 
+        //console.log(this.getDaysOfEvent(this.cutoffs.at(0).time))
+        // 时间补偿
+        let date = new Date(this.startAt)
+        date.setHours(3)
+        date.setMinutes(45)
+        date.setSeconds(0)
+        CutoffTotalTimeInRecord +=(Math.abs(this.startAt - date.getTime()))
+        /*
+        // 补最后一天
+        date = new Date(this.endAt + (24*3600*1000))
+        date.setHours(3)
+        date.setMinutes(45)
+        date.setSeconds(0)
+        CutoffTotalTimeInRecord +=(Math.abs(date.getTime() - this.endAt))
+        */
+        let CutoffAvgDailyIncrementVal = Math.round(((CutoffTotalScoreInRecord /CutoffTotalTimeInRecord )* (24*3600*1000)) /10000)
+        return CutoffAvgDailyIncrementVal
     }
 
 }
