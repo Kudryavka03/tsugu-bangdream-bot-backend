@@ -65,19 +65,35 @@ export async function drawRoonInList(room: Room) {
         maxWidth: maxWidthText
     })
     textList.push(timesFrom )
-    const regex = /\d+\s*(?:w|万)[\s\S]*?q\d+.{0,12}/gi;
-    const matches = room.rawMessage.match(regex);
-    const regex2 = /\b\d{6}\b[\s\S]*?q\d+.{0,2}/gi;
+    const regex1 = /\d+\s*(?:w|万)[\s\S]*?q\d+.{0,12}/gi;
+    const regex2 = /\b\d{6}\b[\s\S]*?q\d+.{0,12}/gi;
+    const regex3 = /\b\d{6}\b[\s\S]*?\d+\s*(?:w|万)\s*\d+/gi;
+
+    const matches1 = room.rawMessage.match(regex1);
     const matches2 = room.rawMessage.match(regex2);
-    const filteredText = matches?.join(' ') ?? matches2?.join(' ') ?? '无法提取说明，可能为无效车牌';
-    const roomNumberText = matches?room.number.toString() + ' ':''
-    if (!(matches || matches2))console.log('无法提取车牌：',room.number,room.rawMessage)
-    var rawMsg = await drawText({
-        text: roomNumberText + filteredText, //room.rawMessage
+    const matches3 = room.rawMessage.match(regex3);
+
+    const filteredMatches = matches1 || matches2 || matches3;
+
+    const filteredText = filteredMatches
+        ? filteredMatches.join(' ')
+        : '无法提取说明，可能为无效车牌';
+
+    const roomNumberText = filteredMatches
+        ? `${room.number} `
+        : '';
+
+    if (!filteredMatches) {
+        console.log('无法提取车牌：', room.number, room.rawMessage);
+    }
+
+    const rawMsg = await drawText({
+        text: roomNumberText + filteredText,
         textSize: 40,
         maxWidth: maxWidthText
-    })
-    textList.push(rawMsg)
+    });
+
+    textList.push(rawMsg);
 
     //画text
     const textImage = stackImage(textList)
