@@ -65,9 +65,15 @@ export async function drawRoonInList(room: Room) {
         maxWidth: maxWidthText
     })
     textList.push(timesFrom )
-
+    const regex = /\d+\s*(?:w|万)[\s\S]*?q\d+.{0,12}/gi;
+    const matches = room.rawMessage.match(regex);
+    const regex2 = /\b\d{6}\b[\s\S]*?q\d+.{0,2}/gi;
+    const matches2 = room.rawMessage.match(regex2);
+    const filteredText = matches?.join(' ') ?? matches2?.join(' ') ?? '无法提取说明，可能为无效车牌';
+    const roomNumberText = matches?room.number.toString() + ' ':''
+    if (!(matches || matches2))console.log('无法提取车牌：',room.number,room.rawMessage)
     var rawMsg = await drawText({
-        text: room.rawMessage,
+        text: roomNumberText + filteredText, //room.rawMessage
         textSize: 40,
         maxWidth: maxWidthText
     })
