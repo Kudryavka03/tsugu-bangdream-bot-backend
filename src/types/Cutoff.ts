@@ -797,13 +797,14 @@ export class Cutoff {
         }
         return chartData;
     }
-    getAvgDailyIncrement(){
+    getAvgDailyIncrement(acc:number=10000){
 
         // 仅从第二天开始统计到倒数第二天结束
+        console.log(this.dailyIncrementOriginData.length)
         if (this.dailyIncrementOriginData.length <3) return 0
         let len = this.dailyIncrementOriginData.length
         let totalEp = this.dailyIncrementOriginData[len-2] - this.dailyIncrementOriginData[0]
-        let CutoffAvgDailyIncrementVal = Math.round((totalEp /(len-2) ) /10000)
+        let CutoffAvgDailyIncrementVal = Math.round((totalEp /(len-2) ) /acc)
         return CutoffAvgDailyIncrementVal
     }
 

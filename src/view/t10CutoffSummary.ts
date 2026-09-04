@@ -35,10 +35,10 @@ export async function drawT10CutoffSummary(cutoff: Cutoff, showDailyIncrement: b
     if (showDailyIncrement) {
         list.push(line)
         const tempDayIncrementList = []
-        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement()
+        let CutoffAvgDailyIncrementVal = cutoff.getAvgDailyIncrement(1)
         tempDayIncrementList.push(await drawList({
             key: '日均增',
-            text: `${CutoffAvgDailyIncrementVal}万`
+            text: `${CutoffAvgDailyIncrementVal}`
         }))
         list.push(drawListMerge(tempDayIncrementList))
         
