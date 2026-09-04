@@ -256,12 +256,28 @@ export class Cutoff {
             return null;
         }
     }
-    checkCanBePredict(timestamp:number){   // 只允许15/45分的数据被用于预测。
+    checkCanBeReduce(timestamp:number){   // 只允许15/45分的数据被用于预测。
         let tempDateMin = new Date(timestamp).getMinutes()
         if (tempDateMin == 15 || tempDateMin == 45){
             return true
         }
         return false
+    }
+    reduceAcc(useMillSecond:boolean = false,addLastestRecord:boolean=true,changeOrigin:boolean = false){
+        var rate = 1000
+        if (useMillSecond) rate = 1
+        const cutoff_ts: { time: number, ep: number }[] = []
+        //let cutoff_ori:Cutoff["cutoffs"]
+        for (let i = 0; i < this.cutoffs.length-1; i++) {
+            if (this.checkCanBeReduce(this.cutoffs[i].time) || i==0){
+                const element = this.cutoffs[i]
+                cutoff_ts.push({ time: Math.floor(element.time / rate), ep: element.ep })
+                //if (changeOrigin) cutoff_ori.push({ time: Math.floor(element.time / rate), ep: element.ep})
+            }
+        }
+        if (addLastestRecord) cutoff_ts.push({ time: (this.cutoffs.at(-1).time/rate), ep: (this.cutoffs.at(-1).ep) })
+        if (changeOrigin) this.cutoffs = cutoff_ts
+        return cutoff_ts
     }
     getPredictionHistory(): { time: number, ep: number }[] {
         if (this.isExist == false || !this.cutoffs) {
@@ -273,7 +289,7 @@ export class Cutoff {
         const cutoff_ts: { time: number, ep: number,index:number }[] = []
         // 精简PredictionHistory，加快计算速度。
         for (let i = 0; i < this.cutoffs.length; i++) {
-            if (this.checkCanBePredict(this.cutoffs[i].time) || i==0){
+            if (this.checkCanBeReduce(this.cutoffs[i].time) || i==0){
                 const element = this.cutoffs[i]
                 cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep,index:i })
             }
@@ -707,6 +723,7 @@ export class Cutoff {
         // 最喜欢天音了最喜欢天音了最喜欢天音了
         // 呃呃，我不是音gachi但是我确实喜欢
         // 天音真的是一个很努力的女生。你们不要黑她好吗，我很喜欢天音的努力，很喜欢他为Morfonica的努力付出
+
         // 莲之空是什么不认识。
         // 眩耀夜行我说真好听吧。
     }
@@ -723,11 +740,13 @@ export class Cutoff {
         }
 
         // 在访问 this.cutoffs[0].time 之前检查 this.cutoffs 是否存在且长度大于0
-        let tempTime = this.cutoffs && this.cutoffs.length > 0 ? this.cutoffs[0].time : null;
+        // 对Chart的精度进行下降，加快绘制速度
+        let chartDataReduce = this.cutoffs.length > 580?this.reduceAcc(true,true,false):this.cutoffs
+        let tempTime = chartDataReduce && chartDataReduce.length > 0 ? chartDataReduce[0].time : null;
         // 如果 tempTime 为 null，则后续逻辑应当考虑这种情况以避免错误
         let ep = -1
-        for (let i = 0; i < this.cutoffs.length; i++) {
-            const element = this.cutoffs[i];
+        for (let i = 0; i < chartDataReduce.length; i++) {
+            const element = chartDataReduce[i];
             if (element.ep>=ep){ // 260730: 不记录比上一次ep少的数据
                 ep = element.ep
             }else if (element.ep<ep){

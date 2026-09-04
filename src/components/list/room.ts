@@ -77,7 +77,7 @@ export async function drawRoonInList(room: Room) {
 
     const filteredText = filteredMatches
         ? filteredMatches.join(' ')
-        : '无法提取说明，可能为无效车牌';
+        : room.number.toString() + ' 无法提取说明，可能为无效车牌';
 
     const roomNumberText = filteredMatches
         ? `${room.number} `

@@ -651,10 +651,10 @@ export function getTimePresentEP(cutoff:Cutoff,present:number,ratio:number,cutof
     let index1 = 0
     let findLeft = true // 是否往左找
     let stopFlags = false
-    let presentNearest = 99999
-    let presentNearestIndex = 99999
-    let absPresent = 9999999
-    let curPresent = 888888888
+    let presentNearest = Infinity
+    let presentNearestIndex = Infinity
+    let absPresent = Infinity
+    let curPresent = Infinity
     while (!stopFlags){
         if(debugflags)console.log('index:',index,'index1',index1)
         if (index > data.length-1){

@@ -11,16 +11,22 @@ import { drawCardListInList } from '@/components/list/cardIconList'
 import { drawSdcharaInList } from '@/components/list/cardSdchara'
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { drawGachaDatablock } from '@/components/dataBlock/gacha'
-import { Image, Canvas } from 'skia-canvas'
+import { Image, Canvas, loadImage } from 'skia-canvas'
 import { Server } from '@/types/Server';
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { Event } from '@/types/Event';
 import { Gacha } from '@/types/Gacha';
 import { globalDefaultServer, serverNameFullList } from '@/config';
+import * as fs from 'fs';
 
 
 async function drawCardDetail(cardId: number, displayedServerList: Server[] = globalDefaultServer, useEasyBG: boolean, compress: boolean): Promise<Array<string | Buffer>> {
+    if (cardId == 947){
+        let list = []
+        list.push(await fs.readFileSync('947.jpeg'))
+        return list
+    }
     const card = new Card(cardId)
     if (!card.isExist) {
         return ['错误: 卡牌不存在']
@@ -37,6 +43,7 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     ///list.push(new Canvas(800, 30))
     var drawCardIllustrationPromise: Promise<Canvas>[] = []
     var trainingStatusListLength = trainingStatusList.length
+    
     if(card.cardId === 947) trainingStatusListLength = 1; // 不允许返回947的花后卡面
     //插画
     for (let i = 0; i < trainingStatusListLength; i++) {

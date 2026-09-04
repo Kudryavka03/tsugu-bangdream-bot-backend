@@ -9,6 +9,8 @@ import { drawList } from '@/components/list'
 import { stackImage } from '@/components/utils'
 
 export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp'],drawPredict=false,drawPredictHistory=true) {
+    // drawPredict是官方的
+    // drawPredictHistory是后加上去的
     //setStartToZero:是否将开始时间设置为0
     var datasets = []
     var time = new Date().getTime()
@@ -81,7 +83,8 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
 
             if (cutoff.predictEP != null && cutoff.predictEP != 0) {
                 let data = []
-                const history = drawPredictHistory?cutoff.getPredictionHistory():[]
+                if (!drawPredictHistory)break
+                const history = cutoff.getPredictionHistory()
                 if (history.length > 0) {
                     if (setStartToZero) {
                         for (const p of history) {
