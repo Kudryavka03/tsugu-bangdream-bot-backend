@@ -283,85 +283,151 @@ export class MonthlyRankingCutoff {
         return Math.ceil((timestamp - firstDayEndTime) / 86400000);
     }
 
-    getDailyIncrement() {
-        const score: number[] = [];
-        const time: number[] = [];
-        if (!this.cutoffs || this.cutoffs.length === 0) {
-            return;
+    preProcessCutoff(){ // 数据预处理
+        if (this.status == "ended"){
+            let finalValue = this.cutoffs.at(-1).ep
+            for(let i = this.cutoffs.length-1;i>0;i--){
+                if (this.cutoffs[i].time > this.endAt){
+                    this.cutoffs.pop()
+                    continue
+                }
+                if (this.cutoffs[i].ep > finalValue){
+                    this.cutoffs[i].ep = finalValue
+                    continue
+                }
+                if (this.cutoffs[i].ep <= finalValue){
+                    break
+                }
+            }
         }
-
+    }
+    getDailyIncrement(divisor: number = 10000){
+        this.preProcessCutoff()
+        if (!Number.isFinite(divisor) || divisor <= 0) divisor = 10000
+        let score:number[] = []
+        let time:number[] = []
+        if (!this.cutoffs || this.cutoffs.length === 0){
+            return
+        }
+        let nearest345Ts: { score: number; time: number }[] = [];
+        let daysFlags = -1
+        
         for (const c of this.cutoffs) {
-            const timestamp = normalizeTimestamp(c.time);
-            const date = getDateByServerTimezone(timestamp, this.server);
+            const timestamp = normalizeTimestamp(c.time)
+            const date = getDateByServerTimezone(timestamp, this.server)
 
-            // 转换为对应服务器的本地时间进行判断
-            const localHour = date.getUTCHours();
-            const localMinute = date.getUTCMinutes();
+            if ((this.server == Server.cn || this.server == Server.tw || this.server == Server.jp)&&date.getUTCHours() === 3 ) {
+                let utcmin = date.getUTCMinutes()
+                if (utcmin ===45){
+                    console.log('find 3:45',timestamp,c.ep)
+                    score.push(c.ep)
+                    time.push(timestamp)
+                    nearest345Ts = []
+                    daysFlags = -1
+                    continue
+                }else{
+                    if (utcmin > (45-5) &&  utcmin <(45+5)){    // 10分钟的容错
+                        nearest345Ts.push({score:c.ep,time:timestamp})
+                        daysFlags = date.getUTCDay()
+                    }else if (utcmin > (45+10)){
+                        if (daysFlags!=-1 && nearest345Ts.length!=0){
+                            let absLess =Infinity
+                            let t345 = new Date(nearest345Ts[0].time).setUTCMinutes(45)
+                            let TimeFind = -1
+                            let ValueFind = -1
+                            t345 = new Date(t345).setUTCMilliseconds(0)
+                            if (nearest345Ts.length==0) daysFlags=-1
+                            if (nearest345Ts.length==1){
+                                score.push(nearest345Ts[0].score)
+                                time.push(nearest345Ts[0].time)
+                                nearest345Ts=[]
+                                daysFlags=-1
+                            }else if(daysFlags!=-1){
+                                //console.log(nearest345Ts)
+                                // 查找最接近3:45的
+                                nearest345Ts.forEach(x=>{
+                                    let t = Math.abs(t345-x.time)
+                                    if (t <=absLess){
+                                        TimeFind = x.time
+                                        ValueFind = x.score
+                                    }
+                                })
+                                //console.log(ValueFind,TimeFind)
+                                ValueFind>0?score.push(ValueFind):null
+                                TimeFind>0?time.push(TimeFind):null
+                                daysFlags=-1
+                                nearest345Ts=[]
+                            }
+                        }
+                        daysFlags=-1
+                    }
+                }
 
-            // 筛选出每天凌晨 4 点的数据点（因为 1min 一次，直接匹配 4:00）
-            if (localHour === 4 && localMinute === 0) {
-                score.push(c.ep);
-                time.push(timestamp);
             }
         }
-
-        const dailyIncrement: string[] = [];
-        const dailyIncrementInvaildDays: number[] = [];
-        const scoreFinal: number[] = [];
-        let j = 0;
-        const cutoffLastDataDays = this.getDaysOfEvent(this.cutoffs[this.cutoffs.length - 1].time);
-
-        if (score.length == 0) {
-            for (let i = 0; i <= this.getDaysOfEvent(this.cutoffs[this.cutoffs.length - 1].time); i++) {
-                if (this.getDaysOfEvent(this.cutoffs[this.cutoffs.length - 1].time) == 0) {
-                    scoreFinal.push(this.cutoffs[this.cutoffs.length - 1].ep);
-                    break;
+        let dailyIncrement = []
+        let dailyIncrementInvaildDays:number[]  = []
+        let scoreFinal:number[] = []
+        var j = 0   // 临时天数存放
+        var cutoffLastDataDays = this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time)   // 最后一个数据的天数
+        // 头处理
+        if (score.length == 0){
+            for (var i = 0;i<=this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time);i++){
+                if (this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time) == 0){
+                    scoreFinal.push(this.cutoffs[this.cutoffs.length-1].ep)
+                    break
                 }
-                const avgIncrementValue = Math.round(((this.cutoffs[this.cutoffs.length - 1].ep) / (this.getDaysOfEvent(this.cutoffs[this.cutoffs.length - 1].time))));
-                scoreFinal.push(Math.round(avgIncrementValue * (i + 1)));
-                dailyIncrementInvaildDays.push(scoreFinal.length - 1);
-                j++;
+                let avgIncrementValue = Math.round(((this.cutoffs[this.cutoffs.length-1].ep)/(this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time))))    // 计算丢失的天数的平均增量
+                scoreFinal.push(Math.round(avgIncrementValue * (i+1)))  // 把丢失的天数的数据补全
+                dailyIncrementInvaildDays.push(scoreFinal.length-1)  // 记录增量数据不完整的天数位置
+                j++ // 增加一天
             }
         }
-
-        for (let i = 0; i < score.length; i++) {
-            if (score.length == 0) break;
-            if (this.getDaysOfEvent(time[i]) == j) {
-                if (this.getDaysOfEvent(time[i]) == 0) {
-                    scoreFinal.push(score[i]);
-                    j++;
-                } else {
-                    scoreFinal.push(score[i]);
-                    j++;
+        
+        for (var i = 0;i<score.length;i++){
+            if (score.length == 0) break
+            if (this.getDaysOfEvent(time[i]) == j){ // 如果当天相对于活动而言天数是i，说明数据完整
+                if (this.getDaysOfEvent(time[i]) == 0){ // 如果是第0天，且有数据，说明第一天虽然不满24小时，但有数据了，就直接把第一天增量设为当天的ep
+                    scoreFinal.push(score[i])
+                    j++
                 }
-            } else {
-                if (this.getDaysOfEvent(time[i]) > j) {
-                    const lostDays = this.getDaysOfEvent(time[i]) - j + 1;
-                    const avgIncrementValue = Math.round((i == 0 ? (score[i] - 0) : (score[i] - score[i - 1])) / lostDays);
-                    for (let ld = 0; ld < lostDays; ld++) {
-                        scoreFinal.push(Math.round(i == 0 ? 0 + avgIncrementValue * (ld + 1) : score[i - 1] + avgIncrementValue * (ld + 1)));
-                        dailyIncrementInvaildDays.push(scoreFinal.length - 1);
-                        j++;
+                else{       // 如果是第i天，且有数据，说明当天数据完整，直接用当天的ep减去前一天的ep就是当天的增量
+                    scoreFinal.push(score[i])
+                    j++
+                }
+            }else{  // i跟相对于getDaysOfEvent的结果不一致，说明当天数据不完整，进行插值计算
+                // 当i = 0时，就说明要从0开始而不是score[i-1]开始插值
+                if (this.getDaysOfEvent(time[i]) > j){  // 如果这个数据是大于标记天数的，则说明需要进行插值计算
+                    let lostDays = this.getDaysOfEvent(time[i]) - j +1
+                    let avgIncrementValue = Math.round((i==0?(score[i] - 0):(score[i] - score[i-1]))/lostDays)    // 计算丢失的天数的平均增量
+                    for (var ld = 0;ld<lostDays;ld++){
+                        scoreFinal.push(Math.round(i==0?0+ avgIncrementValue * (ld+1):score[i-1] + avgIncrementValue * (ld+1)))  // 把丢失的天数的数据补全
+                        dailyIncrementInvaildDays.push(scoreFinal.length-1)  // 记录增量数据不完整的天数位置
+                        j++ // 增加一天
                     }
                 }
             }
         }
-
-        if (score.length != 0) {
-            for (let i = 0; i < cutoffLastDataDays - this.getDaysOfEvent(time[time.length - 1]); i++) {
-                if (score.length == 0) break;
-                const avgIncrementValue = Math.round(((this.cutoffs[this.cutoffs.length - 1].ep - score[score.length - 1])) / (cutoffLastDataDays - this.getDaysOfEvent(time[time.length - 1])));
-                scoreFinal.push(Math.round(score[score.length - 1] + avgIncrementValue * (i + 1)));
-                if (cutoffLastDataDays - this.getDaysOfEvent(time[time.length - 1]) > 1) dailyIncrementInvaildDays.push(scoreFinal.length - 1);
-                j++;
+        // 尾处理 。当尾巴 this.getDaysOfEvent(time[time.length-1])不为1的时候，就说明尾是有多项数据缺失
+        if (score.length != 0){
+            for(var i = 0;i<cutoffLastDataDays - this.getDaysOfEvent(time[time.length-1]);i++){   // 如果tracker最后一个数据日期跟score最后一个数据的日期有差异，说名是尾巴，要处理
+                if (score.length == 0) break
+                let avgIncrementValue = Math.round(((this.cutoffs[this.cutoffs.length-1].ep - score[score.length-1]))/(cutoffLastDataDays - this.getDaysOfEvent(time[time.length-1])))    // 计算丢失的天数的平均增量
+                scoreFinal.push(Math.round(score[score.length-1] + avgIncrementValue * (i+1)))  // 把丢失的天数的数据补全
+                if(cutoffLastDataDays - this.getDaysOfEvent(time[time.length-1]) > 1)dailyIncrementInvaildDays.push(scoreFinal.length-1)
+                j++ // 因该是没什么用的了，还是加一下吧
             }
         }
-
-        for (let i = 0; i < scoreFinal.length; i++) {
-            const val = i === 0 ? scoreFinal[i] : (scoreFinal[i] - scoreFinal[i - 1]);
-            dailyIncrement.push(`${ Math.round(val) }${ dailyIncrementInvaildDays.includes(i) ? '!' : '' }`);
+        for (var i = 0;i<scoreFinal.length;i++){   // 计算增量
+            if (i == 0){
+                    dailyIncrement.push(`${Math.round(scoreFinal[i]/divisor)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}`)
+            }
+            else{
+                    dailyIncrement.push(`${Math.round((scoreFinal[i] - scoreFinal[i-1])/divisor)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}` )
+            }
         }
-        this.dailyIncrement = dailyIncrement;
+        this.dailyIncrement = dailyIncrement
+        //this.dailyIncrementOriginData = scoreFinal
     }
 
     getYesterdayIncrementRate() {

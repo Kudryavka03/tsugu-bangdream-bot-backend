@@ -39,23 +39,18 @@ export function getTopTierCutoffs(
     const result: { time: number, ep: number }[] = [];
     let maxIndex = 10
     let maxIndexFlags = 0
-    for (let index = 1;index<points.length;index++){
-        if (points[index].time!=timeFlags){
-            maxIndexFlags = 0
-            timeFlags = points[index].time
-        }
-         maxIndexFlags++
-        if (maxIndexFlags == maxIndex){
+    
+    for (let index = 0;index<points.length;index++){
+        if (maxIndexFlags == maxIndex && points[index].time!=timeFlags){
+            maxIndexFlags=0
             result.push({time:points[index].time, ep:points[index].value })
-            index+=9
-            continue
+            timeFlags = points[index].time  // 更新时间
+            //onsole.log()
+            index+=(maxIndex-1)    // +9，考虑性能问题你要
+            maxIndexFlags+=(maxIndex-1)
+            
         }
-       
-        if (index == points.length-1){
-            result.push({time:points[index].time, ep:points[index].value })
-            continue
-        }
-
+        maxIndexFlags++ // 当前index+1
     }
     result.sort((a, b) =>a.time -b.time);
     /*

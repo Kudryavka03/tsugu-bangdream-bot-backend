@@ -343,6 +343,7 @@ export class Cutoff {
     }
     preProcessCutoff(){ // 数据预处理
         if (this.status == "ended"){
+            //console.log('预处理啊开始')
             let finalValue = this.cutoffs.at(-1).ep
             for(let i = this.cutoffs.length-1;i>0;i--){
                 if (this.cutoffs[i].time > this.endAt){
@@ -369,14 +370,17 @@ export class Cutoff {
         }
         let nearest345Ts: { score: number; time: number }[] = [];
         let daysFlags = -1
+        console.log(this.server== Server.cn)
         
         for (const c of this.cutoffs) {
             const timestamp = normalizeTimestamp(c.time)
             const date = getDateByServerTimezone(timestamp, this.server)
-
+//console.log(date.getUTCHours(),date.getUTCMinutes())
             if ((this.server == Server.cn || this.server == Server.tw || this.server == Server.jp)&&date.getUTCHours() === 3 ) {
+                
                 let utcmin = date.getUTCMinutes()
                 if (utcmin ===45){
+                    //console.log('find 3:45',timestamp,c.ep)
                     score.push(c.ep)
                     time.push(timestamp)
                     nearest345Ts = []
@@ -419,7 +423,6 @@ export class Cutoff {
                         daysFlags=-1
                     }
                 }
-
             }
         }
         let dailyIncrement = []

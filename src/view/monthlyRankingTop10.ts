@@ -79,6 +79,7 @@ export async function drawMonthlyRankingTop10(
         endAt: monthlyRankingTime.endAt,
     });
     await trackerTop.initFull();
+    //console.log(trackerTop.points)
     if (!trackerTop.isExist) {
 
         trackerTop = new TrackerTop10({
