@@ -38,17 +38,21 @@ export function getTopTierCutoffs(
     let timeFlags = 0
     const result: { time: number, ep: number }[] = [];
     let maxIndex = 10
-    let maxIndexFlags = 0
+    let maxIndexFlags = 1
     
     for (let index = 0;index<points.length;index++){
-        if (maxIndexFlags == maxIndex && points[index].time!=timeFlags){
-            maxIndexFlags=0
+        if (index==points.length-1){
+            result.push({time:points[index].time, ep:points[index].value })
+            continue
+        }
+        if (maxIndexFlags == maxIndex && points[index].time!=timeFlags && index!=points.length-1){
+            maxIndexFlags=1
             result.push({time:points[index].time, ep:points[index].value })
             timeFlags = points[index].time  // 更新时间
             //onsole.log()
-            index+=(maxIndex-1)    // +9，考虑性能问题你要
+            index+=(maxIndex-1)    // 要定位到最后一名，所以+9，如果是+10就是t1.先+8再由外层index++自增1.
             maxIndexFlags+=(maxIndex-1)
-            
+            continue
         }
         maxIndexFlags++ // 当前index+1
     }

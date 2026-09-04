@@ -345,6 +345,7 @@ export class Cutoff {
         if (this.status == "ended"){
             //console.log('预处理啊开始')
             let finalValue = this.cutoffs.at(-1).ep
+            console.log(finalValue)
             for(let i = this.cutoffs.length-1;i>0;i--){
                 if (this.cutoffs[i].time > this.endAt){
                     this.cutoffs.pop()
@@ -358,6 +359,7 @@ export class Cutoff {
                     break
                 }
             }
+            this.cutoffs.at(-1).ep = finalValue
         }
     }
     getDailyIncrement(divisor: number = 10000){
