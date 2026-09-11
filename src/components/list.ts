@@ -366,7 +366,53 @@ export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number
                 ctx.drawImage(line, x - 5, 0)
             }
         }
+
         x += maxWidth / imageList.length
+    }
+    return canvas
+}
+
+//横向组合较短list，高度为最高的list，宽度不平分
+export function drawListMergeWithoutWidth(imageList: Array<Canvas | Image>, maxWidth: number = 800, drawLine: boolean = false, align: "top" | "bottom" | "center" = "top"): Canvas {
+    var maxHeight = 0
+    for (let i = 0; i < imageList.length; i++) {
+        const element = imageList[i];
+        if (element && element.height > maxHeight) {
+            maxHeight = element.height
+        }
+    }
+    var canvas = new Canvas(maxWidth, maxHeight)
+    var ctx = canvas.getContext('2d')
+    var x = 0
+    const line: Canvas = drawDottedLine({
+        width: 10,
+        height: canvas.height,
+        startX: 5,
+        startY: 5,
+        endX: 5,
+        endY: canvas.height - 5,
+        radius: 2,
+        gap: 10,
+        color: "#a8a8a8"
+    })
+    for (let i = 0; i < imageList.length; i++) {
+        const element = imageList[i];
+        if (element) {
+            var y
+            if (align == "top")
+                y = 0
+            else if (align == "bottom")
+                y = maxHeight - element.height
+            else 
+                y = (maxHeight - element.height) / 2
+            ctx.drawImage(element, x, y)
+            if (drawLine && i > 0) {
+                ctx.drawImage(line, x - 5, 0)
+            }
+        }
+        //console.log(element.width)
+        //console.log(maxWidth / imageList.length)
+        x += element.width+10
     }
     return canvas
 }
