@@ -634,7 +634,7 @@ export class Cutoff {
         //this.pCutoffData = this.pCutoffs
         
     }
-    getAnyCutoffSpeedByTime(ts:number=0){
+    getAnyCutoffSpeedByTime(ts:number=0,prevTimeOffset:number=3600000){
         // 如果ts有明确的时间戳的，则以ts作为时间，查找该时间往前1小时的两个时间戳。
         if (!this.cutoffs || this.cutoffs.length < 2) return 0
         
@@ -644,11 +644,11 @@ export class Cutoff {
         if (!targetIndex) return 0  // 检查这个时间戳是否存在，不存在就直接返回0
         let lastCutoffEp = this.cutoffs[targetIndex].ep
         let preCmpTime = this.cutoffs[targetIndex].time // 传入的时间
-        let timePrevHour = (preCmpTime - 3600000)
+        let timePrevHour = (preCmpTime - prevTimeOffset)
         let prevHourIndex = this.findNearestTsIndex(timePrevHour)
         let prevHourEp = this.cutoffs[prevHourIndex].ep
         let prevHourTime = this.cutoffs[prevHourIndex].time
-        if (prevHourIndex == 0 || ((lastCutoffTime - prevHourTime) > (3600000 *2))){
+        if (prevHourIndex == 0 || ((lastCutoffTime - prevHourTime) > (prevTimeOffset *2))){
             // callback to old calc func
             console.log('callback to old logic')
             let currenetTs = ts ? this.findNearestTsIndex(ts) : this.cutoffs.length - 1

@@ -73,7 +73,10 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
 
         //预测线和时速
         const cutoffs = cutoff.cutoffs
+                //预测线和时速
         const speed = cutoff.getAnyCutoffSpeedByTime()
+        const speed15min = cutoff.getAnyCutoffSpeedByTime(0,15*60*1000)
+        let sameSpeed =speed==speed15min
         //const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
         //const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         const showYcx2 = (tier ==1000||tier==500)
@@ -104,13 +107,15 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
             text: cutoff.latestCutoff.ep.toString()
         })
         tempImageList.push(finalCutoffImage)
+        /*
         tempImageList.push(await drawList({
             key: '数据来源',
             text: `${cutoff.dataSourceName}`
         }))
+*/
         tempImageList.push(await drawList({
-            key: '当前时速',
-            text: `${speed} pt/h`
+            key: sameSpeed?'当前时速':"近15分/1小时 时速",
+            text:sameSpeed? `${speed} pt/h`:`${speed15min}/${speed} pt/h`
         }))
 
 
@@ -354,6 +359,9 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
 
         //预测线和时速
         const speed = cutoff.getAnyCutoffSpeedByTime()
+        const speed15min = cutoff.getAnyCutoffSpeedByTime(0,15*60*1000)
+        let sameSpeed =speed==speed15min
+        //if (speed=speed15min)
         const cutoffs = cutoff.cutoffs
         const showYcx2 = (tier ==1000||tier==500)
         //const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
@@ -389,8 +397,8 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
             text: `${cutoff.dataSourceName}`
         }))
         tempImageList.push(await drawList({
-            key: '当前时速',
-            text: `${speed} pt/h`
+            key: sameSpeed?'当前时速':"近15分/1小时 时速",
+            text:sameSpeed? `${speed} pt/h`:`${speed15min}/${speed} pt/h`
         }))
 
         list.push(drawListMerge(tempImageList)) //合并两个list
@@ -525,9 +533,12 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
             let tpEP:TimePresentEP = getTimePresentEP(cutoffGroupResult[i],precent,compareEventRateOfFirstEvent[i],cutoff)
             if (tpEP.value!=0){
                 let speedCmp = cutoffGroupResult[i].getAnyCutoffSpeedByTime(tpEP.time)
+                let speedCmp1 = cutoffGroupResult[i].getAnyCutoffSpeedByTime(tpEP.time)
+                let speedText =""
+                if (speedCmp==speedCmp1) speedText=`原始15分时速：{speedCmp1} / 补偿15分时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp1)}\n`
                 list.push(await drawList({
                     key: '同一时刻对比',
-                    text: `原始分：${tpEP.value} / 补偿分: ${tpEP.valueWithRatio}\n原始时速：${speedCmp} / 补偿时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp)}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
+                    text: `原始分：${tpEP.value} / 补偿分: ${tpEP.valueWithRatio}\n${speedText}原始时速：${speedCmp} / 补偿时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp)}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
                 }))
                 list.push(line)
             }
