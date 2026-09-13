@@ -25,7 +25,8 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
     let result = []
     var player = new Player(playerId, mainServer)
     //尽可能不使用缓存查询。若等待时间过长，则使用缓存查询
-    await player.initFull(false, 2)
+    // 260914: 使用最新数据
+    await player.initFull(false, 3)
 
     if (player.initError) {
         //result.push(`错误: 查询玩家时发生错误: ${playerId}, 正在使用可用缓存`)

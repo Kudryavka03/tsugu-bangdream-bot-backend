@@ -204,6 +204,7 @@ function getLabelFromRawMessage(rawMsg:string):string[]{
     let obj = {
         "ALIVE":[" a","alive","a车"],
         "EXIST":[" e","exist","e车"],
+        "跳":[" j","jumpin","红黄跳"],
         "SAVIOR OF SONG":["savior of song"," s","sos","s车"],
         "效率自选":["效率自选","效率","自选"],
         "长途":["长","长途"],

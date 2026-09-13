@@ -137,7 +137,7 @@ export async function queryRoomNumberFromBandoriStation(): Promise<Room[]> {
                 roomData['user_info']['bandori_player_brief_info']['user_id'],
                 getServerByName(roomData['user_info']['bandori_player_brief_info']['server'])
             )
-            await player.initFull()
+            await player.initFull(false,1)
             room.setPlayer(player)
         }
         roomList.push(room)
@@ -177,7 +177,7 @@ export async function submitRoomNumber({ number, rawMessage, source, userId, tim
     //玩家数据
     if (userpPlayerInList) {
         const player = new Player(userpPlayerInList.playerId, userpPlayerInList.server)
-        await player.initFull(false, 2)
+        await player.initFull(false, 1)
         if (!player.initError && player.isExist) {
             room.setPlayer(player)
         }

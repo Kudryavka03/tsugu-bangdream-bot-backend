@@ -11,6 +11,7 @@ import { Skill } from '@/types/Skill'
 import { Bestdoriurl } from "@/config"
 import { loadImageFromPath } from '@/image/utils';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
+import { Server } from '@/types/Server'
 var cardTypeIconList: { [type: string]: Image } = {}
 var starList: { [type: string]: Image } = {}
 var limitBreakIcon: Image
@@ -82,7 +83,7 @@ interface drawCardIconOptions {
     skillTypeVisible?: boolean,
     cardTypeVisible?: boolean,
     skillLevel?: number,
-
+    server?:Server
 }
 
 //画卡icon
@@ -94,7 +95,8 @@ export async function drawCardIcon({
     cardIdVisible = false,
     skillTypeVisible = false,
     cardTypeVisible = true,
-    skillLevel
+    skillLevel,
+    server
 }: drawCardIconOptions): Promise<Canvas> {
     trainingStatus = card.ableToTraining(trainingStatus)
     illustTrainingStatus ??= trainingStatus
@@ -104,7 +106,7 @@ export async function drawCardIcon({
     if (card.cardId === 947) illustTrainingStatus = false
     if (!loadImageOnceFinished) await loadImageOnce()
     // ★ 所有异步操作先不 await，而是创建 Promise
-    const pCardIcon = card.getCardIconImage(illustTrainingStatus);
+    const pCardIcon = card.getCardIconImage(illustTrainingStatus,server);
     const pFrame = getCardIconFrame(card.rarity, card.attribute);
     const pAttributeIcon = new Attribute(card.attribute).getIcon();
     const pBandIcon = new Band(card.bandId).getIcon();
@@ -183,19 +185,21 @@ export async function drawCardIcon({
 interface drawCardIllustrationOptions {
     card: Card
     trainingStatus: boolean,
-    isList?: boolean
+    isList?: boolean,
+    server?:Server
 }
 //画卡插画
 export async function drawCardIllustration({
     card,
     trainingStatus,
     isList = false,
+    server
 }: drawCardIllustrationOptions): Promise<Canvas> {
     //console.log('drawCardIllustration')
     trainingStatus = card.ableToTraining(trainingStatus)
     var PromiseList = []
     //var CardIllustrationImage = await card.getCardIllustrationImage(trainingStatus)
-    PromiseList.push(card.getCardIllustrationImage(trainingStatus))
+    PromiseList.push(card.getCardIllustrationImage(trainingStatus,server))
     PromiseList.push(getCardIllustrationFrame(card.rarity, card.attribute))
     var PromiseResult = await Promise.all(PromiseList)
     

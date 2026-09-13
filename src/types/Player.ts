@@ -1,4 +1,4 @@
-import { callAPIAndCacheResponse, existLocalCache } from '@/api/getApi';
+import { callAPIAndCacheResponse } from '@/api/getApi';
 import { Bestdoriurl } from '@/config';
 import { Server } from '@/types/Server'
 import { Card, addStat, Stat } from '@/types/Card'

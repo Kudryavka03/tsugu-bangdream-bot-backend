@@ -117,3 +117,4 @@ export function switchDataSource(){
     return 'Cutoff data source: ' + preferredCutoffDataSourceName
 }
 
+export const queryCardIdResWithServer = 10000

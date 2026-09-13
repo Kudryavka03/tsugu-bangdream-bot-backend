@@ -17,7 +17,7 @@ import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { Event } from '@/types/Event';
 import { Gacha } from '@/types/Gacha';
-import { globalDefaultServer, serverNameFullList } from '@/config';
+import { globalDefaultServer, queryCardIdResWithServer, serverNameFullList } from '@/config';
 import * as fs from 'fs';
 
 
@@ -52,7 +52,8 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
         drawCardIllustrationPromise.push(drawCardIllustration({
             card: card,
             trainingStatus: element,
-            isList: true
+            isList: true,
+            server:cardId>queryCardIdResWithServer?server:null
         }))
         ///list.push(new Canvas(800, 30))
     }
@@ -215,7 +216,7 @@ async function drawCardDetail(cardId: number, displayedServerList: Server[] = gl
     }
 
     var getCardIllustrationImagePromise = []
-    getCardIllustrationImagePromise.push(card.getCardIllustrationImage(true))
+    getCardIllustrationImagePromise.push(card.cardId > queryCardIdResWithServer?card.getCardIllustrationImage(true,server):card.getCardIllustrationImage(true))
 
 
 

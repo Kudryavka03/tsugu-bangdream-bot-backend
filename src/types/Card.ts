@@ -319,36 +319,49 @@ export class Card {
             cardRessetId = formatNumber(cardRessetIdNumber, 4)
         }
         else {
-            cardRessetId = '0200'
-            if (this.cardId > 90000) cardRessetId = '1800'   // 针对国际服的修复
+            //cardRessetId = '0200'
+            if (this.cardId > 90000){
+                cardRessetId = '1800'   // 针对国际服的修复
+            }
+            else{
+                var cardRessetIdNumber: number = Math.floor(this.cardId / 50)
+                var cardRessetId: string = cardRessetIdNumber.toString()
+                cardRessetId = formatNumber(cardRessetIdNumber, 4)
+            }
         }
         return (cardRessetId + '_rip')
     }
-    async getCardIconImage(trainingStatus: boolean): Promise<Image> {
+    async getCardIconImage(trainingStatus: boolean,server?:Server): Promise<Image> {
+        if (this.cardId <10000) server=null
         trainingStatus = this.ableToTraining(trainingStatus)
         const trainingString = trainingStatus ? '_after_training' : '_normal'
-        var tempServer = this.getFirstReleasedServer()
+        var tempServer = server?server:this.getFirstReleasedServer()
         var cardIconImageBuffer = await downloadFileCache(`${Bestdoriurl}/assets/${Server[tempServer]}/thumb/chara/card0${this.getRip()}/${this.resourceSetName}${trainingString}.png`)
+        //console.log(this.resourceSetName)
         return await loadImage(cardIconImageBuffer)
     }
-    async getCardIllustrationImage(trainingStatus: boolean): Promise<Image> {
+    async getCardIllustrationImage(trainingStatus: boolean,server?:Server): Promise<Image> {
+        if (this.cardId <10000) server=null
         trainingStatus = this.ableToTraining(trainingStatus)
         const trainingString = trainingStatus ? '_after_training' : '_normal'
-        var tempServer = this.getFirstReleasedServer()
+        var tempServer = server?server:this.getFirstReleasedServer()
         var CardIllustrationImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[tempServer]}/characters/resourceset/${this.resourceSetName}_rip/card${trainingString}.png`)
+        //console.log(this.resourceSetName)
         return await loadImage(CardIllustrationImageBuffer)
     }
-    async getCardIllustrationImageBuffer(trainingStatus: boolean): Promise<Buffer> {
+    async getCardIllustrationImageBuffer(trainingStatus: boolean,server?:Server): Promise<Buffer> {
+        if (this.cardId <10000) server=null
         trainingStatus = this.ableToTraining(trainingStatus);
         const trainingString = trainingStatus ? '_after_training' : '_normal';
-        var tempServer = this.getFirstReleasedServer();
+        var tempServer = server?server:this.getFirstReleasedServer()
         var cardIllustration = await downloadFile(`${Bestdoriurl}/assets/${Server[tempServer]}/characters/resourceset/${this.resourceSetName}_rip/card${trainingString}.png`);
         return cardIllustration;
     }
-    async getCardTrimImage(trainingStatus: boolean): Promise<Image> {
+    async getCardTrimImage(trainingStatus: boolean,server?:Server): Promise<Image> {
+        if (this.cardId <10000) server=null
         trainingStatus = this.ableToTraining(trainingStatus)
         const trainingString = trainingStatus ? '_after_training' : '_normal'
-        var tempServer = this.getFirstReleasedServer()
+        var tempServer = server?server:this.getFirstReleasedServer()
         var CardIllustrationImageBuffer = await downloadFile(`${Bestdoriurl}/assets/${Server[tempServer]}/characters/resourceset/${this.resourceSetName}_rip/trim${trainingString}.png`)
         return await loadImage(CardIllustrationImageBuffer)
     }

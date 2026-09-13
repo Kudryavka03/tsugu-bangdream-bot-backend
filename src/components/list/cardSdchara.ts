@@ -17,7 +17,7 @@ export async function drawSdcharaInList(card: Card): Promise<Canvas> {
     var sdcharaImage = await costume.getSdchara()
     */
     const costumeId = card.costumeId
-    const costume = new Costume(costumeId)
+    const costume = new Costume(costumeId,card.cardId)
     var sdcharaImage = await costume.getSdcharaQuick(card.sdResourceName)
     //return await loadImage(sdCharaBuffer)
     //从高度84开始，把sdCharaImage切成田字形的四分，大小都为400*470

@@ -73,5 +73,14 @@ async function downloadFile(url: string, IgnoreErr: boolean = true, overwrite = 
     throw errInfo; // 抛出错误
   
 }
-
+export  function existLocalCache(url:string[]):string{
+  for(let u of url){
+    if (u.includes("undefined")) continue
+    const cacheDir = getCacheDirectory(u);
+    const fileName = getFileNameFromUrl(u);
+    const cacheFilePath = path.join(cacheDir || '', `${fileName || ''}`);
+    if (fs.existsSync(cacheFilePath)) return  u
+  }
+  return null
+}
 export { downloadFile };

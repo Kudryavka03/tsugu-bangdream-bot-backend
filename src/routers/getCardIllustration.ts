@@ -7,7 +7,7 @@ import { Request, Response } from 'express';
 import { getDoujinshiSayoHina } from './searchCard';
 import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
 import { drawCardList, matchCardList } from '@/view/cardList';
-import { Server } from '@/types/Server';
+import { Server, serverList } from '@/types/Server';
 import { piscina } from '@/WorkerPool';
 
 const router = express.Router();
@@ -35,7 +35,7 @@ router.post('/',
   }
 );
 
-async function commandGetCardIllustration(cardText: string| FuzzySearchResult): Promise<Array<Buffer | string>> {
+async function commandGetCardIllustration(cardText: string| FuzzySearchResult,server?:Server): Promise<Array<Buffer | string>> {
   //console.log(cardText)
   var after_training = null
   let fuzzySearchResult: FuzzySearchResult
@@ -106,7 +106,7 @@ async function commandGetCardIllustration(cardText: string| FuzzySearchResult): 
   const imageList = [];
   for (let i = index; i < trainingStatusListLength; i++) {
     const element = trainingStatusList[i];
-    const illustration = await card.getCardIllustrationImageBuffer(element);
+    const illustration = await card.getCardIllustrationImageBuffer(element,server);
     // 直接添加插图到列表中，不需要绘制到Canvas
     imageList.push(illustration);
   }
