@@ -64,7 +64,7 @@ async function drawSongTopBlock(song: Song, trackerTop: TrackerTop10, mainServer
         list.push(await drawSongInList(song, undefined, undefined, [mainServer]));
     }
     catch (e) {
-        list.push(await drawList({ key: '歌曲', text: `${ song.songId }` }));
+        song?list.push(await drawList({ key: '歌曲', text: `${ song.songId }` })):null;
     }
     list.push(line);
 
@@ -99,7 +99,7 @@ async function drawSongTopBlock(song: Song, trackerTop: TrackerTop10, mainServer
     list.push(new Canvas(800, 50));
     const chart = await drawCutoffEventTopChartPromise;
     if (chart != null) list.push(chart);
-    return await drawDatablock({ list, topLeftText: `歌曲${ song.songId } T10` });
+    return song?await drawDatablock({ list, topLeftText: `歌曲${ song.songId } T10` }):await drawDatablock({ list, topLeftText: `T10档线` });
 }
 
 export async function drawSongTop10(
@@ -116,10 +116,10 @@ export async function drawSongTop10(
     catch (e) {
         // 单活动详情不可用时，继续使用现役活动汇总数据中的歌曲列表。
     }
-
+    let isNotMedley = event.eventType!='medley'
     const songIdList = getEventSongIdList(event, mainServer);
     if (songIdList.length === 0) return ['错误: 该活动没有歌曲数据'];
-    if (songIdList.length > 1 && songIdFilter == undefined) {
+    if (songIdList.length > 1 && songIdFilter == undefined && isNotMedley) {
         const songOptions = songIdList.map(songId => {
             const song = new Song(songId);
             const musicTitle = song.musicTitle?.[mainServer]
@@ -132,24 +132,38 @@ export async function drawSongTop10(
     const eventTime = getEventTime(event, mainServer);
     const songTopList: { song: Song, trackerTop: TrackerTop10 }[] = [];
     let matchedSong = false;
-
-    for (const currentSongId of songIdList) {
-        // 歌曲 ID 查询在歌曲循环中筛选，未命中时继续检查其他歌曲。
-        if (songIdFilter != undefined && currentSongId != songIdFilter) continue;
-        matchedSong = true;
-        const song = new Song(currentSongId);
-        const trackerTop = new TrackerTop10({
-            eventId,
-            server: mainServer,
-            type: 'song',
-            songId: currentSongId,
-            startAt: eventTime.startAt,
-            endAt: eventTime.endAt,
-        });
-        await trackerTop.initFull();
-        if (!trackerTop.isExist) continue;
-        songTopList.push({ song, trackerTop });
+    if (isNotMedley){
+        for (const currentSongId of songIdList) {
+            // 歌曲 ID 查询在歌曲循环中筛选，未命中时继续检查其他歌曲。
+            if (songIdFilter != undefined && currentSongId != songIdFilter) continue;
+            matchedSong = true;
+            const song = new Song(currentSongId);
+            const trackerTop = new TrackerTop10({
+                eventId,
+                server: mainServer,
+                type: 'song',
+                songId: currentSongId,
+                startAt: eventTime.startAt,
+                endAt: eventTime.endAt,
+            });
+            await trackerTop.initFull();
+            if (!trackerTop.isExist) continue;
+            songTopList.push({ song, trackerTop });
+        }
+    }else{
+        const song = new Song(songIdList[0]);
+            const trackerTop = new TrackerTop10({
+                eventId,
+                server: mainServer,
+                type: 'song',
+                
+                startAt: eventTime.startAt,
+                endAt: eventTime.endAt,
+            });
+            await trackerTop.initFull();
+            songTopList.push({ song:null, trackerTop });
     }
+
 
     if (songIdFilter != undefined && !matchedSong) {
         return [`错误: 活动中不存在歌曲${ songIdFilter }`];

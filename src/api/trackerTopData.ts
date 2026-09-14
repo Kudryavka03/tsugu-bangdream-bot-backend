@@ -2,7 +2,7 @@ import { callAPIAndCacheResponse } from '@/api/getApi';
 import { HHWX_Url } from '@/config';
 import { Server } from '@/types/Server';
 
-export type TrackerTopDataType = 'monthly' | 'song';
+export type TrackerTopDataType = 'monthly' | 'song' |'medley';
 
 export interface TrackerTopDataPoint {
     time: number;
@@ -52,9 +52,11 @@ export async function getTrackerTopData(params: {
     type: TrackerTopDataType;
     songId?: number;
 }): Promise<TrackerTopDataResponse | null> {
+    /*
     if (params.type === 'song' && params.songId == undefined) {
         return null;
     }
+        */
 
     const url = buildTrackerTopDataUrl(params);
     try {
