@@ -14,10 +14,10 @@ export interface CutoffSongChartPoint {
 export interface CutoffSongChartEntry {
     song: Song;
     t1List: CutoffSongChartPoint[];
-    t10List: CutoffSongChartPoint[];
+    //t10List: CutoffSongChartPoint[];
     tierList: CutoffSongChartPoint[];
     currentT1: number;
-    currentT10: number;
+    //currentT10: number;
 }
 
 function toChartData(
@@ -49,13 +49,16 @@ export async function drawCutoffSongChart(
     endAt: number,
     server: Server,
 ) {
+    /*
     const T1_ABNORMAL_THRESHOLD = 0.995;
+    
     let isT1Abnormal = entries.some((x,i)=>{
         if ((x.t10List.at(-1).ep / x.t1List.at(-1).ep)<T1_ABNORMAL_THRESHOLD){
             return true
         }
         return false
     })
+        */
     if (entries.length === 0) {
         return new Canvas(1, 1);
     }
@@ -68,9 +71,9 @@ export async function drawCutoffSongChart(
         const entry = entries[i];
         const tempColor = getPresetColor(i);
         const songLabel = entry.song.musicTitle[server] || `歌曲${entry.song.songId}`;
-        const tierTop = isT1Abnormal?'T10':'T1'
-        const tierTopEp = isT1Abnormal?entry.t10List[entry.t10List.length-1].ep:entry.t1List[entry.t1List.length-1].ep
-        if (tier === (isT1Abnormal?10:1)) {
+        const tierTop = 'T1'
+        const tierTopEp = entry.t1List[entry.t1List.length-1].ep
+        if (tier === (1)) {
             const labelName = onlyOne ? tierTop : `${songLabel} ${tierTop}`;
             legendList.push(await drawList({
                 content: [tempColor.generateColorBlock(0.8), labelName],
@@ -78,7 +81,7 @@ export async function drawCutoffSongChart(
             }));
             datasets.push({
                 label: labelName,
-                data: isT1Abnormal?toChartData(entry.t10List, startAt):toChartData(entry.t1List, startAt),
+                data: toChartData(entry.t1List, startAt),
                 borderWidth: 5,
                 borderColor: [tempColor.getRGBA(1)],
                 backgroundColor: [tempColor.getRGBA(0.2)],
@@ -96,7 +99,7 @@ export async function drawCutoffSongChart(
         }));
         datasets.push({
             label: t1Label,
-            data: isT1Abnormal?toHorizontalLineData(entry.currentT10, startAt, endAt):toHorizontalLineData(entry.currentT1, startAt, endAt),
+            data: toHorizontalLineData(entry.currentT1, startAt, endAt),
             borderWidth: 4,
             borderColor: [tempColor.getRGBA(0.6)],
             backgroundColor: [tempColor.getRGBA(0.6)],
