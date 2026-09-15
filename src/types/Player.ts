@@ -171,7 +171,10 @@ export class Player {
         //插画
         userIllust: { cardId: number, trainingStatus: boolean };
 
+
     }
+    //每个角色的加成
+    eachCardStat:eachCardStat[] = []
     server: Server;
 
     isInitfull: boolean = false;
@@ -248,6 +251,7 @@ export class Player {
                 }
             }
         }
+        this.calcEachStat()
         this.isInitfull = true;
 
     }
@@ -362,6 +366,42 @@ export class Player {
 
         return cardStat
     }
+    calcEachStat(){
+        if (this.profile.publishTotalDeckPowerFlg == false) {
+            return ({
+                performance: 0,
+                technique: 0,
+                visual: 0,
+            })
+        }
+        this.profile.mainDeckUserSituations.entries.map((data) => {
+            const card = new Card(data.situationId), append = data.userAppendParameter
+            const base: Stat = {
+                performance: append.performance,
+                technique: append.technique,
+                visual: append.visual
+            }
+            addStat(base, card.stat[card.getMaxLevel().toString()])
+            const potential: Stat = {
+                performance: Math.ceil(1000 * (append.characterPotentialPerformance || 0) / base.performance) / 1000,
+                technique: Math.ceil(1000 * (append.characterPotentialTechnique || 0) / base.technique) / 1000,
+                visual: Math.ceil(1000 * (append.characterPotentialVisual || 0) / base.visual) / 1000,
+            }, characterTask: Stat = {
+                performance: Math.ceil(1000 * (append.characterBonusPerformance || 0) / base.performance) / 1000,
+                technique: Math.ceil(1000 * (append.characterBonusTechnique || 0) / base.technique) / 1000,
+                visual: Math.ceil(1000 * (append.characterBonusVisual || 0) / base.visual) / 1000,
+            }
+            this.eachCardStat.push({
+                characterId: card.characterId,
+                potential:potential,
+                characterTask:characterTask
+            })
+        })
+        // 排序
+        this.eachCardStat.sort((x,y)=>{
+            return (x.characterId - y.characterId)
+        })
+    }
     calcHSR(): number {
         var hsr = 0
         var userHighScoreRating = this.profile.userHighScoreRating
@@ -396,4 +436,10 @@ export class Player {
         }
         return { cardId: illustCardId, trainingStatus: trainingStatus }
     }
+    
+}
+export interface eachCardStat {
+    characterId: number,
+    potential:Stat,
+    characterTask:Stat
 }

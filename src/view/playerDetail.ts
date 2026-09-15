@@ -7,7 +7,7 @@ import { assetsRootPath, serverNameFullList } from '@/config'
 import * as path from 'path'
 import { drawPlayerCardInList } from '@/components/list/playerCardIconList'
 import { line, drawList, drawTipsInList } from '@/components/list'
-import { drawStatInList } from '@/components/list/stat';
+import { drawCharacterBonusList, drawStatInList } from '@/components/list/stat';
 import { drawDatablock } from '@/components/dataBlock';
 import { drawPlayerBandRankInList, drawPlayerStageChallengeRankInList, drawPlayerDeckTotalRatingInList } from '@/components/list/bandDetail'
 import { drawPlayerDifficultyDetailInList } from '@/components/list/difficultyDetail'
@@ -146,9 +146,10 @@ export async function drawPlayerDetail(playerId: number, mainServer: Server, use
         list.push(line)
     }
     // console.log(list)
-    
-
-
+    if (player.profile.publishTotalDeckPowerFlg){
+        list.push(await drawCharacterBonusList(player.eachCardStat))
+        list.push(line)
+    }
 
 
 
