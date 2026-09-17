@@ -6,6 +6,7 @@ import { changeTimefomant, changeTimePeriodFormat, formatSeconds } from '@/compo
 import { setFontStyle } from '@/image/text'
 import { stackImageHorizontal } from "../utils";
 import { loadImageFromPath } from '@/image/utils';
+import { drawRoundedImage } from '@/image/surfaceShadow';
 
 FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 
@@ -67,7 +68,15 @@ async function drawSongInEventStageSongHorizontal(song: Song, meta: boolean): Pr
     const ctx = canvas.getContext('2d');
 
     const jacketImageHeight = 800 / 8 - 6
-    ctx.drawImage(await song.getSongJacketImage(), 3, 0, jacketImageHeight, jacketImageHeight);
+    drawRoundedImage(
+        ctx,
+        await song.getSongJacketImage(),
+        3,
+        0,
+        jacketImageHeight,
+        jacketImageHeight,
+        { radius: 10 },
+    );
 
     ctx.textAlign = 'start'
     ctx.textBaseline = 'middle'

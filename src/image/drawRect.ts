@@ -1,12 +1,14 @@
 import { Canvas, FontLibrary } from 'skia-canvas';
 import { assetsRootPath } from '@/config';
 import { getTextWidth } from '@/image/utils';
+import { CornerRadius, CornerStyle, titleMatchedRoundedRectPath } from '@/image/surfaceShadow';
 FontLibrary.use("old",[`${assetsRootPath}/Fonts/old.ttf`])
 
 interface RoundedRect {
   width: number;
   height: number;
-  radius?: number | [number, number, number, number];
+  radius?: CornerRadius;
+  cornerStyle?: CornerStyle;
   color?: string;
   opacity?: number;
   strokeColor?: string;
@@ -22,6 +24,7 @@ export function drawRoundedRect({
   opacity = 0.9,
   strokeColor = "#bbbbbb",
   strokeWidth = 0,
+  cornerStyle = 'legacy',
 }: RoundedRect): Canvas {
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext("2d");
@@ -30,17 +33,22 @@ export function drawRoundedRect({
     radius = [radius, radius, radius, radius];
   }
 
-  ctx.beginPath();
-  ctx.moveTo(radius[0], 0);
-  ctx.lineTo(width - radius[1], 0);
-  ctx.quadraticCurveTo(width, 0, width, radius[1]);
-  ctx.lineTo(width, height - radius[2]);
-  ctx.quadraticCurveTo(width, height, width - radius[2], height);
-  ctx.lineTo(radius[3], height);
-  ctx.quadraticCurveTo(0, height, 0, height - radius[3]);
-  ctx.lineTo(0, radius[0]);
-  ctx.quadraticCurveTo(0, 0, radius[0], 0);
-  ctx.closePath();
+  if (cornerStyle === 'title-matched') {
+    titleMatchedRoundedRectPath(ctx, 0, 0, width, height, radius);
+  }
+  else {
+    ctx.beginPath();
+    ctx.moveTo(radius[0], 0);
+    ctx.lineTo(width - radius[1], 0);
+    ctx.quadraticCurveTo(width, 0, width, radius[1]);
+    ctx.lineTo(width, height - radius[2]);
+    ctx.quadraticCurveTo(width, height, width - radius[2], height);
+    ctx.lineTo(radius[3], height);
+    ctx.quadraticCurveTo(0, height, 0, height - radius[3]);
+    ctx.lineTo(0, radius[0]);
+    ctx.quadraticCurveTo(0, 0, radius[0], 0);
+    ctx.closePath();
+  }
 
   if (opacity!=1)ctx.globalAlpha = opacity;
   ctx.fillStyle = color;
@@ -50,37 +58,44 @@ export function drawRoundedRect({
     ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = strokeColor;
 
-    ctx.beginPath();
-    ctx.moveTo(radius[0], strokeWidth / 2);
-    ctx.lineTo(width - radius[1], strokeWidth / 2);
-    ctx.quadraticCurveTo(
-      width - strokeWidth / 2,
-      strokeWidth / 2,
-      width - strokeWidth / 2,
-      radius[1]
-    );
-    ctx.lineTo(width - strokeWidth / 2, height - radius[2]);
-    ctx.quadraticCurveTo(
-      width - strokeWidth / 2,
-      height - strokeWidth / 2,
-      width - radius[2],
-      height - strokeWidth / 2
-    );
-    ctx.lineTo(radius[3], height - strokeWidth / 2);
-    ctx.quadraticCurveTo(
-      strokeWidth / 2,
-      height - strokeWidth / 2,
-      strokeWidth / 2,
-      height - radius[3]
-    );
-    ctx.lineTo(strokeWidth / 2, radius[0]);
-    ctx.quadraticCurveTo(
-      strokeWidth / 2,
-      strokeWidth / 2,
-      radius[0],
-      strokeWidth / 2
-    );
-    ctx.closePath();
+    if (cornerStyle === 'title-matched') {
+      const inset = strokeWidth / 2;
+      const insetRadius = radius.map((value) => Math.max(0, value - inset)) as CornerRadius;
+      titleMatchedRoundedRectPath(ctx, inset, inset, width - strokeWidth, height - strokeWidth, insetRadius);
+    }
+    else {
+      ctx.beginPath();
+      ctx.moveTo(radius[0], strokeWidth / 2);
+      ctx.lineTo(width - radius[1], strokeWidth / 2);
+      ctx.quadraticCurveTo(
+        width - strokeWidth / 2,
+        strokeWidth / 2,
+        width - strokeWidth / 2,
+        radius[1]
+      );
+      ctx.lineTo(width - strokeWidth / 2, height - radius[2]);
+      ctx.quadraticCurveTo(
+        width - strokeWidth / 2,
+        height - strokeWidth / 2,
+        width - radius[2],
+        height - strokeWidth / 2
+      );
+      ctx.lineTo(radius[3], height - strokeWidth / 2);
+      ctx.quadraticCurveTo(
+        strokeWidth / 2,
+        height - strokeWidth / 2,
+        strokeWidth / 2,
+        height - radius[3]
+      );
+      ctx.lineTo(strokeWidth / 2, radius[0]);
+      ctx.quadraticCurveTo(
+        strokeWidth / 2,
+        strokeWidth / 2,
+        radius[0],
+        strokeWidth / 2
+      );
+      ctx.closePath();
+    }
 
     ctx.stroke();
   }

@@ -1,6 +1,7 @@
 import { Canvas, Image } from 'skia-canvas';
 import { drawRoundedRect } from '@/image/drawRect';
 import { drawText, releaseCanvas } from '@/image/text';
+import { CARD_CORNER_RADIUS, drawDecoratedImage, inheritSurfaceDecorations, registerSurfaceDecorations } from '@/image/surfaceShadow';
 
 interface datablockOptions {
     list: Array<Canvas | Image>
@@ -50,6 +51,7 @@ export async function drawDatablock({
                 width: 380,
                 height: topLeftTextHeight + 5,
                 radius: [25, 25, 0, 0],
+                cornerStyle: 'title-matched',
                 strokeColor: '#ffffff',
                 strokeWidth: 5
             }), 50, 0)
@@ -66,14 +68,17 @@ export async function drawDatablock({
                 opacity,
                 width: maxW + 100,
                 height: allH,
-                radius: [0, 25, 25, 25]
+                radius: [0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
+                cornerStyle: 'title-matched',
             }), 50, topLeftTextHeight)
         }
         else {
             ctx.drawImage(drawRoundedRect({//画总底
                 opacity,
                 width: maxW + 100,
-                height: allH
+                height: allH,
+                radius: CARD_CORNER_RADIUS,
+                cornerStyle: 'title-matched',
             }), 50, 0)
         }
     }
@@ -93,8 +98,53 @@ export async function drawDatablock({
     }
 
     for (var i = 0; i < list.length; i++) {
-        ctx.drawImage(list[i], xStart, allH2)
+        if (BG) {
+            // Bake nested card shadows onto the opaque parent surface. Merely
+            // inheriting their metadata would draw the shadow behind that
+            // surface, where it would be invisible.
+            drawDecoratedImage(ctx, list[i], xStart, allH2)
+        }
+        else {
+            ctx.drawImage(list[i], xStart, allH2)
+            inheritSurfaceDecorations(tempcanv, list[i], xStart, allH2)
+        }
         allH2 = allH2 + list[i].height
+    }
+
+    if (BG) {
+        if (topLeftText != undefined) {
+            registerSurfaceDecorations(tempcanv, [
+                {
+                    x: 50,
+                    y: 0,
+                    width: 380,
+                    height: topLeftTextHeight + 5,
+                    radius: [25, 25, 0, 0],
+                    cornerStyle: 'title-matched',
+                    border: false,
+                },
+                {
+                    x: 50,
+                    y: topLeftTextHeight,
+                    width: maxW + 100,
+                    height: allH,
+                    radius: [0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
+                    cornerStyle: 'title-matched',
+                    border: true,
+                },
+            ])
+        }
+        else {
+            registerSurfaceDecorations(tempcanv, [{
+                x: 50,
+                y: 0,
+                width: maxW + 100,
+                height: allH,
+                radius: CARD_CORNER_RADIUS,
+                cornerStyle: 'title-matched',
+                border: true,
+            }])
+        }
     }
 
     return (tempcanv)
@@ -138,6 +188,7 @@ export async function drawDatablockHorizontal({
                 width: topLeftTextHeight + 5,
                 height: 380,
                 radius: [25, 25, 0, 0],
+                cornerStyle: 'title-matched',
                 strokeColor: '#ffffff',
                 strokeWidth: 5
             }), 0, 50);
@@ -158,12 +209,15 @@ export async function drawDatablockHorizontal({
             ctx.drawImage(drawRoundedRect({
                 width: allW - 100,
                 height: maxH + 100,
-                radius: [25, 0, 25, 25]
+                radius: [CARD_CORNER_RADIUS, 0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
+                cornerStyle: 'title-matched',
             }), topLeftTextHeight, 50);
         } else {
             ctx.drawImage(drawRoundedRect({
                 width: allW - 100,
-                height: maxH + 100
+                height: maxH + 100,
+                radius: CARD_CORNER_RADIUS,
+                cornerStyle: 'title-matched',
             }), 50, 0);
         }
     }
@@ -176,8 +230,50 @@ export async function drawDatablockHorizontal({
         }
     }
     for (var i = 0; i < list.length; i++) {
-        ctx.drawImage(list[i], allW2, 50);
+        if (BG) {
+            drawDecoratedImage(ctx, list[i], allW2, 50)
+        }
+        else {
+            ctx.drawImage(list[i], allW2, 50)
+            inheritSurfaceDecorations(tempcanv, list[i], allW2, 50)
+        }
         allW2 += list[i].width;
+    }
+
+    if (BG) {
+        if (topLeftText !== undefined) {
+            registerSurfaceDecorations(tempcanv, [
+                {
+                    x: 0,
+                    y: 50,
+                    width: topLeftTextHeight + 5,
+                    height: 380,
+                    radius: [25, 25, 0, 0],
+                    cornerStyle: 'title-matched',
+                    border: false,
+                },
+                {
+                    x: topLeftTextHeight,
+                    y: 50,
+                    width: allW - 100,
+                    height: Math.max(0, tempcanv.height - 50),
+                    radius: [CARD_CORNER_RADIUS, 0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
+                    cornerStyle: 'title-matched',
+                    border: true,
+                },
+            ])
+        }
+        else {
+            registerSurfaceDecorations(tempcanv, [{
+                x: 50,
+                y: 0,
+                width: allW - 100,
+                height: maxH + 100,
+                radius: CARD_CORNER_RADIUS,
+                cornerStyle: 'title-matched',
+                border: true,
+            }])
+        }
     }
 
     return tempcanv;

@@ -396,6 +396,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         lineHeight: 110,
         trainingStatus: false,
         cardIdVisible: true,
+        leftPadding: 0,
     })
     //return stackImage([imageUp, imageDown])
     const result = stackImage([imageUp, imageDown])

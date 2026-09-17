@@ -24,3 +24,5 @@ PerfLog/
 prediction.png
 predictor.log
 ConfigRepo/
+.vs/
+*.dll

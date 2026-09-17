@@ -34,6 +34,7 @@ if (!isMainThread && parentPort) {
 const line = drawDottedLine({
     width: 800,
     height: 10,
+    // Cover the ID and jacket columns as well as the title/meta column.
     startX: 5,
     startY: 5,
     endX: 795,
@@ -95,13 +96,14 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
     let maxCount = getOptDrawCount(tempSongList.length,1000,85,10,30)  // 1000为一首歌长度，85为高度
     //const maxHeight = getOptHeight(tempSongList.length,1000,100,10,30)
     //表格用默认竖向虚线
+    const columnSeparatorHeight = ((maxCount - 0.2) * 85)
     const line2: Canvas = drawDottedLine({
         width: 30,
-        height: ((maxCount-0.2) * 85) ,
+        height: columnSeparatorHeight,
         startX: 10,
         startY: 0,
         endX: 15,
-        endY: 5990,
+        endY: columnSeparatorHeight - 5,
         radius: 2,
         gap: 10,
         color: "#a8a8a8"

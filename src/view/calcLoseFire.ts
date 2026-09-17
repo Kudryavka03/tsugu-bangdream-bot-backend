@@ -7,11 +7,11 @@ import { drawDifficulity } from '@/components/list/difficulty'
 import { drawDatablock } from '@/components/dataBlock'
 import { drawListTextWithImages, line } from '@/components/list'
 import { drawText } from '@/image/text'
-import { resizeImage } from '@/components/utils'
 import { getServerByPriority } from '@/types/Server'
 import { Canvas } from 'skia-canvas'
 import { serverNameFullList } from '@/config'
 import { formatSeconds } from '@/components/list/time'
+import { drawRoundedImage } from '@/image/surfaceShadow'
 
 const LIST_WIDTH = 800
 const SONG_ROW_WIDTH = 760
@@ -78,11 +78,7 @@ async function drawSongRow(song: Song, difficulty: number, mainServer: Server) {
     const server = getServerByPriority(song.publishedAt, [mainServer])
     const canvas = new Canvas(SONG_ROW_WIDTH, SONG_ROW_HEIGHT)
     const ctx = canvas.getContext('2d')
-    const jacket = resizeImage({
-        image: await song.getSongJacketImage(),
-        widthMax: 74,
-        heightMax: 74,
-    })
+    const jacket = await song.getSongJacketImage()
     const idImage = await drawText({
         text: song.songId.toString(),
         textSize: 22,
@@ -106,7 +102,7 @@ async function drawSongRow(song: Song, difficulty: number, mainServer: Server) {
     const difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 58, true, song.notes[difficulty])
 
     ctx.drawImage(idImage, 0, 2)
-    ctx.drawImage(jacket, 52, 6)
+    drawRoundedImage(ctx, jacket, 52, 6, 74, 74, { radius: 8 })
     ctx.drawImage(titleImage, 140, 6)
     ctx.drawImage(detailImage, 140, 48)
     ctx.drawImage(difficultyImage, SONG_ROW_WIDTH - difficultyImage.width - 10, (SONG_ROW_HEIGHT - difficultyImage.height) / 2)

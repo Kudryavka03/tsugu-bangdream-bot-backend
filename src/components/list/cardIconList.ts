@@ -11,6 +11,7 @@ interface CardIconInListOptions {
     cardTypeVisible?: boolean;
     trainingStatus?: boolean;
     lineHeight?: number;
+    leftPadding?: number;
 }
 
 export async function drawCardListInList({
@@ -20,7 +21,8 @@ export async function drawCardListInList({
     skillTypeVisible = true,
     cardTypeVisible = true,
     trainingStatus,
-    lineHeight = 200
+    lineHeight = 200,
+    leftPadding = 20,
 }: CardIconInListOptions) {
     //cardList排序，稀有度高的在前面，其中cardId低的在前面
     var typeList = ['kirafes','dreamfes','limited','birthday']//用于排序
@@ -85,6 +87,7 @@ export async function drawCardListInList({
         content: list,
         textSize: textSize,
         lineHeight: lineHeight,
-        spacing: spacing
+        spacing: spacing,
+        leftPadding,
     })
 }

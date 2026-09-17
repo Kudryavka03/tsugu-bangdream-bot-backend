@@ -4,6 +4,7 @@
 import { drawList as drawListAsync, line } from '@/components/list';
 import { drawDottedLine } from '@/image/dottedLine';
 import { Canvas, Image } from 'skia-canvas';
+import { inheritSurfaceDecorations } from '@/image/surfaceShadow';
 
 export { line };
 
@@ -68,6 +69,7 @@ export function drawListMerge(
             else if (align == 'bottom') y = maxHeight - element.height;
             else y = (maxHeight - element.height) / 2;
             ctx.drawImage(element, x, y);
+            inheritSurfaceDecorations(canvas, element, x, y);
             if (drawLine && i > 0) {
                 ctx.drawImage(divider, x - 5, 0);
             }

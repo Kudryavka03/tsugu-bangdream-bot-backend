@@ -7,6 +7,7 @@ import { stackImageHorizontal } from '@/components/utils';
 import { globalDefaultServer } from '@/config';
 import { setFontStyle } from '@/image/text';
 import { getFontCanvasCtxFromPool } from '@/image/utils';
+import { inheritSurfaceDecorations, roundedRectPath } from '@/image/surfaceShadow';
 
 
 //表格用默认虚线
@@ -34,6 +35,7 @@ interface ListOptions {
     maxWidth?: number;
     RoundedRectColor?:string;
     RoundedRectTextColor?:string;
+    leftPadding?: number;
     align?: "top" | "bottom" | "center"
 }
 
@@ -124,6 +126,7 @@ export function drawList({
     maxWidth = 800,
     RoundedRectColor = '#5b5b5b',
     RoundedRectTextColor = "#ffffff",
+    leftPadding = 20,
 
 }: ListOptions): Canvas {
     const xmax = maxWidth - 40
@@ -154,14 +157,16 @@ export function drawList({
         textImage = new Canvas(0, 0)
     }
     if (key == undefined) {
-        return stackImageHorizontal([new Canvas(20, 1), textImage])
+        return leftPadding > 0
+            ? stackImageHorizontal([new Canvas(leftPadding, 1), textImage])
+            : textImage
     }
     var ymax = textImage.height + keyImage.height + 10;
     const canvas = new Canvas(maxWidth, ymax);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(keyImage, 0, 0);
     if(textImage.height != 0){
-        ctx.drawImage(textImage, 20, keyImage.height + 10);
+        ctx.drawImage(textImage, leftPadding, keyImage.height + 10);
     }
     return canvas;
 }
@@ -313,6 +318,7 @@ export function drawListMergeMin(
             y = (maxHeight - element.height) / 2;
 
         ctx.drawImage(element, x, y);
+        inheritSurfaceDecorations(canvas, element, x, y)
 
         // 分隔线：在两项之间
         if (drawLine && i > 0) {
@@ -362,6 +368,7 @@ export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number
             else 
                 y = (maxHeight - element.height) / 2
             ctx.drawImage(element, x, y)
+            inheritSurfaceDecorations(canvas, element, x, y)
             if (drawLine && i > 0) {
                 ctx.drawImage(line, x - 5, 0)
             }
@@ -406,6 +413,7 @@ export function drawListMergeWithoutWidth(imageList: Array<Canvas | Image>, maxW
             else 
                 y = (maxHeight - element.height) / 2
             ctx.drawImage(element, x, y)
+            inheritSurfaceDecorations(canvas, element, x, y)
             if (drawLine && i > 0) {
                 ctx.drawImage(line, x - 5, 0)
             }
@@ -479,6 +487,7 @@ export function drawImageListCenter(imageList: Array<Canvas | Image>, maxWidth =
         for (let j = 0; j < element.imageList.length; j++) {
             const image = element.imageList[j];
             ctx.drawImage(image, x, y)
+            inheritSurfaceDecorations(canvas, image, x, y)
             x += image.width
         }
         y += element.height
@@ -497,8 +506,22 @@ export function drawListWithLine(textImageList: Array<Canvas | Image>): Canvas {
     }
     var canvas = new Canvas(800, height + 10)
     var ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#a8a8a8'
-    ctx.fillRect(10, 10, 5, height + 20)
+    const lineY = 8
+    const lineHeight = canvas.height - lineY * 2
+    if (lineHeight > 0) {
+        // A filled capsule makes the semicircular caps more apparent than a
+        // thin stroked line. Its shadow is shifted only to the right, avoiding
+        // both bottom clipping and shadowBlur on long cards.
+        ctx.save()
+        ctx.fillStyle = 'rgba(84, 62, 73, 0.12)'
+        roundedRectPath(ctx, 11, lineY, 7, lineHeight, 3.5)
+        ctx.fill()
+
+        ctx.fillStyle = '#A8A1A6'
+        roundedRectPath(ctx, 10, lineY, 6, lineHeight, 3)
+        ctx.fill()
+        ctx.restore()
+    }
     for (let i = 0; i < textImageList.length; i++) {
         const element = textImageList[i];
         ctx.drawImage(element, x, y)

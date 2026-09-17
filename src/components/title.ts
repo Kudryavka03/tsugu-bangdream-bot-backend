@@ -3,15 +3,25 @@ import { drawText, releaseCanvas } from '@/image/text'
 import { assetsRootPath } from '@/config'
 import * as path from 'path'
 import { loadImageFromPath } from '@/image/utils';
+import { registerLogicalHeight } from '@/image/surfaceShadow';
 
 
-var titleImage: Image
-async function loadImageOnce() {
-    titleImage = await loadImageFromPath(path.join(assetsRootPath, '/title.png'));
+const TITLE_LOGICAL_HEIGHT = 110
+let titleImagePromise: Promise<Image> | undefined
+
+function getTitleImage(): Promise<Image> {
+    if (!titleImagePromise) {
+        titleImagePromise = loadImageFromPath(path.join(assetsRootPath, '/title.png'))
+            .catch((error) => {
+                titleImagePromise = undefined
+                throw error
+            })
+    }
+    return titleImagePromise
 }
-loadImageOnce()
 
 export async function drawTitle(title1: string, title2: string): Promise<Canvas> {
+    const titleImage = await getTitleImage()
     const canvas = new Canvas(titleImage.width, titleImage.height)
     const ctx = canvas.getContext("2d")
     ctx.drawImage(titleImage, 0, 0)
@@ -21,7 +31,8 @@ export async function drawTitle(title1: string, title2: string): Promise<Canvas>
 
     ctx.drawImage(text2, 74, 42)
 
-    
-    return canvas
+    // title.png contains the exact alpha-matched shadow. Its extra pixels are
+    // allowed to overlap the existing 30px inter-component gap, while layout
+    // continues to advance by the original 110px.
+    return registerLogicalHeight(canvas, TITLE_LOGICAL_HEIGHT)
 }
-

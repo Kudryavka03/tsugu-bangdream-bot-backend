@@ -1,6 +1,7 @@
 import { logger } from '@/logger';
 import { Chart } from 'chart.js';
 import { Canvas, Image } from 'skia-canvas';
+import { inheritSurfaceDecorations } from '@/image/surfaceShadow';
 
 export function stackImage(list: Array<Image | Canvas>,AutoDispose:boolean = false) {
     var maxW = 0
@@ -16,6 +17,7 @@ export function stackImage(list: Array<Image | Canvas>,AutoDispose:boolean = fal
     var allH2 = 0
     for (var i = 0; i < list.length; i++) {
         ctx.drawImage(list[i], 0, allH2)
+        inheritSurfaceDecorations(tempcanv, list[i], 0, allH2)
         allH2 = allH2 + list[i].height
     }
     if (AutoDispose) list.length = 0
@@ -36,6 +38,7 @@ export function stackImageHorizontal(list: Array<Image | Canvas>) {
     var allW2 = 0
     for (var i = 0; i < list.length; i++) {
         ctx.drawImage(list[i], allW2, 0)
+        inheritSurfaceDecorations(tempcanv, list[i], allW2, 0)
         allW2 = allW2 + list[i].width
     }
     return (tempcanv)
@@ -65,6 +68,7 @@ export function resizeImage({
     var canvas = new Canvas(width, height)
     var ctx = canvas.getContext('2d')
     ctx.drawImage(image, 0, 0, width, height)
+    inheritSurfaceDecorations(canvas, image, 0, 0, width / image.width, height / image.height)
     return canvas
 }
 

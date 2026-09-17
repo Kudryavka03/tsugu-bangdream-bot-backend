@@ -4,6 +4,7 @@ import { assetsRootPath } from '@/config';
 import * as path from 'path';
 import { loadImageFromPath } from '@/image/utils';
 import { logger } from '@/logger';
+import { drawDecoratedImage, getLogicalHeight } from '@/image/surfaceShadow';
 var BGDefaultImage: Image
 var useGpu = false  // 控制是否使用GPU
 async function loadImageOnce() {
@@ -39,14 +40,15 @@ export var outputFinalCanv = async function ({ imageList,
 }: outputFinalOptions
 ): Promise<Canvas> {
     //console.log(imageList)
+    const componentGap = 34
     let allH = 30
     if (startWithSpace) {
         allH += 50
     }
     var maxW = 0
     for (var i = 0; i < imageList.length; i++) {
-        allH = allH + imageList[i].height
-        allH += 30
+        allH = allH + getLogicalHeight(imageList[i])
+        allH += componentGap
         if (imageList[i].width > maxW) {
             maxW = imageList[i].width
         }
@@ -85,9 +87,9 @@ export var outputFinalCanv = async function ({ imageList,
         allH2 += 50
     }
     for (var i = 0; i < imageList.length; i++) {
-        ctx.drawImage(imageList[i], 0, allH2)
-        allH2 = allH2 + imageList[i].height
-        allH2 += 30
+        drawDecoratedImage(ctx, imageList[i], 0, allH2)
+        allH2 = allH2 + getLogicalHeight(imageList[i])
+        allH2 += componentGap
     }
 
     return (tempcanv)

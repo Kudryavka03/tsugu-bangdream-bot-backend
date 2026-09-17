@@ -10,19 +10,16 @@ import { drawList } from '../list'
 import { drawDottedLine } from '@/image/dottedLine'
 import { formatSeconds } from './time'
 import mainAPI from '@/types/_Main'
+import { drawRoundedImage } from '@/image/surfaceShadow'
 
 export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer,useFever?:boolean): Promise<Canvas> {
     
     var server = getServerByPriority(song.publishedAt, displayedServerList)
-    var songImage = resizeImage({
-        image: await song.getSongJacketImage(),
-        widthMax: 80,
-        heightMax: 80
-    })
+    var songImage = await song.getSongJacketImage()
 
     var canvas = new Canvas(800, 75)
     var ctx = canvas.getContext("2d")
-    ctx.drawImage(songImage, 50, 5, 65, 65)
+    drawRoundedImage(ctx, songImage, 50, 5, 65, 65, { radius: 8 })
     //id
     var IDImage = await drawText({
         text: song.songId.toString(),
@@ -90,15 +87,11 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
 
 export async function drawSongInList(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
-    var songImage = resizeImage({
-        image: await song.getSongJacketImage(),
-        widthMax: 80,
-        heightMax: 80
-    })
+    var songImage = await song.getSongJacketImage()
 
     var canvas = new Canvas(800, 75)
     var ctx = canvas.getContext("2d")
-    ctx.drawImage(songImage, 50, 5, 65, 65)
+    drawRoundedImage(ctx, songImage, 50, 5, 65, 65, { radius: 8 })
     //id
     var IDImage = await drawText({
         text: song.songId.toString(),
@@ -262,7 +255,15 @@ export async function drawSongInListBig(song: Song, difficulty?: number, display
     var ctx = canvas.getContext("2d")
     ctx.drawImage(titleImage, 20, 0)
     ctx.drawImage(bandImage, 20, titleImage.height)
-    ctx.drawImage(await song.getSongJacketImage(), (width - jacketSize) / 2, topHeight + spacing, jacketSize, jacketSize)
+    drawRoundedImage(
+        ctx,
+        await song.getSongJacketImage(),
+        (width - jacketSize) / 2,
+        topHeight + spacing,
+        jacketSize,
+        jacketSize,
+        { radius: 16 },
+    )
     var IDImage = await drawText({
         text: 'ID:' + song.songId.toString(),
         textSize: 30,
@@ -286,7 +287,7 @@ export async function drawSongInListMid(song: Song, difficulty?: number, display
     const height = 210, spacing = 10, jacketSize = 180
     var canvas = new Canvas(jacketSize + 150, height)
     var ctx = canvas.getContext("2d")
-    ctx.drawImage(await song.getSongJacketImage(), 0, 0, jacketSize, jacketSize)
+    drawRoundedImage(ctx, await song.getSongJacketImage(), 0, 0, jacketSize, jacketSize, { radius: 14 })
     var IDImage = await drawText({
         text: 'ID:' + song.songId.toString(),
         textSize: 30,

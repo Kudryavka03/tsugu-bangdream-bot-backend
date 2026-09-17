@@ -3,12 +3,13 @@ import { Song } from "@/types/Song"
 import { drawDatablock } from '@/components/dataBlock'
 import { Image, Canvas } from 'skia-canvas'
 import { drawDottedLine } from '@/image/dottedLine'
-import { resizeImage, stackImage, stackImageHorizontal } from "@/components/utils"
+import { stackImage } from "@/components/utils"
 import { Server, getServerByPriority } from "@/types/Server"
 import { Band } from "@/types/Band"
 import { drawText, releaseCanvas } from "@/image/text"
 import { drawDifficulityList } from "@/components/list/difficulty"
 import { globalDefaultServer } from "@/config"
+import { drawRoundedImage } from '@/image/surfaceShadow'
 
 // 紧凑化虚线分割
 const line = drawDottedLine({
@@ -26,11 +27,6 @@ const line = drawDottedLine({
 export async function drawSongDataBlock(song: Song, text?: string, displayedServerList: Server[] = globalDefaultServer) {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
     var songJacketImage = await song.getSongJacketImage()
-    // 缩放封面
-    var songJacketCanvas = resizeImage({
-        image: songJacketImage,
-        widthMax: 400
-    })
     var songName = song.musicTitle[server]
     var bandName = new Band(song.bandId).bandName[server]
     var songTipsName = song.getTagName()
@@ -55,8 +51,15 @@ export async function drawSongDataBlock(song: Song, text?: string, displayedServ
     var list = [songNameImage, line, songDetailImage, new Canvas(1, 60)]
     var rightCanvas = stackImage(list)
 
-    var canvas = stackImageHorizontal([songJacketCanvas, new Canvas(35, 1), rightCanvas])
+    const jacketWidth = 400
+    const jacketHeight = songJacketImage.height * jacketWidth / songJacketImage.width
+    // Preserve the original 400px-wide cover slot. A 2px internal inset leaves
+    // enough room for the cheap contact shadow without changing any sibling
+    // coordinates or the outer component dimensions.
+    var canvas = new Canvas(jacketWidth + 35 + rightCanvas.width, Math.max(jacketHeight, rightCanvas.height))
     var ctx = canvas.getContext("2d")
+    drawRoundedImage(ctx, songJacketImage, 2, 2, jacketWidth - 4, jacketHeight - 4, { radius: 22 })
+    ctx.drawImage(rightCanvas, 435, 0)
     ctx.drawImage(difficultyImage, 435, canvas.height - difficultyImage.height)
 
     return (drawDatablock({ list: [canvas] }))

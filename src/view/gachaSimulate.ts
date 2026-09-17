@@ -13,6 +13,7 @@ import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { setMainAPI } from "@/types/_Main";
+import { inheritSurfaceDecorations } from '@/image/surfaceShadow';
 
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
@@ -270,6 +271,7 @@ async function drawGachaBanner(gacha: Gacha) {
     const ctx = canvas.getContext('2d');
     //ctx.drawImage(okButton, 1010, 0)
     ctx.drawImage(gachaBannerImage, 50, 0)
+    inheritSurfaceDecorations(canvas, gachaBannerImage, 50, 0)
     return canvas
 }
 
