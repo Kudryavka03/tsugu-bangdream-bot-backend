@@ -1,5 +1,5 @@
 import { Canvas, Image } from 'skia-canvas';
-import { CreateBG, CreateBGEazyOpt, CreateBGPure } from '@/image/BG';
+import { CreateBG, CreateBGEazy, CreateBGEazyOpt, CreateBGPure } from '@/image/BG';
 import { assetsRootPath } from '@/config';
 import * as path from 'path';
 import { loadImageFromPath } from '@/image/utils';
@@ -29,6 +29,8 @@ interface outputFinalOptions {
     text?: string;
     BGimage?: Image | Canvas;
     compress?: boolean;
+    usePureBG?: boolean;
+    useNoneBG?: boolean;
 }
 
 //将图片列表从上到下叠在一起输出为一张图片
@@ -36,7 +38,9 @@ export var outputFinalCanv = async function ({ imageList,
     startWithSpace = true,
     useEasyBG = true,
     text = 'BanG Dream!',
-    BGimage = BGDefaultImage
+    BGimage = BGDefaultImage,
+    usePureBG = false,
+    useNoneBG=false
 }: outputFinalOptions
 ): Promise<Canvas> {
     //console.log(imageList)
@@ -61,18 +65,30 @@ export var outputFinalCanv = async function ({ imageList,
     const bgColor = '#fef3ef'
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, maxW, allH);
-    
-    if (useEasyBG) {
-        //if ((maxW * allH) < 5000000) ctx.drawImage(BGImageCache, 0, 0)
-        
+    if (usePureBG){
         await CreateBGPure({
             width: maxW,
             height: allH,
             canvas: tempcanv,
         })
+    }
+    else if (useEasyBG) {
+        //if ((maxW * allH) < 5000000) ctx.drawImage(BGImageCache, 0, 0)
+        /*
+        await CreateBGPure({
+            width: maxW,
+            height: allH,
+            canvas: tempcanv,
+        })
+            */
+        await CreateBGEazy({
+            width: maxW,
+            height: allH,
+            canv: tempcanv,
+        })
             
     }
-    else {
+    else if (!useNoneBG) {
         ctx.drawImage(await CreateBG({
             text,
             image: BGimage,
@@ -105,6 +121,7 @@ export var outputFinalBuffer = async function ({
     text,
     BGimage,
     compress = true,
+    usePureBG = false
 }: outputFinalOptions): Promise<Buffer> {
     var tempcanv = await outputFinalCanv({
         startWithSpace,

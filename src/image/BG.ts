@@ -109,11 +109,11 @@ async function loadImageOnce() {
 loadImageOnce()
 
 export async function CreateBGEazy({
-  width, height
+  width, height, canv
 }) {
   const texture = defaultBGTexture ?? await getDefaultBGTexture();
   const bgColor = '#fef3ef'
-  const canvas: Canvas = new Canvas(width, height);
+  const canvas: Canvas = canv;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
@@ -135,7 +135,7 @@ export async function CreateBGEazy({
     }
     y += texture.height * ratio;
   }
-  return (canvas)
+  //return (canvas)
 }
 
 interface BGEazyOptOptions {
