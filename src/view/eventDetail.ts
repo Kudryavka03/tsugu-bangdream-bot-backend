@@ -408,6 +408,8 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
             })
         )
         list.push(drawListMerge([totalPlayerDataCN, bannedPlayerDataCN]))
+    }else{
+        list.pop()
     }
 
 

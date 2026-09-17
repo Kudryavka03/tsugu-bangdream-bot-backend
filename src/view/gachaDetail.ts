@@ -141,12 +141,12 @@ export async function drawGachaDetail(gachaId: number, displayedServerList: Serv
         list.push(r)
     }
 
-    list.push(line)
+    if (drawGachaPickupInListResult && drawGachaPickupInListResult.length!=0) list.push(line)
 
     for(var r1 of drawGachaPickupInListResult){
         list.push(r1)
     }
-    list.push(line)
+    //list.push(line)
 
 
     var listImage = await drawDatablock({ list })

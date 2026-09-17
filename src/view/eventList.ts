@@ -167,6 +167,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         tempEventImageList.push(line);
         //最后一张图
         if (i == eventResults.length - 1) {
+            tempEventImageList.pop()
             eventImageListHorizontal.push(stackImage(tempEventImageList));
             eventImageListHorizontal.push(line2);
         }
@@ -396,7 +397,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         lineHeight: 110,
         trainingStatus: false,
         cardIdVisible: true,
-        leftPadding: 0,
+        leftPadding: 3,
     })
     //return stackImage([imageUp, imageDown])
     const result = stackImage([imageUp, imageDown])
