@@ -216,7 +216,7 @@ export async function drawCardList(matches: FuzzySearchResult, displayedServerLi
         all.push(cardListImage)
         var buffer = await outputFinalBuffer({
             imageList: all,
-            useEasyBG: true,
+            useNoneBG: true,
             compress: compress
         })
         return [buffer]

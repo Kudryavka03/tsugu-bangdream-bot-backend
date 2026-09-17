@@ -67,7 +67,7 @@ export async function drawCharacterList(matches: FuzzySearchResult, displayedSer
     }))
     var buffer = await outputFinalBuffer({
         imageList: all,
-        useNoneBG: true,
+        usePureBG: true,
         compress: compress,
     })
     return [buffer];

@@ -441,8 +441,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
 
     var buffer = await outputFinalBuffer({
         imageList: all,
-        useEasyBG: useEasyBG,
-        BGimage,
+        usePureBG: true,
         text: 'Event',
         compress: compress,
     })

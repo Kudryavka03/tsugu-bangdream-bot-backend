@@ -65,7 +65,10 @@ export var outputFinalCanv = async function ({ imageList,
     const bgColor = '#fef3ef'
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, maxW, allH);
-    if (usePureBG){
+    if (useNoneBG){
+
+    }
+    else if (usePureBG){
         await CreateBGPure({
             width: maxW,
             height: allH,
@@ -88,7 +91,7 @@ export var outputFinalCanv = async function ({ imageList,
         })
             
     }
-    else if (!useNoneBG) {
+    else  {
         ctx.drawImage(await CreateBG({
             text,
             image: BGimage,
@@ -121,11 +124,14 @@ export var outputFinalBuffer = async function ({
     text,
     BGimage,
     compress = true,
-    usePureBG = false
+    usePureBG = false,
+    useNoneBG = false
 }: outputFinalOptions): Promise<Buffer> {
     var tempcanv = await outputFinalCanv({
         startWithSpace,
         imageList,
+        useNoneBG,
+        usePureBG,
         useEasyBG,
         text,
         BGimage,
