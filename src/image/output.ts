@@ -65,6 +65,14 @@ export var outputFinalCanv = async function ({ imageList,
     const bgColor = '#fef3ef'
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, maxW, allH);
+    var size = maxW*allH
+      if (size >=5750000) usePureBG = true
+        if (size >=78000000) useNoneBG = true
+         if (size <5750000) {
+            usePureBG = false
+            useEasyBG = true
+            useNoneBG= false
+         }
     if (useNoneBG){
 
     }
@@ -139,9 +147,9 @@ export var outputFinalBuffer = async function ({
     var tempBuffer: Buffer
     if (compress != undefined && compress) {
         var size = (tempcanv.height * tempcanv.width)
-        var qualityValue = 0.7
+        var qualityValue = 0.6
         //console.log(size)
-        if (size >=5000000) qualityValue = 0.6
+        if (size >=5000000) qualityValue = 0.55
         if (size >=70000000) qualityValue = 0.5
         logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
         tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true, matte: '#fef3ef', })
