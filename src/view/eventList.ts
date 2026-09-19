@@ -20,7 +20,11 @@ import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
-const limitSub = pLimit(3);
+const configuredEventConcurrency = Number(process.env.TSUGU_EVENT_LIST_CONCURRENCY)
+const eventSubConcurrency = Number.isFinite(configuredEventConcurrency) && configuredEventConcurrency > 0
+    ? Math.floor(configuredEventConcurrency)
+    : 3
+const limitSub = pLimit(eventSubConcurrency);
 const limitMain = pLimit(7);
 let maxHeight = 7000
 const maxColumns = 7
@@ -94,6 +98,7 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     let offsetN:number = 0  // 定义列表Offset
     // 按照开始时间排序
     sortEventList(tempEventList,displayedServerList)
+    if (tempEventList.length >= 25 && isMainThread) return null
 
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
     var tempH = 0;

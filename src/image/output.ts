@@ -152,7 +152,7 @@ export var outputFinalBuffer = async function ({
         if (size >=5000000) qualityValue = 0.55
         if (size >=70000000) qualityValue = 0.5
         logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true, matte: '#fef3ef', })
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')

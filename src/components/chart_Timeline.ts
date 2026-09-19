@@ -28,6 +28,53 @@ interface drawTimeLineChartOptions {
   server?:Server
 }
 
+const MAX_CHART_POINTS_PER_DATASET = 1000
+
+function getChartPointX(point: any): number {
+  return point.x instanceof Date ? point.x.getTime() : Number(point.x)
+}
+
+function downsampleLTTB<T extends { x: any; y: number }>(data: T[], threshold: number): T[] {
+  if (threshold >= data.length || threshold < 3) return data
+  const sampled: T[] = [data[0]]
+  const bucketSize = (data.length - 2) / (threshold - 2)
+  let anchorIndex = 0
+  for (let i = 0; i < threshold - 2; i++) {
+    const avgRangeStart = Math.floor((i + 1) * bucketSize) + 1
+    const avgRangeEnd = Math.min(Math.floor((i + 2) * bucketSize) + 1, data.length)
+    let avgX = 0
+    let avgY = 0
+    const avgCount = Math.max(1, avgRangeEnd - avgRangeStart)
+    for (let j = avgRangeStart; j < avgRangeEnd; j++) {
+      avgX += getChartPointX(data[j])
+      avgY += data[j].y
+    }
+    avgX /= avgCount
+    avgY /= avgCount
+
+    const rangeStart = Math.floor(i * bucketSize) + 1
+    const rangeEnd = Math.min(Math.floor((i + 1) * bucketSize) + 1, data.length - 1)
+    const anchorX = getChartPointX(data[anchorIndex])
+    const anchorY = data[anchorIndex].y
+    let maxArea = -1
+    let selectedIndex = rangeStart
+    for (let j = rangeStart; j < rangeEnd; j++) {
+      const area = Math.abs(
+        (anchorX - avgX) * (data[j].y - anchorY) -
+        (anchorX - getChartPointX(data[j])) * (avgY - anchorY)
+      )
+      if (area > maxArea) {
+        maxArea = area
+        selectedIndex = j
+      }
+    }
+    sampled.push(data[selectedIndex])
+    anchorIndex = selectedIndex
+  }
+  sampled.push(data[data.length - 1])
+  return sampled
+}
+
 // 6. 主函数：生成时间轴图表
 export async function drawTimeLineChart(
   { start, end, setStartToZero = false, data,server }: drawTimeLineChartOptions,
@@ -35,6 +82,13 @@ export async function drawTimeLineChart(
 ) {
   const width = widthNum;
   const height = heightNum;
+  const chartDatasets = data.datasets.map((dataset: any) => ({
+    ...dataset,
+    data: Array.isArray(dataset.data)
+      ? downsampleLTTB(dataset.data, MAX_CHART_POINTS_PER_DATASET)
+      : dataset.data,
+  }))
+  const chartData = { ...data, datasets: chartDatasets }
   const weekMap = server== Server.jp?['日', '月', '火', '水', '木', '金', '土']:['日', '一', '二', '三', '四', '五', '六'];
   // 7. 创建 skia-canvas 实例
   const canvas = new Canvas(width, height);
@@ -82,11 +136,12 @@ export async function drawTimeLineChart(
   }
 
   // 8. 计算 y 轴最大值
-  const yMax = Math.max(
-    ...data.datasets.map((dataset: any) =>
-      Math.max(...dataset.data.map((pt: any) => pt.y))
-    )
-  );
+  let yMax = 0
+  for (const dataset of chartDatasets) {
+    for (const point of dataset.data ?? []) {
+      if (Number.isFinite(point?.y) && point.y > yMax) yMax = point.y
+    }
+  }
   
   // 9. 配置 Chart.js 选项
   const options = {
@@ -112,7 +167,7 @@ export async function drawTimeLineChart(
   // 10. Chart.js 配置
   const config = {
     type: 'line' as const,
-    data,
+    data: chartData,
     options: {
       ...options,
       responsive: false, // 重要：关闭 Chart.js 自适应模式

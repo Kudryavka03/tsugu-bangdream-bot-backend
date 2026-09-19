@@ -5,7 +5,7 @@ import { Canvas } from 'skia-canvas'
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
 import { drawDatablockHorizontal } from "@/components/dataBlock";
-import { drawSongInList, drawSongInListForQuerySong } from '@/components/list/song';
+import { drawSongInList, drawSongInListForQuerySong, drawSongInListForQuerySongInto } from '@/components/list/song';
 import { drawDottedLine } from '@/image/dottedLine';
 import { getOptDrawCount, getOptHeight, stackImage } from '@/components/utils';
 import { Server } from '@/types/Server';
@@ -16,7 +16,11 @@ import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
 import { parentPort, threadId, isMainThread } from 'worker_threads';
 import { loadImageOnce } from "@/components/card";
-const limitSub = pLimit(2);
+const configuredSubConcurrency = Number(process.env.TSUGU_WORKER_LIST_CONCURRENCY)
+const subConcurrency = Number.isFinite(configuredSubConcurrency) && configuredSubConcurrency > 0
+    ? Math.floor(configuredSubConcurrency)
+    : 4
+const limitSub = pLimit(subConcurrency);
 const limitMain = pLimit(7);
 const limitTask = isMainThread ? limitMain : limitSub;
 if (!isMainThread && parentPort) {
@@ -65,38 +69,12 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         return await drawSongDetail(tempSongList[0], displayedServerList, compress)
     }
 
-    var tempSongImageList: Canvas[] = [];
     var songImageListHorizontal: Canvas[] = [];
-    var tempH = 0;
     var songPromises: Promise<Canvas>[] = [];
-    //var t1 = Date.now()
-    if (tempSongList.length <50){
-        
-       for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(
-                limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
-            )
-            //songPromises.push();
-        }
-    } else{   // 大于15首，并发降级，不允许全部并发
-        if(isMainThread) return null
-        heavyLoad = true
-        logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
-        for (let i = 0; i < tempSongList.length; i++) {
-            songPromises.push(
-                limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
-            )
-            //songPromises.push(drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList));
-        }
-    }
-    var songImages = await Promise.all(songPromises);
-    songPromises.length = 0 // clear memory
-    //var t2 = Date.now()
-    //console.log(t2-t1)
-    let maxCount = getOptDrawCount(tempSongList.length,1000,85,10,30)  // 1000为一首歌长度，85为高度
-    //const maxHeight = getOptHeight(tempSongList.length,1000,100,10,30)
-    //表格用默认竖向虚线
+    const useDirectColumns = true//process.env.TSUGU_SONG_LIST_DIRECT_COLUMNS === '1'
+    const maxCount = getOptDrawCount(tempSongList.length, 1000, 85, 10, 30)
     const columnSeparatorHeight = ((maxCount - 0.2) * 85)
+    //表格用默认竖向虚线
     const line2: Canvas = drawDottedLine({
         width: 30,
         height: columnSeparatorHeight,
@@ -108,29 +86,78 @@ export async function drawSongList(matches: FuzzySearchResult, displayedServerLi
         gap: 10,
         color: "#a8a8a8"
     })
-    for (let i = 0; i < songImages.length; i++) {
-        var tempImage = songImages[i];
-        tempH += tempImage.height
-        if (i % maxCount == 0 && i!=0) {
-            tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList,true))
-            songImageListHorizontal.push(line2)
-            tempSongImageList = []
-            tempH = tempImage.height
+
+    if (useDirectColumns && !isMainThread && tempSongList.length >= 50) {
+        heavyLoad = true
+        logger('drawSongList', 'Direct column draw enabled. size=' + tempSongList.length)
+        const columnCount = Math.ceil(tempSongList.length / maxCount)
+        const directColumnPromises: Promise<void>[] = []
+        const columns: Canvas[] = []
+        for (let columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+            const rowCount = Math.min(maxCount, tempSongList.length - columnIndex * maxCount)
+            const canvasHeight = rowCount * 75 + Math.max(0, rowCount - 1) * line.height
+            columns.push(new Canvas(800, canvasHeight))
         }
-        tempSongImageList.push(tempImage)
-        tempSongImageList.push(line)
-        if (i == tempSongList.length - 1) {
-            tempSongImageList.pop()
-            songImageListHorizontal.push(stackImage(tempSongImageList,true))
-            songImageListHorizontal.push(line2)
+        for (let i = 0; i < tempSongList.length; i++) {
+            const columnIndex = Math.floor(i / maxCount)
+            const y = (i % maxCount) * (75 + line.height)
+            const ctx = columns[columnIndex].getContext('2d')
+            const rowIndex = i % maxCount
+            directColumnPromises.push(
+                limitTask(async () => {
+                    await drawSongInListForQuerySongInto(ctx, 0, y, tempSongList[i], undefined, undefined, displayedServerList)
+                    if (i < tempSongList.length - 1 && rowIndex < maxCount - 1) {
+                        ctx.drawImage(line, 0, y + 75)
+                    }
+                })
+            )
         }
+        await Promise.all(directColumnPromises)
+        directColumnPromises.length = 0
+        for (let i = 0; i < columns.length; i++) {
+            songImageListHorizontal.push(columns[i])
+            if (i != columns.length - 1) songImageListHorizontal.push(line2)
+        }
+    } else {
+        if (tempSongList.length < 50) {
+            for (let i = 0; i < tempSongList.length; i++) {
+                songPromises.push(
+                    limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+                )
+            }
+        } else {
+            if (isMainThread) return null
+            heavyLoad = true
+            logger('drawSongList','Task Priority Level DOWN,Concurrent Level DOWN to sync draw! Reason: tempSongImageList is too large,size is ' + tempSongList.length);
+            for (let i = 0; i < tempSongList.length; i++) {
+                songPromises.push(
+                    limitTask(async () => (await drawSongInListForQuerySong(tempSongList[i], undefined, undefined, displayedServerList)))
+                )
+            }
+        }
+        var songImages = await Promise.all(songPromises);
+        songPromises.length = 0 // clear memory
+        var tempSongImageList: Canvas[] = [];
+        for (let i = 0; i < songImages.length; i++) {
+            var tempImage = songImages[i];
+            if (i % maxCount == 0 && i!=0) {
+                tempSongImageList.pop()
+                songImageListHorizontal.push(stackImage(tempSongImageList,true))
+                songImageListHorizontal.push(line2)
+                tempSongImageList = []
+            }
+            tempSongImageList.push(tempImage)
+            tempSongImageList.push(line)
+            if (i == tempSongList.length - 1) {
+                tempSongImageList.pop()
+                songImageListHorizontal.push(stackImage(tempSongImageList,true))
+                songImageListHorizontal.push(line2)
+            }
+        }
+        songImageListHorizontal.pop();
+        songImages.length = 0
+        tempSongImageList.length = 0    // clear memory
     }
-
-    songImageListHorizontal.pop();
-    songImages.length = 0
-    tempSongImageList.length = 0    // clear memory
-
     var songListImage = await drawDatablockHorizontal({
         list: songImageListHorizontal
     })

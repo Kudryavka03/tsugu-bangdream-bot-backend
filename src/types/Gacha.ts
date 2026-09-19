@@ -13,6 +13,28 @@ const MAX_CACHE_SIZE = 300;  // 设置Event最大缓存量
 const ENABLE_CACHE = true; // 是否启用缓存
 //var cardDataCache = {}
 const gachaDataCache=new LRUCache(MAX_CACHE_SIZE);
+let gachaObjectSource = undefined
+let gachaObjectCache = new Map<number, Gacha>()
+let gachaRangeCache = new Map<string, Promise<Gacha[]>>()
+
+function ensureGachaCacheVersion() {
+    const source = mainAPI['gacha']
+    if (source !== gachaObjectSource) {
+        gachaObjectSource = source
+        gachaObjectCache = new Map()
+        gachaRangeCache = new Map()
+    }
+}
+
+function getGachaInstance(gachaId: number): Gacha {
+    ensureGachaCacheVersion()
+    let gacha = gachaObjectCache.get(gachaId)
+    if (!gacha) {
+        gacha = new Gacha(gachaId)
+        gachaObjectCache.set(gachaId, gacha)
+    }
+    return gacha
+}
 
 const typeName = {
     "permanent": "常驻",
@@ -228,14 +250,14 @@ export class Gacha {
 }
 
 //获取当前进行中的卡池
-export async function getPresentGachaList(server: Server, start: number = Date.now(), end: number = Date.now()): Promise<Array<Gacha>> {
+async function computePresentGachaList(server: Server, start: number, end: number): Promise<Array<Gacha>> {
     var gachaList: Array<Gacha> = []
     var gachaListMain = mainAPI['gacha']
     var gachaListTemp: Array<Gacha> = []
     var gachaInitFullPromise:Promise<Gacha>[]=[]
     for (const gachaId in gachaListMain) {
         if (Object.prototype.hasOwnProperty.call(gachaListMain, gachaId)) {
-            const gacha = new Gacha(parseInt(gachaId))
+            const gacha = getGachaInstance(parseInt(gachaId))
 
             // 检查卡池持续时间是否与start和end有交集
             if (gacha.publishedAt[server] == null) {
@@ -272,5 +294,17 @@ export async function getPresentGachaList(server: Server, start: number = Date.n
     }
     //console.log(gachaList)
     return gachaList
+
+}
+
+export function getPresentGachaList(server: Server, start: number = Date.now(), end: number = Date.now()): Promise<Array<Gacha>> {
+    ensureGachaCacheVersion()
+    const cacheKey = `${server}:${start}:${end}`
+    const cached = gachaRangeCache.get(cacheKey)
+    if (cached) return cached.then((list) => list.slice())
+    const pending = computePresentGachaList(server, start, end)
+    gachaRangeCache.set(cacheKey, pending)
+    pending.catch(() => gachaRangeCache.delete(cacheKey))
+    return pending.then((list) => list.slice())
     
 }

@@ -15,6 +15,8 @@ import { Server } from '@/types/Server'
 var cardTypeIconList: { [type: string]: Image } = {}
 var starList: { [type: string]: Image } = {}
 var limitBreakIcon: Image
+const cardIconFrameCache = new Map<string, Promise<Image>>()
+const cardIllustrationFrameCache = new Map<string, Promise<Image>>()
 
 
 if (!isMainThread && parentPort) {
@@ -52,8 +54,16 @@ async function getCardIconFrame(rarity: number, attribute: 'cool' | 'happy' | 'p
     else {
         var imageUrl = baseUrl + rarity.toString() + '.png'
     }
-    var imageBuffer = await downloadFileCache(imageUrl)
-    return (await loadImage(imageBuffer))
+    const cached = cardIconFrameCache.get(imageUrl)
+    if (cached) return await cached
+    const pending = downloadFileCache(imageUrl).then((buffer) => loadImage(buffer))
+    cardIconFrameCache.set(imageUrl, pending)
+    try {
+        return await pending
+    } catch (error) {
+        cardIconFrameCache.delete(imageUrl)
+        throw error
+    }
 }
 
 //根据稀有度与属性，获得插画框
@@ -66,8 +76,16 @@ async function getCardIllustrationFrame(rarity: number, attribute: 'cool' | 'hap
     else {
         var imageUrl = baseUrl + rarity.toString() + '.png'
     }
-    var imageBuffer = await downloadFileCache(imageUrl)
-    return (await loadImage(imageBuffer))
+    const cached = cardIllustrationFrameCache.get(imageUrl)
+    if (cached) return await cached
+    const pending = downloadFileCache(imageUrl).then((buffer) => loadImage(buffer))
+    cardIllustrationFrameCache.set(imageUrl, pending)
+    try {
+        return await pending
+    } catch (error) {
+        cardIllustrationFrameCache.delete(imageUrl)
+        throw error
+    }
 }
 
 

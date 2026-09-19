@@ -1,4 +1,4 @@
-import { Canvas } from 'skia-canvas'
+import { Canvas, CanvasRenderingContext2D } from 'skia-canvas'
 import { Band } from "@/types/Band"
 import { Server, getServerByPriority } from "@/types/Server"
 import { Song } from "@/types/Song"
@@ -12,14 +12,20 @@ import { formatSeconds } from './time'
 import mainAPI from '@/types/_Main'
 import { drawRoundedImage } from '@/image/surfaceShadow'
 
-export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer,useFever?:boolean): Promise<Canvas> {
-    
+export async function drawSongInListForQuerySongInto(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    song: Song,
+    difficulty?: number,
+    text?: string,
+    displayedServerList: Server[] = globalDefaultServer,
+    useFever?: boolean
+): Promise<void> {
     var server = getServerByPriority(song.publishedAt, displayedServerList)
     var songImage = await song.getSongJacketImage()
 
-    var canvas = new Canvas(800, 75)
-    var ctx = canvas.getContext("2d")
-    drawRoundedImage(ctx, songImage, 50, 5, 65, 65, { radius: 8 })
+    drawRoundedImage(ctx, songImage, x + 50, y + 5, 65, 65, { radius: 8 })
     //id
     var IDImage = await drawText({
         text: song.songId.toString(),
@@ -27,7 +33,7 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
         lineHeight: 37.5,
         maxWidth: 800
     })
-    ctx.drawImage(IDImage, 0, 0)
+    ctx.drawImage(IDImage, x, y)
 
     //曲名与乐队名
     var fullText = `${song.musicTitle[server]}\n`
@@ -70,7 +76,7 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
         lineHeight: 25, //37.5
         maxWidth: 800
     })
-    ctx.drawImage(textImage, 120, 0)
+    ctx.drawImage(textImage, x + 120, y)
 
 
     //难度
@@ -81,7 +87,12 @@ export async function drawSongInListForQuerySong(song: Song, difficulty?: number
         var difficultyImage = await drawDifficulity(difficulty, song.difficulty[difficulty].playLevel, 45, true,song.notes[difficulty])
         //var difficultyImage = await drawDifficulityWithNotes(difficulty, song.difficulty[difficulty].playLevel, 45,true,song.notes[difficulty])
     }
-    ctx.drawImage(difficultyImage, 800 - difficultyImage.width, 75 / 2 - difficultyImage.height / 2)
+    ctx.drawImage(difficultyImage, x + 800 - difficultyImage.width, y + 75 / 2 - difficultyImage.height / 2)
+}
+
+export async function drawSongInListForQuerySong(song: Song, difficulty?: number, text?: string, displayedServerList: Server[] = globalDefaultServer,useFever?:boolean): Promise<Canvas> {
+    var canvas = new Canvas(800, 75)
+    await drawSongInListForQuerySongInto(canvas.getContext("2d"), 0, 0, song, difficulty, text, displayedServerList, useFever)
     return canvas
 }
 

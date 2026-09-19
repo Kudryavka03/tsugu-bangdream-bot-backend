@@ -7,6 +7,7 @@ import { loadImageFromPath } from '@/image/utils';
 
 
 var skillIcon: { [skillType: string]: Image } = {}
+const skillIconCanvasCache = new Map<number, Canvas>()
 async function loadImageOnce() {
     skillIcon.life = await loadImageFromPath(path.join(assetsRootPath, '/Skill/life.png'));
     skillIcon.judge = await loadImageFromPath(path.join(assetsRootPath, '/Skill/judge.png'));
@@ -22,6 +23,8 @@ function getTextBase(): Promise<Image> {
 }
 //卡牌Icon右下角的技能描述图标
 export async function drawCardIconSkill(skill: Skill): Promise<Canvas> {
+    const cachedCanvas = skillIconCanvasCache.get(skill.skillId)
+    if (cachedCanvas) return cachedCanvas
     var content: Array<Image | string> = []
     var EffectTypes = skill.getEffectTypes()
     var ScoreUpMaxValue = skill.getScoreUpMaxValue()
@@ -73,5 +76,6 @@ export async function drawCardIconSkill(skill: Skill): Promise<Canvas> {
     const ctx = canvas.getContext('2d')
     ctx.drawImage(textbase, stringWithImage.width + 15 - textbase.width, 0)
     ctx.drawImage(stringWithImage, 5, 0)
+    skillIconCanvasCache.set(skill.skillId, canvas)
     return canvas
 }

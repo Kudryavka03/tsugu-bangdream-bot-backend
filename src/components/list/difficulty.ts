@@ -3,6 +3,8 @@ import { Song } from "@/types/Song"
 import { drawText, releaseCanvas } from "@/image/text"
 import { difficultyColorList } from "@/types/Song"
 
+const difficultyCanvasCache = new Map<string, Canvas>()
+
 export async function drawDifficulityListInListWithNotes(song: Song, imageHeight: number = 100, spacing: number = 10,dif?:string): Promise<Canvas> {
     var difficultyCount = Object.keys(song.difficulty).length
     var canvas = new Canvas(imageHeight * difficultyCount + (difficultyCount - 1) * spacing, imageHeight + 10)
@@ -66,6 +68,9 @@ export async function drawDifficulityWithNotes(difficultyType: number, playLevel
 
 
 export async function drawDifficulity(difficultyType: number, playLevel: number, imageHeight: number,choose: boolean = true,notes?:number) {
+    const cacheKey = `${difficultyType}:${playLevel}:${imageHeight}:${choose ? 1 : 0}:${notes ?? ''}`
+    const cachedCanvas = difficultyCanvasCache.get(cacheKey)
+    if (cachedCanvas) return cachedCanvas
     var tempcanv = new Canvas(imageHeight, notes?imageHeight+30:imageHeight)
     var ctx = tempcanv.getContext("2d")
     let offset = notes?8:0
@@ -99,6 +104,7 @@ export async function drawDifficulity(difficultyType: number, playLevel: number,
         });
         ctx.drawImage(notesText,(tempcanv.width -  notesText.width)/2,imageHeight+offset)
     }
+    difficultyCanvasCache.set(cacheKey, tempcanv)
     return (tempcanv)
 }
 

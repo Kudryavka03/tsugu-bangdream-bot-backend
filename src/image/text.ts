@@ -167,7 +167,7 @@ export function wrapText({
         if (temptext === "") continue;
 
         // 如果整行已经能放下，不需要换行
-        if (normalCtx.measureText(temptext).width <= maxWidth) {
+        if (drawTextMeasureText(temptext, textSize, font) <= maxWidth) {
             continue;
         }
 
@@ -178,7 +178,7 @@ export function wrapText({
         // 看草头黄修路灯想到的
         while (left <= right) {
             const mid = Math.floor((left + right) / 2);
-            const width = normalCtx.measureText(temptext.slice(0, mid)).width;
+            const width = drawTextMeasureText(temptext.slice(0, mid), textSize, font);
 
             if (width <= maxWidth) {
                 fitLength = mid;
