@@ -77,6 +77,7 @@ export async function drawCutoffDetail(eventId: number, tier: number, mainServer
         const speed = cutoff.getAnyCutoffSpeedByTime()
         const speed15min = cutoff.getAnyCutoffSpeedByTime(0,15*60*1000)
         let sameSpeed =speed==speed15min
+        sameSpeed = isNaN(speed) || isNaN(speed15min)
         //const lastep = cutoffs.length > 1 ? cutoffs[cutoffs.length - 2].ep : 0
         //const timeSpan = (cutoffs.length > 1 ? cutoff.latestCutoff.time - cutoffs[cutoffs.length - 2].time : cutoff.latestCutoff.time - cutoff.startAt) / (1000 * 3600)
         const showYcx2 = (tier ==1000||tier==500)
@@ -361,6 +362,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
         const speed = cutoff.getAnyCutoffSpeedByTime()
         const speed15min = cutoff.getAnyCutoffSpeedByTime(0,15*60*1000)
         let sameSpeed =speed==speed15min
+        sameSpeed = isNaN(speed) || isNaN(speed15min)
         //if (speed=speed15min)
         const cutoffs = cutoff.cutoffs
         const showYcx2 = (tier ==1000||tier==500)
@@ -727,16 +729,19 @@ export function getPrevDifference(cutoff:Cutoff){
     let lastest = cutoffs.at(-1).ep
     let continueFlags = true
     let index = -2
-    while(continueFlags){
-        let prevPoint = cutoffs.at(index).ep
-        if (prevPoint!=lastest){
-            continueFlags = false
-            return lastest - prevPoint
-        } if (index > (-cutoffs.length)){
-            index--
-        }else{
-            return 0
+    if (cutoffs.at(-2)){
+        while(continueFlags){
+            let prevPoint = cutoffs.at(index).ep
+            if (prevPoint!=lastest){
+                continueFlags = false
+                return lastest - prevPoint
+            } if (index > (-cutoffs.length)){
+                index--
+            }else{
+                return 0
+            }
         }
     }
+
     return 0
 }
