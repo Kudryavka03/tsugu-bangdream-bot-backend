@@ -207,6 +207,8 @@ function getLabelFromRawMessage(rawMsg:string):string[]{
         "跳":[" j","jumpin","红黄跳"],
         "SAVIOR OF SONG":["savior of song"," s","sos","s车"],
         "效率自选":["效率自选","效率","自选"],
+        "蓝队":["蓝队","蓝"],
+        "绿队":["绿队","绿"],
         "长途":["长","长途"],
         "禁FC":["禁fc","禁hdfc"],
         "禁HD":["禁hd","禁fchd"],
@@ -216,6 +218,7 @@ function getLabelFromRawMessage(rawMsg:string):string[]{
         "下把":["xb","下把","下吧"],
         "结算中":["结算","js"],
         "接车牌":["接车牌"]
+
     }
     let result:string[] = []
     const plateRegex = /(\d+)\s*(?:w|万)\s*(\d+)?/gi;
