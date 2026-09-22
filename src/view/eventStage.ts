@@ -8,6 +8,7 @@ import { drawEventStageTypeTop, drawEventStageSongHorizontal } from '@/component
 import { outputFinalBuffer } from '@/image/output'
 import { drawDatablock } from '@/components/dataBlock'
 import { stackImage, stackImageHorizontal } from '@/components/utils'
+import { line } from '@/components/list';
 
 export async function drawEventStage(eventId: number, index: number, date: Date, mainServer: Server, meta: boolean = false, compress: boolean): Promise<Array<Buffer | string>> {
     const event = new Event(eventId);
@@ -45,10 +46,57 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
 
     //绘制活动stage，每个stage一个图片
     async function drawStageSong(stage: Stage) {
+        let imageList =[]
+        let nowtime = new Date().getTime()
+        let isDrawEventStageSongHorizontal = false
+        const  checkTs=function(tsTypeStart,tsTypeEnd,nowTs){
+            if (isDrawEventStageSongHorizontal) return false
+            let r = (((Number(tsTypeStart) <= nowTs)) && (Number(tsTypeEnd) >= nowTs))
+            return (r)
+        }
+        const  preCheckTs=function(tsTypeStart){
+            if (isDrawEventStageSongHorizontal) return false
+            let r = (((Number(tsTypeStart) <= nowtime)))
+            return (r)
+        }
+        //console.log(stage)
+        
+        for (let i = 0 ;i<stage.type.length;i++){
+            if (stage.type[i] == undefined) continue
+            // 现在时间大于试炼的开始时间，试炼歌曲时间
+            if (Number(stage.type[i].endAt) >= stage.startAt && Number(stage.type[i].startAt)<= stage.startAt){
+                imageList.push(await drawEventStageTypeTop(stage,i))
+                if (checkTs(stage.type[i].startAt,stage.type[i].endAt,nowtime)){
+                    imageList.push(await drawEventStageSongHorizontal(stage, meta))
+                    isDrawEventStageSongHorizontal = true
+                }
+                continue
+            }
+            if (Number(stage.type[i].startAt) >= (stage.startAt) &&  Number(stage.type[i].startAt) <= (stage.endAt)){
+                imageList.push(await drawEventStageTypeTop(stage,i))
+                if (checkTs(stage.type[i].startAt,stage.type[i].endAt,nowtime)){
+                    imageList.push(await drawEventStageSongHorizontal(stage, meta))
+                    isDrawEventStageSongHorizontal = true
+                }
+                continue
+            }
+            if (Number(stage.type[i].startAt) >= (stage.startAt) &&  Number(stage.type[i].endAt) <= (stage.endAt)){
+                imageList.push(await drawEventStageTypeTop(stage,i))
+                if (checkTs(stage.type[i].startAt,stage.type[i].endAt,nowtime)){
+                    imageList.push(await drawEventStageSongHorizontal(stage, meta))
+                    isDrawEventStageSongHorizontal = true
+                }
+                continue
+            }
+        }
+        if (!isDrawEventStageSongHorizontal) imageList.push(await drawEventStageSongHorizontal(stage, meta))
+        return stackImage(imageList)
+        /*
         return stackImage([
             await drawEventStageTypeTop(stage),
             await drawEventStageSongHorizontal(stage, meta)
         ])
+            */
 
     }
 
@@ -77,8 +125,9 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
             tempH = tempImage.height;
         }
         tempEventStageImageList.push(tempImage);
-
+        tempEventStageImageList.push(line)
         if (i == eventStageResults.length - 1) {
+            tempEventStageImageList.pop()
             eventStageImageListHorizontal.push(await drawDatablock({ list: tempEventStageImageList }));
         }
     }

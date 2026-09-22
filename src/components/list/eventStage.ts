@@ -22,10 +22,15 @@ async function loadStageTypeTopImage(type: string): Promise<Image> {//加载活�
     }
 }
 
-export async function drawEventStageTypeTop(stage: Stage): Promise<Canvas> {//绘制活动类型顶部(时间+类型)
-    let type = stage.type;
-    const startAt = stage.startAt;
-    const endAt = stage.endAt;
+export async function drawEventStageTypeTop(stage: Stage,index:number): Promise<Canvas> {//绘制活动类型顶部(时间+类型)
+    
+    let stageType = stage.type[index]
+    let stageStartTs = Number(stageType.startAt)
+    let stageEndTs = Number(stageType.endAt)
+    let type = stageType.type;
+    // 设定区间
+    const startAt = stage.startAt<stageStartTs?stageStartTs:stage.startAt;
+    const endAt = stage.endAt<stageEndTs?stage.endAt:stageEndTs;
 
     if (stageTypeList.indexOf(type) == -1) {
         type = 'undefined';

@@ -217,8 +217,8 @@ function getLabelFromRawMessage(rawMsg:string):string[]{
         "欢迎清火":["hyqh","欢迎清货","后院起火","海员七号","花音求婚"],
         "下把":["xb","下把","下吧"],
         "结算中":["结算","js"],
-        "接车牌":["接车牌"]
-
+        "接车牌":["接车牌"],
+        "修车":["修车"]
     }
     let result:string[] = []
     const plateRegex = /(\d+)\s*(?:w|万)\s*(\d+)?/gi;

@@ -4,7 +4,7 @@ import { globalDefaultServer, Bestdoriurl } from '@/config';
 import { callAPIAndCacheResponse } from '@/api/getApi';
 
 export interface Stage {
-    type: string,
+    type: EventStage["stageType"],
     startAt: number,
     endAt: number,
     songIdList: Array<number>
@@ -105,7 +105,7 @@ export class EventStage {
             const element = temp[i];
             let tempStartAt = parseInt(element.startAt);
             let tempEndAt = parseInt(element.endAt);
-            let tempStageType = this.getStageTypeByTime(tempStartAt, tempEndAt);
+            let tempStageType = this.getStageTypeByTimeArray(tempStartAt, tempEndAt);
             tempStageList.push({ type: tempStageType, startAt: tempStartAt, endAt: tempEndAt, songIdList: temp[i].music });
         }
         //排序
@@ -129,6 +129,21 @@ export class EventStage {
             return false;
         });
         return stage?.type || 'undefined';
+    }
+    getStageTypeByTimeArray(startAt: number, endAt: number): EventStage["stageType"] {//重叠修复
+        if (!this.isInitFull) {
+            return;
+        };
+        let stage = this.stageType.map(x => {
+            let startTime = parseInt(x.startAt);
+            let endTime = parseInt(x.endAt);
+            if (startTime <= endAt && endTime >= startAt) {
+                return x;
+            }
+            //return false;
+        });
+        return stage
+        //return stage?.type || 'undefined';
     }
 }
 
