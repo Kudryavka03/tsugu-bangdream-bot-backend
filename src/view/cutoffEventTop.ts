@@ -1429,6 +1429,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     let findGreaterResult = false
                     for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
                         let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
+                        if (tempUidList[index] == uid) continue // 重复uid不判断
                         if (index == -1) break
                         let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
                         let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
