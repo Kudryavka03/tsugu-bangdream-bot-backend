@@ -1350,6 +1350,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
     //console.log(totalChangeCount)
     const strictMode = totalChangeCount>=strictCount ?true:false
     // 为了在后来的结算中排除这些已经高度绑定的结果
+    var sureMap = new Map<number,any[]>()  // uid对应的其他绝对同房uid
     var sureAtSameRoomUidList = []
     var sureAtSameRoomUidListFirst = []
     if (uidSort) uidTotalList = uidSort
@@ -1358,7 +1359,17 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         var sureSameUidList = inferSureRoomsByScoreChange(valueChangeData,uid)
         if (sureSameUidList.length > 1){
             for(let sureSameUid of sureSameUidList){
-                if (!sureAtSameRoomUidList.includes(sureSameUid)) sureAtSameRoomUidList.push(sureSameUid)
+                if (!sureAtSameRoomUidList.includes(sureSameUid)){
+                    sureAtSameRoomUidList.push(sureSameUid)
+                    sureMap.set(uid,sureSameUidList)
+                }
+                //console.log(sureSameUidList)
+                /*
+                if (sureSameUidList.length==5){   // 对于已经是等于5个的，直接push进去，不再参与循环
+                    console.log(sureSameUidList)
+                    sureSameUidList.forEach(x=>dupUid.push(x))
+                }
+                    */
                 if (!sureAtSameRoomUidListFirst.includes(uid))  sureAtSameRoomUidListFirst.push(uid)   // 吧同房的第一个uid push进去
             }
         
@@ -1403,6 +1414,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             tempUidListAppearCountInCurrentUidChange.push(appearCount)
         }
         var sureAtSameRoom = inferSureRoomsByScoreChange(valueChangeData,uid,dupUid) // 完全确认是在同一个房间的
+        console.log(utl,sureAtSameRoom)
         var possibleAtSameRoom = [] // 可能在同一个房间的Uid
         var possibleAtSameRoomRatio = [] // 可能在同一个房间的可能概率
         let possibleAtSameRoomTemp = []
@@ -1410,7 +1422,9 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         const roomLeft = 5 - sureAtSameRoom.length
         let skipCompare = false
         for(let i = 0;i<tempUidList.length;i++){
-            if (sureAtSameRoomUidList.includes(tempUidList[i]))continue
+            // 26.9.23： 如果sureAtSameRoomUidList.includes，则表示主动跳过同房的列表，导致同房会单独另起一个房间
+            //if (sureAtSameRoomUidList.includes(tempUidList[i]))continue
+
             if (sureAtSameRoom.includes(tempUidList[i]))continue
             //if (sureAtSameRoom.length>=5)break
             if (strictMode)break
@@ -1423,13 +1437,16 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
             let smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 2026-08-31: 从绝对同房中寻找是否有更好的同房列表。例如跟当前跟同房A 同房B都符合条件，但是同房B的条件更加符合，因此跳过。
+            //console.log(`${uid} VS ${tempUidList[i]} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length}`)
+            //console.log(tempUidList[i],dupUid.includes(tempUidList[i]))
             if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
                 if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大变动次数 > sameRoomRatioConfidence比例
+
                     let ratioValue = smallCountInPart /largeCountInTotal    // 记录当前的可能度
                     let findGreaterResult = false
                     for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
                         let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
-                        if (tempUidList[index] == uid) continue // 重复uid不判断
+                        if (tempUidList[index] == uid ||tempUidList[index]==tempUidList[i] ) continue // 重复uid不判断
                         if (index == -1) break
                         let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
                         let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
@@ -1442,8 +1459,22 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                         }
                     }
                     if (!findGreaterResult){
-                        possibleAtSameRoomTemp.push(tempUidList[i])
-                        possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        if (sureMap.has(tempUidList[i])){
+                            let sureMapList = sureMap.get(tempUidList[i])
+                            for(let sml of sureMapList){
+                                //console.log(sml)
+                                possibleAtSameRoomTemp.push(sml)
+                                
+                                //dupUid.push(sml)
+                            }
+                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        }else{
+                            possibleAtSameRoomTemp.push(tempUidList[i])
+                            //console.log(uid,tempUidList[i])
+                            //dupUid.push(tempUidList[i])
+                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        }
+
                         console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
                     }
                     if (findGreaterResult) continue
@@ -1457,6 +1488,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
                         let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
                         if (index == -1) break
+                        if (tempUidList[index] == uid ||tempUidList[index]==tempUidList[i]) continue // 重复uid不判断
                         if (tempUidListAppearCount[index] < currentUidChange.length && currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[index]){
                             let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
                             let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
@@ -1469,8 +1501,19 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                         }
                     }
                     if (!findGreaterResult){
-                        possibleAtSameRoomTemp.push(tempUidList[i])
-                        possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        if (sureMap.has(tempUidList[i])){
+                            let sureMapList = sureMap.get(tempUidList[i])
+                            for(let sml of sureMapList){
+                                //console.log(sml)
+                                possibleAtSameRoomTemp.push(sml)
+                                //dupUid.push(sml)
+                            }
+                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        }else{
+                            possibleAtSameRoomTemp.push(tempUidList[i])
+                            //dupUid.push(tempUidList[i])
+                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        }
                         console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} / 规则2`)
                     }
                     if (findGreaterResult) continue
@@ -1480,7 +1523,11 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 当前查询总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
                     if(!skipCompare)skipCompare = true  // 让后面的流程来匹配
                     console.log(`数值偏少但可能同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length} > ${sameRoomRatioToTotalConfidence} / 规则3`)
+                }else{
+                    //console.log(`${uid}判定与${tempUidList[i]}不同房: ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length} > ${sameRoomRatioToTotalConfidence}`)
                 }
+            }else{
+                //console.log(`${uid}判定与${tempUidList[i]}不同房: ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length} > ${sameRoomRatioToTotalConfidence}`)
             }
         }
         if (skipCompare == true && possibleAtSameRoomTemp.length <1) continue
