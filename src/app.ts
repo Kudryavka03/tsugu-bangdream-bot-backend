@@ -20,6 +20,7 @@ import { cutoffDetailRouter } from '@/routers/cutoffDetail';
 import { cutoffListOfRecentEventRouter } from '@/routers/cutoffListOfEvent';
 import { cutoffAllRouter } from '@/routers/cutoffAll';
 import { cutoffSongRouter } from '@/routers/cutoffSong';
+import { cutoffCacheRouter } from '@/routers/cutoffCache';
 import { songChartRouter } from '@/routers/songChart'; 1
 import { userRouter } from '@/routers/user'
 import { stationRouter } from '@/routers/station'
@@ -74,6 +75,7 @@ app.use('/cutoffDetail', cutoffDetailRouter);
 app.use('/cutoffListOfRecentEvent', cutoffListOfRecentEventRouter);
 app.use('/cutoffAll', cutoffAllRouter);
 app.use('/cutoffSong', cutoffSongRouter)
+app.use('/cutoffCache', cutoffCacheRouter)
 app.use('/eventStage', eventStageRouter)
 app.use('/songRandom', songRandomRouter);
 app.use('/fuzzySearch', fuzzySearchRouter);

@@ -220,13 +220,12 @@ async function loadMainAPI(useCache: boolean = false) {
 }
 //TopRateSpeedCacheTime = new Date().getTime()
 logger('mainAPI', "initializing...")
-loadMainAPI(true).then(() => {
+loadMainAPI(true).then(async () => {
     preCacheIcon()
+    await runSubscriptCache()
     logger('mainAPI', "initializing done")
     loadMainAPI()
 })
-
-runSubscriptCache()
 
 if (isMainThread) setInterval(loadMainAPI, 1000 * 60 * 5)//5分钟更新一次
 

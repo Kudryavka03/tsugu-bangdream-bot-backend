@@ -2,31 +2,26 @@
 
 import { preferredCutoffDataSourceName } from "@/config";
 import { Cutoff } from "./Cutoff";
-import { checkEventEndOrNot, getEventListByDisplayServerListTimeRange, getPresentEvent } from "./Event";
+import { checkEventEndOrNot, Event } from "./Event";
 import { Server } from "./Server";
 import { promises as fs } from "fs";
 import path from "path";
 
 const cacheListFile = path.resolve(process.cwd(), "subscript-cache-list.txt");
 const cacheKeyPattern = /^S(\d+)E(\d+)T(\d+)D(\d+)$/;
-let serverLength = Object.keys(Server).length
-let presentEventId: number[] = []
-let presentEventEndTs: number[] = []
-for(let i = 0;i<serverLength;i++){
-    let e = getPresentEvent(i).eventId
-    presentEventId[i] = getPresentEvent(i).eventId
-    presentEventEndTs[i] = getPresentEvent(i).endAt[i]
-}
+export const subscriptCacheTtlSeconds = 60
 export class CacheStatus {
     server: Server;
     eventId: number;
     tier: number;
     prevUpdate:number
-    constructor(server:Server,eventId:number,tier:number,ttl:number){
+    id: string
+    constructor(server:Server,eventId:number,tier:number,ttl:number,prevUpdate:number = Date.now()){
         this.server = server
         this.eventId = eventId
         this.tier = tier
-        this.prevUpdate = new Date().getTime()
+        this.prevUpdate = prevUpdate
+        this.id = makeSubscriptCacheKey(server,eventId,tier,ttl)
     }
 }
 // 注册档线 缓存档线
@@ -48,21 +43,18 @@ export class CacheOptions {
         this.ttl = ttl
         this.prevUpdate = new Date().getTime()
         this.cutoffObj = new Cutoff(this.eventId,this.server,this.tier)
-        this.fetchNewData()
     }
-    async fetchNewData(){
-        const update = function(){
-            let cutoff = new Cutoff(this.eventId,this.server,this.tier)
-            cutoff.initFull()
-            this.cutoffObj = null
-            this.cutoffObj = cutoff
-            this.prevUpdate = new Date().getTime()
-        }
-        if (preferredCutoffDataSourceName != 'StarFx' && (new Date().getTime() - this.prevUpdate)>15*60*1000){  // 非高精度源应该要15分钟后才能更新一次
-            update()
-        }else if (preferredCutoffDataSourceName == 'StarFx'){
-            update()
-        }
+    async fetchNewData(force:boolean = false){
+        const now = Date.now()
+        const shouldUpdate = force
+            || preferredCutoffDataSourceName == 'StarFx'
+            || now - this.prevUpdate > 15 * 60 * 1000
+        if (!shouldUpdate) return
+
+        const cutoff = new Cutoff(this.eventId,this.server,this.tier)
+        await cutoff.initFull()
+        this.cutoffObj = cutoff
+        this.prevUpdate = Date.now()
     }
     getData(): Cutoff {
         // 复制一个
@@ -76,19 +68,22 @@ export class CacheOptions {
 };
 
 let subscriptCacheMap = new Map<string,CacheOptions>()
-let ttl = 60        // 秒（）
+let ttl = subscriptCacheTtlSeconds
 let runStatus = false
 export async function addSubscriptCache(server:Server,eventId:number,tier:number,isLoad=false){
-    const key = makeCacheKey(server, eventId, tier, ttl);
-    subscriptCacheMap.set(
-        key,
-        new CacheOptions(server, eventId, tier, ttl),
-    );
+    const key = makeSubscriptCacheKey(server, eventId, tier, ttl);
+    const cache = new CacheOptions(server, eventId, tier, ttl);
+    subscriptCacheMap.set(key, cache);
+    try {
+        await cache.fetchNewData(true);
+    } catch (error) {
+        console.error(`加载档线缓存失败：${key}`, error);
+    }
     if (!isLoad) await saveSubscriptCacheList();
 }
 
 export async function delSubscriptCache(server:Server,eventId:number,tier:number){
-    const key = makeCacheKey(server, eventId, tier, ttl);
+    const key = makeSubscriptCacheKey(server, eventId, tier, ttl);
     if (subscriptCacheMap.has(key)) subscriptCacheMap.delete(key)
     await saveSubscriptCacheList()
 }
@@ -151,11 +146,11 @@ async function updateSubscriptCache(): Promise<void> {
     await Promise.all(tasks);
 }
 export function hasSubscriptCache(server:Server,eventId:number,tier:number):boolean{
-    const key = makeCacheKey(server, eventId, tier, ttl);
+    const key = makeSubscriptCacheKey(server, eventId, tier, ttl);
     return subscriptCacheMap.has(key)
 }
 export function readSubscriptCache(server:Server,eventId:number,tier:number):Cutoff{
-    const key = makeCacheKey(server, eventId, tier, ttl);
+    const key = makeSubscriptCacheKey(server, eventId, tier, ttl);
     if (subscriptCacheMap.has(key)){
         return subscriptCacheMap.get(key).getData()
     }
@@ -165,7 +160,7 @@ export function readSubscriptCache(server:Server,eventId:number,tier:number):Cut
 }
 export function readSubscriptCacheStatusTotal(){
     let status:CacheStatus[] =[]
-    subscriptCacheMap.forEach((key)=>status.push(new CacheStatus(key.server,key.eventId,key.tier,key.ttl)))
+    subscriptCacheMap.forEach((cache)=>status.push(new CacheStatus(cache.server,cache.eventId,cache.tier,cache.ttl,cache.prevUpdate)))
     return status
 }
 export async function runSubscriptCache(){
@@ -181,7 +176,7 @@ export async function runSubscriptCache(){
     }, ttl * 1000);
 }
 
-function makeCacheKey(
+export function makeSubscriptCacheKey(
     server: Server,
     eventId: number,
     tier: number,

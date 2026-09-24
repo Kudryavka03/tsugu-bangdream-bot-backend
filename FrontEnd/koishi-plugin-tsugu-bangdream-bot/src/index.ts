@@ -9,6 +9,7 @@ import * as searchSong_1 from "./commands/searchSong";
 import * as searchGacha_1 from "./commands/searchGacha";
 import * as cutoffDetail_1 from "./commands/cutoffDetail";
 import * as cutoffSong_1 from "./commands/cutoffSong";
+import * as cutoffCache_1 from "./commands/cutoffCache";
 import * as songTop10_1 from "./commands/songTop10";
 import * as searchPlayer_1 from "./commands/searchPlayer";
 import * as cutoffListOfRecentEvent_1 from "./commands/cutoffListOfRecentEvent";
@@ -146,6 +147,8 @@ export function apply(ctx: Context, config: Config) {
         if (config.noSpace) {
             // 查卡面 一定要放在 查卡 前面
             const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
+            keywords.push(...cutoffCacheKeywords);
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
@@ -594,6 +597,51 @@ export function apply(ctx: Context, config: Config) {
             mainServer = serverFromServerNameFuzzySearch;
         }
         const list = await (0, cutoffDetail_1.commandCutoffDetail)(config, mainServer, tier, eventId,options.compare);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("预热档线 <tier:string> [eventId:string] [serverName:text]", "添加档线缓存订阅", cmdConfig)
+        .alias('添加档线缓存', '添加预热档线')
+        .usage('添加指定活动与档线的档线缓存订阅。档线支持纯数字或T加数字。省略活动ID时默认当前活动，省略服务器时使用用户的主服务器')
+        .example('预热档线 T1000 :添加主服务器当前活动的1000档线缓存')
+        .example('预热档线 1000 320 国服 :添加国服320号活动的1000档线缓存')
+        .action(async ({ session }, tier, eventId, serverName) => {
+        if (tier == undefined) {
+            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 预热档线`;
+        }
+        if (eventId != undefined && isNaN(Number(eventId))) {
+            if (serverName != undefined) {
+                return '错误: 活动ID必须为数字';
+            }
+            serverName = eventId;
+            eventId = undefined;
+        }
+        const tsuguUserData = await observeUserTsugu(session);
+        let mainServer = tsuguUserData.mainServer;
+        if (serverName) {
+            const serverFromServerNameFuzzySearch = await (0, fuzzySearch_1.serverNameFuzzySearchResult)(config, serverName);
+            if (serverFromServerNameFuzzySearch == -1) {
+                return '错误: 服务器名未能匹配任何服务器';
+            }
+            mainServer = serverFromServerNameFuzzySearch;
+        }
+        const list = await (0, cutoffCache_1.commandAddCutoffCache)(config, mainServer, tier, eventId == undefined ? undefined : Number(eventId));
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("删除档线 <id:string>", "删除档线缓存订阅", cmdConfig)
+        .alias('删除预热档线', '移除档线', '移除预热档线')
+        .usage('根据档线缓存状态中显示的预热ID删除订阅')
+        .example('删除档线 S3E320T100D60 :删除预热ID为S3E320T100D60的档线缓存订阅')
+        .action(async ({ session }, id) => {
+        if (id == undefined) {
+            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 删除档线`;
+        }
+        const list = await (0, cutoffCache_1.commandDelCutoffCache)(config, id);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("档线缓存状态", "查询档线缓存订阅列表", cmdConfig)
+        .alias('查看档线缓存', '档线缓存', '预热档线列表')
+        .action(async () => {
+        const list = await (0, cutoffCache_1.commandCutoffCacheStatus)(config);
         return (0, utils_1.paresMessageList)(list);
     });
     

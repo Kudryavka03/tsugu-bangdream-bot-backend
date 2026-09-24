@@ -815,8 +815,8 @@ export function loadCutoff(eventId: number, server: Server, tier: number, manual
     if (manualOptions){
         return new Cutoff(eventId,server,tier,manualOptions)
     }else{
-        if (hasSubscriptCache(eventId,server,tier)){
-            return readSubscriptCache(eventId,server,tier)
+        if (hasSubscriptCache(server,eventId,tier)){
+            return readSubscriptCache(server,eventId,tier)
         }
         else{
             return  new Cutoff(eventId,server,tier,manualOptions)
