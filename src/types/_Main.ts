@@ -13,6 +13,7 @@ import { genMetaRankCache } from '@/view/songMetaList'
 import { manualLoadFuzzyConfig } from '@/fuzzySearch'
 import { clearMeasureCache } from '@/image/text'
 import { getPD_Size } from '@/api/downloader'
+import { runSubscriptCache } from './CutoffCacheSystem'
 
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
@@ -225,7 +226,7 @@ loadMainAPI(true).then(() => {
     loadMainAPI()
 })
 
-
+runSubscriptCache()
 
 if (isMainThread) setInterval(loadMainAPI, 1000 * 60 * 5)//5分钟更新一次
 

@@ -7,6 +7,7 @@ import { predict } from '@/api/cutoff.cjs'
 import * as fs from 'fs';
 import path from 'path'
 import { getDateByServerTimezone, GetProbablyTimeDifference, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
+import { hasSubscriptCache, readSubscriptCache } from './CutoffCacheSystem';
 
 export type ManualCutoffOptions = {
     startAt: number;
@@ -809,3 +810,18 @@ export class Cutoff {
     }
 
 }
+
+export function loadCutoff(eventId: number, server: Server, tier: number, manualOptions?: ManualCutoffOptions){
+    if (manualOptions){
+        return new Cutoff(eventId,server,tier,manualOptions)
+    }else{
+        if (hasSubscriptCache(eventId,server,tier)){
+            return readSubscriptCache(eventId,server,tier)
+        }
+        else{
+            return  new Cutoff(eventId,server,tier,manualOptions)
+        }
+    }
+}
+
+// 天音最强！天音最强！天音最强！
