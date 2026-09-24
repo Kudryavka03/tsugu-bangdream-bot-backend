@@ -2,13 +2,21 @@
 
 import { preferredCutoffDataSourceName } from "@/config";
 import { Cutoff } from "./Cutoff";
-import { getEventListByDisplayServerListTimeRange } from "./Event";
+import { checkEventEndOrNot, getEventListByDisplayServerListTimeRange, getPresentEvent } from "./Event";
 import { Server } from "./Server";
 import { promises as fs } from "fs";
 import path from "path";
 
 const cacheListFile = path.resolve(process.cwd(), "subscript-cache-list.txt");
 const cacheKeyPattern = /^S(\d+)E(\d+)T(\d+)D(\d+)$/;
+let serverLength = Object.keys(Server).length
+let presentEventId: number[] = []
+let presentEventEndTs: number[] = []
+for(let i = 0;i<serverLength;i++){
+    let e = getPresentEvent(i).eventId
+    presentEventId[i] = getPresentEvent(i).eventId
+    presentEventEndTs[i] = getPresentEvent(i).endAt[i]
+}
 export class CacheStatus {
     server: Server;
     eventId: number;
@@ -70,7 +78,7 @@ export class CacheOptions {
 let subscriptCacheMap = new Map<string,CacheOptions>()
 let ttl = 60        // 秒（）
 let runStatus = false
-export async function addSubscriptCache(server:Server,eventId:number,tier:number,ttl:number,isLoad=false){
+export async function addSubscriptCache(server:Server,eventId:number,tier:number,isLoad=false){
     const key = makeCacheKey(server, eventId, tier, ttl);
     subscriptCacheMap.set(
         key,
@@ -120,16 +128,21 @@ export async function loadSubscriptCacheList(){
             config.server,
             config.eventId,
             config.tier,
-            config.cacheTtl,
+            //config.cacheTtl,
             true    // 加载阶段
         );
     }
 }
 
+
 async function updateSubscriptCache(): Promise<void> {
     const tasks: Promise<void>[] = [];
     subscriptCacheMap.forEach((item, key) => {
         if (item.removeFlags) {
+            subscriptCacheMap.delete(key);
+            return;
+        }
+        if (checkEventEndOrNot(item.server,item.eventId)){    // 该活动不一定举办过
             subscriptCacheMap.delete(key);
             return;
         }

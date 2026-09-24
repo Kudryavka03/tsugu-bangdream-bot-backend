@@ -831,3 +831,12 @@ export async function getAnimatedStamp(baseImageName: string, server: Server, fr
     //return frame image
     return canvas
 }
+export function checkEventEndOrNot(server:Server,eventId:Number){
+    let endTime = mainAPI["events"][eventId.toString()]["endAt"][server]
+    if (!endTime){
+        return false
+    }else if (Number(endTime) < new Date().getTime()){
+        return true
+    }
+    return false
+}
