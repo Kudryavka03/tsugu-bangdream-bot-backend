@@ -47,14 +47,17 @@ export class CacheOptions {
     async fetchNewData(force:boolean = false){
         const now = Date.now()
         const shouldUpdate = force
-            || preferredCutoffDataSourceName == 'StarFx'
+            || preferredCutoffDataSourceName == 'StarFX'
             || now - this.prevUpdate > 15 * 60 * 1000
         if (!shouldUpdate) return
 
         const cutoff = new Cutoff(this.eventId,this.server,this.tier)
         await cutoff.initFull()
-        this.cutoffObj = cutoff
-        this.prevUpdate = Date.now()
+        if (cutoff.isInitfull){
+            this.cutoffObj = cutoff
+            this.prevUpdate = Date.now()
+        }
+
     }
     getData(): Cutoff {
         // 复制一个
