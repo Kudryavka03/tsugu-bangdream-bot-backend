@@ -176,6 +176,7 @@ async function loadMainAPI(useCache: boolean = false) {
         }
     }
     // 初始化metaCache
+    /*
     mainAPI['metaCache'] = {}
     mainAPI['metaCache'][true] ??= {}
     mainAPI['metaCache'][true][Server.cn] ??= {}
@@ -201,10 +202,11 @@ async function loadMainAPI(useCache: boolean = false) {
     genMetaRankCache(false,Server.kr)
     //console.log(mainAPI['metaCache'][true][Server.cn])
     //await preCacheIcon()
+    */
     manualLoadFuzzyConfig()
-    clearMeasureCache()
+    //clearMeasureCache()
    // genEasyBGCache()
-    logger('getPD_Size',getPD_Size())
+    //logger('getPD_Size',getPD_Size())
     if(isMainThread){
             await piscina.drawList.run({
             data: mainAPI,
