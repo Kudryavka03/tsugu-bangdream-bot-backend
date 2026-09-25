@@ -61,7 +61,12 @@ export async function drawSongInListForQuerySongInto(
         if (candidates.length === 0) {
             fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
         } else {
-            candidates.sort((a, b) => Math.max(b.metaTrue, b.metaFalse) - Math.max(a.metaTrue, a.metaFalse))
+            const scoreKey = (c: {metaTrue:number, metaFalse:number}) => {
+                if (useFever === true) return c.metaTrue
+                if (useFever === false) return c.metaFalse
+                return c.metaTrue // default: match drawEventStageSongHorizontal (uses fever)
+            }
+            candidates.sort((a, b) => scoreKey(b) - scoreKey(a))
             const top = candidates.slice(0, 2)
             const shortMap: { [key: string]: string } = { 'hard': 'HD', 'expert': 'EX', 'special': 'SP' }
             for (const c of top) {

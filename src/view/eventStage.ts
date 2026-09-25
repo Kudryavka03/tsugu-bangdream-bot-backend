@@ -153,7 +153,7 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
         if (i == eventStageResults.length - 1) {
             if (!showCurrentStageOnly)tempEventStageImageList.pop()
             //let content = tempEventStageImageList
-            if (showCurrentStageOnly) tempEventStageImageList.push(await drawSongListInListWithMoreDetailCustomKey(songList,null,null,[mainServer],false,undefined))
+            if (showCurrentStageOnly) tempEventStageImageList.push(await drawSongListInListWithMoreDetailCustomKey(songList,null,null,[mainServer],true,undefined))
             eventStageImageListHorizontal.push(await drawDatablock({ list: tempEventStageImageList }));
         }
     }
