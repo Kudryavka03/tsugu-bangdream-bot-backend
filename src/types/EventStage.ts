@@ -87,7 +87,18 @@ export class EventStage {
         var eventData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/festival/${type}/${this.eventId}.json`, time,2,false);
         return eventData;
     }
-
+    getStageStartTs():number{
+        if (!this.isInitFull) {
+            return 0;
+        }
+        return Number(this.rotationMusics.at(0).startAt)
+    }
+    getStageEndTs():number{
+        if (!this.isInitFull) {
+            return 0;
+        }
+        return Number(this.rotationMusics.at(-1).endAt)
+    }
     getStageList(): Stage[] {//获取所有的stage,并且按照时间排序 [{type,startAt,endAt,songIdList}]
         if (!this.isInitFull) {
             return;

@@ -259,3 +259,7 @@ export function getDateByServerTimezone(time: number | string, server: Server): 
     const offset = getServerUtcOffset(server)
     return new Date(timestamp + offset * 60 * 60 * 1000)
 }
+
+export function checkTsIfInRangeOrNot(ts_start:number,ts_end:number,ts_cur:number){
+    return ((ts_cur>=ts_start) && (ts_cur <= ts_end))
+}

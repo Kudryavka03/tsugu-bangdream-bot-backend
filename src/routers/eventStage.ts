@@ -35,9 +35,9 @@ router.post(
 );
 
 export async function commandEventStage(mainServer: Server, compress: boolean, meta: boolean = false, eventId?: number, index?: number, date?: number): Promise<Array<Buffer | string>> {
-    if (!eventId && !date) {
-        date = Date.now()
-    }
+    //if (!eventId && !date) {
+        //date = Date.now()
+    //}
     if (!eventId) {
         eventId = getPresentEvent(mainServer, date).eventId
     }

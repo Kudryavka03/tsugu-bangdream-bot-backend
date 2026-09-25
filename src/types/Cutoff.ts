@@ -373,7 +373,7 @@ export class Cutoff {
         }
         let nearest345Ts: { score: number; time: number }[] = [];
         let daysFlags = -1
-        console.log(this.server== Server.cn)
+        //console.log(this.server== Server.cn)
         
         for (const c of this.cutoffs) {
             const timestamp = normalizeTimestamp(c.time)
@@ -801,7 +801,7 @@ export class Cutoff {
     getAvgDailyIncrement(acc:number=10000){
 
         // 仅从第二天开始统计到倒数第二天结束
-        console.log(this.dailyIncrementOriginData.length)
+        //console.log(this.dailyIncrementOriginData.length)
         if (this.dailyIncrementOriginData.length <3) return 0
         let len = this.dailyIncrementOriginData.length
         let totalEp = this.dailyIncrementOriginData[len-2] - this.dailyIncrementOriginData[0]

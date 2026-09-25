@@ -9,6 +9,10 @@ import { outputFinalBuffer } from '@/image/output'
 import { drawDatablock } from '@/components/dataBlock'
 import { stackImage, stackImageHorizontal } from '@/components/utils'
 import { line } from '@/components/list';
+import { checkTsIfInRangeOrNot } from '@/components/list/time';
+import { drawSongListDataBlock, drawSongListWithoutDataBlock } from '@/components/dataBlock/songList';
+import { Song } from '@/types/Song';
+import { drawSongListInListWithMoreDetail, drawSongListInListWithMoreDetailCustomKey } from '@/components/list/song';
 
 export async function drawEventStage(eventId: number, index: number, date: Date, mainServer: Server, meta: boolean = false, compress: boolean): Promise<Array<Buffer | string>> {
     const event = new Event(eventId);
@@ -26,14 +30,23 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
     if (!eventStage.isExist) {
         return [`错误: 活动stage数据不足`];
     }
-
+    var songList:Song[] = []
     var all = []
     all.push(await drawTitle('查试炼', `国服 ID:${eventId} 活动试炼`))
 
+    let showCurrentStageOnly = true    // 是否只显示当前的试炼
+    if (!checkTsIfInRangeOrNot(eventStage.getStageStartTs(),eventStage.getStageEndTs(),new Date().getTime())){
+
+        showCurrentStageOnly = false
+        
+    }else{
+        if (date) showCurrentStageOnly = false
+    }
     //获得活动stage列表
     var stageList = eventStage.getStageList()
     if (!date) {
-        date = new Date(stageList[0].startAt + (index - 1) * 24 * 60 * 60 * 1000)
+        //date = new Date(stageList[0].startAt + (index - 1) * 24 * 60 * 60 * 1000)
+        date = new Date()
     }
     stageList = stageList.filter((stage) => {
         // console.log((new Date(stage.startAt)))
@@ -99,10 +112,21 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
             */
 
     }
-
+    let ts_cur_date = new Date()
+    let ts_cur = ts_cur_date.getTime()
     for (let i = 0; i < stageList.length; i++) {
         const stage = stageList[i];
-        eventStagePromises.push(drawStageSong(stage))
+        if (showCurrentStageOnly){      // 如果只显示当前试炼
+            if (checkTsIfInRangeOrNot(stage.startAt,stage.endAt,ts_cur)){
+                eventStagePromises.push(drawStageSong(stage))
+                for(let id of stage.songIdList){
+                    songList.push(new Song(id))
+                }
+            }
+        }
+        else{
+            eventStagePromises.push(drawStageSong(stage))
+        }
     }
 
     var eventStageResults = await Promise.all(eventStagePromises)
@@ -113,7 +137,7 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
 
     var tempEventStageImageList: Canvas[] = [];
     var eventStageImageListHorizontal: Canvas[] = [];
-
+    
     for (var i = 0; i < eventStageResults.length; i++) {
         var tempImage = eventStageResults[i];
         tempH += tempImage.height;
@@ -127,20 +151,24 @@ export async function drawEventStage(eventId: number, index: number, date: Date,
         tempEventStageImageList.push(tempImage);
         tempEventStageImageList.push(line)
         if (i == eventStageResults.length - 1) {
-            tempEventStageImageList.pop()
+            if (!showCurrentStageOnly)tempEventStageImageList.pop()
+            //let content = tempEventStageImageList
+            if (showCurrentStageOnly) tempEventStageImageList.push(await drawSongListInListWithMoreDetailCustomKey(songList,null,null,[mainServer],false,undefined))
             eventStageImageListHorizontal.push(await drawDatablock({ list: tempEventStageImageList }));
         }
     }
-
+    
     const eventStageListImage = stackImageHorizontal(eventStageImageListHorizontal)
     all.push(eventStageListImage)
-
+    //if (showCurrentStageOnly) all.push(await drawDatablock({list:[await drawSongListInListWithMoreDetail(songList,null,null,[mainServer],false,undefined)]}))
     var buffer = await outputFinalBuffer({
         imageList: all,
         useEasyBG: true,
         compress: compress,
     })
-
-    return [buffer];
+    let returnResult = []
+    returnResult.push(buffer)
+    if (showCurrentStageOnly) returnResult.push(`如需查看当天全部试炼请回复：查试炼 ${ts_cur_date.getMonth()+1}.${ts_cur_date.getDate()}`)
+    return returnResult;
 
 }
