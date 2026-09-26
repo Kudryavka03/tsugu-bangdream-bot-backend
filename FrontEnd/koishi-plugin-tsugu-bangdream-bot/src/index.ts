@@ -25,6 +25,7 @@ import * as songChart_1 from "./commands/songChart";
 import * as eventStage_1 from "./commands/eventStage";
 import * as songRandom_1 from "./commands/songRandom";
 import * as calcLoseFire_1 from "./commands/calcLoseFire";
+import * as calcFireBonus_1 from "./commands/calcFireBonus";
 import * as calcFullFire_1 from "./commands/calcFullFire";
 import * as config_1 from "./config";
 import * as utils_1 from "./utils";
@@ -148,6 +149,7 @@ export function apply(ctx: Context, config: Config) {
             // 查卡面 一定要放在 查卡 前面
             const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
+            keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
             keywords.push(...cutoffCacheKeywords);
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
@@ -566,6 +568,23 @@ export function apply(ctx: Context, config: Config) {
         const tsuguUserData = await observeUserTsugu(session);
         const mainServer = tsuguUserData.mainServer;
         const list = await (0, eventStage_1.commandEventStage)(config, mainServer, eventId, index, date, true);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command('火罐计算 [text:text]', '计算活动换箱抽取策略', cmdConfig)
+        .alias('抽火罐')
+        .alias('抽火')
+        .alias('火罐抽取')
+        .alias('火罐抽取计算')
+        .usage('不填写参数时，后端按当前活动类型使用默认值：festival 为 230 抽、10 火罐、1 大奖，其他活动为 180 抽、10 火罐、1 大奖。\n填写参数时，总抽数、火罐数、大奖数必须同时提供。')
+        .example('抽火罐 :计算当前活动的默认策略')
+        .example('火罐计算 230 10 1 :按指定参数计算')
+        .action(async ({ session }, text) => {
+        const parsed = (0, calcFireBonus_1.parseCalcFireBonusInput)(text);
+        if (parsed.ok === false) {
+            return `错误: ${parsed.error}`;
+        }
+        const tsuguUserData = await observeUserTsugu(session);
+        const list = await (0, calcFireBonus_1.commandCalcFireBonus)(config, tsuguUserData.mainServer, parsed.value);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查卡池 <gachaId:integer>", "查卡池", cmdConfig)
