@@ -8,11 +8,10 @@ export class FireBonusCalculator {
   #fireBonus: number;
   #gift: number;
   #onekey: boolean;
-
   initRatio = 0.5;
-  best: number[][][] = [];
-  choice: number[][][] = [];
-
+  best: number[][][] = [];    // 记录历史得分
+  choice: number[][][] = [];  // 记录当前选择，究竟是继续抽还是下一箱。0为下一项，1为继续抽
+  baseRatio = Infinity
   constructor(total = 230, fireBonus = 10, gift = 1, onekey = false) {
     this.#total = total;
     this.#fireBonus = fireBonus;
@@ -23,29 +22,34 @@ export class FireBonusCalculator {
   // n: 还有多少抽    m: 还有多少火罐 ratio: 扣分     k：还有多少大奖
   calc1(n: number, m: number, k: number, ratio: number) {  // 下一箱
     return (this.#fireBonus - m) - ratio * (this.#total - n);
+    // 这个公式的理解是：假设火罐是收益，ratio是一抽值多少火罐，n是还剩多少抽
+    // 也就是说，在当前情况下收益 - 支出要>0,而本问题就是解决ratio（一抽值多少火罐）的最大化倍率
   }
-
+  
+  //var tempScore = new Map<>()
   calc2(n: number, m: number, k: number, ratio: number) {    // 分三种情况
     // 如果一键
     if (this.#onekey && k === 0) {
-      return this.#fireBonus - ratio * this.#total;
+      //return this.baseRatio==Infinity?this.#fireBonus - ratio * this.#total : this.baseRatio
+      return this.#fireBonus - ratio * this.#total
     }
-    // 中火罐
     let s = 0;
-    if (m > 0) {   // 中一个火罐，总抽数-1.火罐-1，还没有中大奖
+    if (m > 0) {   // 中一个火罐，奖池里总抽数-1.火罐-1，还没有中大奖
       s = s + (m / n) * this.best[n - 1][m - 1][k];
     }
-    if (k > 0) {   // 中一个大奖，总抽数-1.大奖-1，没有中火罐
+    if (k > 0) {   // 中一个大奖，奖池里总抽数-1.大奖-1，没有中火罐
       s = s + (k / n) * this.best[n - 1][m][k - 1];
     }
     if (n - m - k > 0) { // 中其他
       s = s + ((n - m - k) / n) * this.best[n - 1][m][k];  // 中普通货
     }
-    return s;
+    return s; // s只会发生这几种情况，所以可以将s视为1.这个过程就是算下一抽的期望分数是多少
+              // 一抽只能中其中一个
   }
-
+  
   fillTable(r: number) {
     // 填冲表格
+    this.baseRatio = this.#fireBonus - r * this.#total;
     this.best = [];
     this.choice = [];
     for (let n = 0; n <= this.#total; n++) {
@@ -62,6 +66,7 @@ export class FireBonusCalculator {
     }
 
     // 每个都算一次
+    // n: 还有多少抽    m: 还有多少火罐 ratio: 一抽相当于多少火罐     k：还有多少大奖
     for (let n = 0; n <= this.#total; n++) {
       for (let m = 0; m <= this.#fireBonus; m++) {
         for (let k = 0; k <= this.#gift; k++) {
@@ -83,6 +88,7 @@ export class FireBonusCalculator {
         }
       }
     }
+    //this.baseRatio = Infinity
   }
 
   run() {
@@ -117,7 +123,7 @@ export class FireBonusCalculator {
       }
     }
     info.push({fire:-1,count:ans})
-    console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
+    //console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
     return ans;
   }
 }
