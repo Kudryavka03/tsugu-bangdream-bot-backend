@@ -110,7 +110,7 @@ export class FireBonusCalculator {
       } else {
         high = mid;                       // 不达标抬上界
       }
-      console.log(score,`[${low_old},${high_old}] -> [${low},${high}]`)
+      //console.log(score,`[${low_old},${high_old}] -> [${low},${high}]`)
     }
 
     this.fillTable(ans);
@@ -120,15 +120,15 @@ export class FireBonusCalculator {
         if (n >= m && this.choice[n][m][0] === 0) { th = n; break; }
       }
       if (th < 0) {
-        console.log("剩 " + m + " 个火罐时：换箱怎么都不换箱（把箱子抽完）");
+        //console.log("剩 " + m + " 个火罐时：换箱怎么都不换箱（把箱子抽完）");
         info.push({fire:m,count:-1})
       } else {
-        console.log("剩 " + m + " 个火罐时：剩余抽数 ≥ " + th + " 个就换新箱");
+        //console.log("剩 " + m + " 个火罐时：剩余抽数 ≥ " + th + " 个就换新箱");
         info.push({fire:m,count:th})
       }
     }
     info.push({fire:-1,count:ans})
-    console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
+    //console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
     return ans;
   }
 }
@@ -148,5 +148,5 @@ export type fireBonusGacha={
     count:number
 }
 
-new FireBonusCalculator(38,5,0,false).run()
-new FireBonusCalculator(38,5,0,false).run()
+//new FireBonusCalculator(38,5,0,false).run()
+//new FireBonusCalculator(38,5,0,false).run()
