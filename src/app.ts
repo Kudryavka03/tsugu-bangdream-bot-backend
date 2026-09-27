@@ -30,6 +30,7 @@ import { eventStageRouter } from '@/routers/eventStage'
 import { songRandomRouter } from '@/routers/songRandom'
 import { calcLoseFireRouter } from '@/routers/calcLoseFire'
 import { calcFireBonusRouter } from '@/routers/calcFireBonus'
+import { controlScoreRouter } from '@/routers/controlScore'
 import { fuzzySearchRouter } from '@/routers/fuzzySearch'
 import { topRateDetailRouter } from './routers/topRateDetail';
 import { logger } from '@/logger'
@@ -82,6 +83,7 @@ app.use('/songRandom', songRandomRouter);
 app.use('/fuzzySearch', fuzzySearchRouter);
 app.use('/calcLoseFire', calcLoseFireRouter);
 app.use('/calcFireBonus', calcFireBonusRouter);
+app.use('/controlScore', controlScoreRouter);
 app.use('/topRateDetail', topRateDetailRouter);
 app.use('/searchComposition', searchCompositionRouter)
 app.use('/searchMonthlyRanking', searchMonthlyRankingRouter);

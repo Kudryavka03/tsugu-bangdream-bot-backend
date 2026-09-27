@@ -26,6 +26,7 @@ import * as eventStage_1 from "./commands/eventStage";
 import * as songRandom_1 from "./commands/songRandom";
 import * as calcLoseFire_1 from "./commands/calcLoseFire";
 import * as calcFireBonus_1 from "./commands/calcFireBonus";
+import * as controlScore_1 from "./commands/controlScore";
 import * as calcFullFire_1 from "./commands/calcFullFire";
 import * as config_1 from "./config";
 import * as utils_1 from "./utils";
@@ -150,6 +151,7 @@ export function apply(ctx: Context, config: Config) {
             const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
             keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
+            keywords.push('控分助手', '控分');
             keywords.push(...cutoffCacheKeywords);
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
@@ -585,6 +587,28 @@ export function apply(ctx: Context, config: Config) {
         }
         const tsuguUserData = await observeUserTsugu(session);
         const list = await (0, calcFireBonus_1.commandCalcFireBonus)(config, tsuguUserData.mainServer, parsed.value);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command('控分 [text:text]', '计算活动控分方案', cmdConfig)
+        .alias('控分助手')
+        .usage(controlScore_1.CONTROL_SCORE_GUIDE)
+        .example('控分 947 :使用当前活动、0%加成计算')
+        .example('控分 947 120 300 :使用活动300、120%加成计算')
+        .action(async ({ session }, text) => {
+        const parsed = (0, controlScore_1.parseControlScoreInput)(text);
+        if (parsed.ok === false) {
+            return parsed.error;
+        }
+        const tsuguUserData = await observeUserTsugu(session);
+        let mainServer = tsuguUserData.mainServer;
+        if (parsed.value.serverName) {
+            const targetServer = config_1.Server[parsed.value.serverName];
+            if (targetServer === undefined) {
+                return '错误: 未能识别服务器名。';
+            }
+            mainServer = targetServer;
+        }
+        const list = await (0, controlScore_1.commandControlScore)(config, mainServer, parsed.value);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查卡池 <gachaId:integer>", "查卡池", cmdConfig)
