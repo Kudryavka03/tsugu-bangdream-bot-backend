@@ -12,11 +12,14 @@ export class FireBonusCalculator {
   best: number[][][] = [];    // 记录历史得分
   choice: number[][][] = [];  // 记录当前选择，究竟是继续抽还是下一箱。0为下一项，1为继续抽
   baseRatio = Infinity
+  //bypassChangeLimit = false // 是否可以随时更换
   constructor(total = 230, fireBonus = 10, gift = 1, onekey = false) {
     this.#total = total;
     this.#fireBonus = fireBonus;
     this.#gift = gift;
     this.#onekey = onekey;
+    //if (gift == 0) this.bypassChangeLimit = true  // 当特别礼物数量为0的时候，所有 k >0 的分支会永远不触发，所以只会走 b > a 的分支
+    // 而根据debug结果，在第一次的时候会返回整数0因此会抬升下限。因此需要调整，当等于0时应该缩小上限
   }
 
   // n: 还有多少抽    m: 还有多少火罐 ratio: 扣分     k：还有多少大奖
@@ -100,12 +103,14 @@ export class FireBonusCalculator {
       const mid = (low + high) / 2;         // 猜正中间
       this.fillTable(mid);                   // 按这个标准把整张表重新填一遍
       const score = this.best[this.#total][this.#fireBonus][this.#gift];   // 开局的最高分
-      if (score >= 0) {
+      let low_old = low,high_old=high
+      if (score > 0) {                    // 开局为0的情况下也就是gift刚传入就是0的时候，则会向1靠拢，此时完全不能得出正确答案。因此不能等于0
         low = mid;                        // 达标抬下届
         ans = mid;                        // 记下"最后一次达标的数"
       } else {
         high = mid;                       // 不达标抬上界
       }
+      console.log(score,`[${low_old},${high_old}] -> [${low},${high}]`)
     }
 
     this.fillTable(ans);
@@ -115,15 +120,15 @@ export class FireBonusCalculator {
         if (n >= m && this.choice[n][m][0] === 0) { th = n; break; }
       }
       if (th < 0) {
-        //console.log("剩 " + m + " 个火罐时：换箱怎么都不换箱（把箱子抽完）");
+        console.log("剩 " + m + " 个火罐时：换箱怎么都不换箱（把箱子抽完）");
         info.push({fire:m,count:-1})
       } else {
-        //console.log("剩 " + m + " 个火罐时：剩余抽数 ≥ " + th + " 个就换新箱");
+        console.log("剩 " + m + " 个火罐时：剩余抽数 ≥ " + th + " 个就换新箱");
         info.push({fire:m,count:th})
       }
     }
     info.push({fire:-1,count:ans})
-    //console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
+    console.log("倍数" + (1 / ans).toFixed(4) + ' 一抽等于' + ans + '火');
     return ans;
   }
 }
@@ -142,3 +147,6 @@ export type fireBonusGacha={
     fire:number,
     count:number
 }
+
+new FireBonusCalculator(38,5,0,false).run()
+new FireBonusCalculator(38,5,0,false).run()
