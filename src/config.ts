@@ -41,10 +41,13 @@ export var preferredCutoffDataSourceName = 'StarFX'
 export var USE_HHWX_SOURCE_PREFER = preferredCutoffDataSourceName == 'HHWX'
 export const extraUrl: string = 'http://127.0.0.1'; //其他功能实现
 
-const enableAutoTrackerDataSourceSwitch = true
+export var enableAutoTrackerDataSourceSwitch = false
 const trackerAutoSwitchThreshold:number = 5     // 设定数据源自动切换门限，当存在5次数据源更新不及时的情况，自动切换数据源，加快访问速度
 var trackerAutoSwitchFlags:number = 0
 var trackerAutoSwitchSourceName = preferredCutoffDataSourceName
+export function setAutoTrackerDataSourceSwitch(b:boolean){
+    enableAutoTrackerDataSourceSwitch = b
+}
 export function getPreferredCutoffDataSourceName(){
     return preferredCutoffDataSourceName
 }

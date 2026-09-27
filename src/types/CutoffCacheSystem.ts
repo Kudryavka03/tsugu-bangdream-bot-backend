@@ -1,6 +1,6 @@
 // 档线缓存系统。
 
-import { preferredCutoffDataSourceName } from "@/config";
+import { enableAutoTrackerDataSourceSwitch, preferredCutoffDataSourceName, setAutoTrackerDataSourceSwitch } from "@/config";
 import { Cutoff } from "./Cutoff";
 import { checkEventEndOrNot, Event } from "./Event";
 import { Server } from "./Server";
@@ -53,7 +53,8 @@ export class CacheOptions {
 
         const cutoff = new Cutoff(this.eventId,this.server,this.tier)
         await cutoff.initFull()
-        if (cutoff.isInitfull){
+        if (cutoff.isInitfull && ((this.cutoffObj.isInitfull) && (cutoff.cutoffs.at(-1).time > this.cutoffObj.cutoffs.at(-1).time))){
+
             this.cutoffObj = cutoff
             this.prevUpdate = Date.now()
         }
@@ -134,19 +135,30 @@ export async function loadSubscriptCacheList(){
 
 
 async function updateSubscriptCache(): Promise<void> {
-    const tasks: Promise<void>[] = [];
-    subscriptCacheMap.forEach((item, key) => {
-        if (item.removeFlags) {
-            subscriptCacheMap.delete(key);
-            return;
-        }
-        if (checkEventEndOrNot(item.server,item.eventId)){    // 该活动不一定举办过
-            subscriptCacheMap.delete(key);
-            return;
-        }
-        tasks.push(item.fetchNewData());
-    });
-    await Promise.all(tasks);
+    let autoSwFlg = enableAutoTrackerDataSourceSwitch
+    try{
+        if (!autoSwFlg)setAutoTrackerDataSourceSwitch(false)
+        const tasks: Promise<void>[] = [];
+        subscriptCacheMap.forEach((item, key) => {
+            if (item.removeFlags) {
+                subscriptCacheMap.delete(key);
+                return;
+            }
+            if (checkEventEndOrNot(item.server,item.eventId)){    // 该活动不一定举办过
+                subscriptCacheMap.delete(key);
+                return;
+            }
+            tasks.push(item.fetchNewData());
+        });
+        await Promise.all(tasks);
+        setAutoTrackerDataSourceSwitch(autoSwFlg)
+    }
+    catch{
+        setAutoTrackerDataSourceSwitch(autoSwFlg)
+    }finally{
+        setAutoTrackerDataSourceSwitch(autoSwFlg)
+    }
+
 }
 export function hasSubscriptCache(server:Server,eventId:number,tier:number):boolean{
     const key = makeSubscriptCacheKey(server, eventId, tier, ttl);
