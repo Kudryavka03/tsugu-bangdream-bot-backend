@@ -592,8 +592,14 @@ export function apply(ctx: Context, config: Config) {
     ctx.command('控分 [text:text]', '计算活动控分方案', cmdConfig)
         .alias('控分助手')
         .usage(controlScore_1.CONTROL_SCORE_GUIDE)
-        .example('控分 947 :使用当前活动、0%加成计算')
-        .example('控分 947 120 300 :使用活动300、120%加成计算')
+        .example('控分 500 :使用当前活动、0%加成计算')
+        .example('控分 500 120 300 :使用活动300、120%加成计算')
+        .example('控分 500 加成120 支援282000 :计算当前任务Live')
+        .example('控分 500 清CP :计算当前CP活动的清CP方案')
+        .example('控分 500 胜利 精简 :计算当前5v5的胜利精简方案')
+        .example('控分 500 失败 完整 :计算当前5v5的失败完整方案')
+        .example('控分 500 完整 :计算当前对邦的完整排名方案')
+        .example('控分 500 活动300 失败 完整 :指定5v5活动并计算失败完整方案')
         .action(async ({ session }, text) => {
         const parsed = (0, controlScore_1.parseControlScoreInput)(text);
         if (parsed.ok === false) {

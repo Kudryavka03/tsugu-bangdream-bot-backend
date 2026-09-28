@@ -43,13 +43,22 @@ export type ControlScoreParseResult =
 export const CONTROL_SCORE_GUIDE = [
     '请按以下格式使用控分：',
     '控分 <目标PT> [加成%] [活动ID] [支援综合力] [模式] [服务器] [第N页]',
-    '示例：',
-    '控分 947',
-    '控分 947 120',
-    '控分 947 120 300',
-    '控分 947 活动300 加成120 支援282000',
-    '控分 947 120 300 清CP',
-    '当前活动可省略活动ID，活动类型会由后端根据活动ID自动判断。',
+    '基础示例：',
+    '控分 500',
+    '控分 500 120',
+    '控分 500 120 300',
+    '各活动类型示例（默认使用当前活动）：',
+    '任务Live：控分 500 加成120 支援282000',
+    'CP自由：控分 500 加成120 自由',
+    'CP清CP：控分 500 清CP',
+    'EX Live：控分 500 加成120',
+    '5v5胜利精简：控分 500 胜利 精简',
+    '5v5失败完整：控分 500 失败 完整',
+    '组曲Live：控分 500',
+    '对邦精简：控分 500 精简',
+    '对邦完整：控分 500 完整',
+    '指定活动时请加入活动ID，例如：控分 500 活动300 失败 完整',
+    '活动ID省略时使用当前活动，活动类型由后端自动判断。',
 ].join('\n')
 
 export async function commandControlScore(
@@ -136,7 +145,7 @@ export function parseControlScoreInput(text: string | undefined | null): Control
             cpClear = false
             continue
         }
-        if (['胜利', '赢'].includes(token)) {
+        if (['胜利', '赢','成功'].includes(token)) {
             isWin = true
             continue
         }

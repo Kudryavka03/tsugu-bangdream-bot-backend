@@ -53,7 +53,7 @@ export class CacheOptions {
 
         const cutoff = new Cutoff(this.eventId,this.server,this.tier)
         await cutoff.initFull()
-        if (cutoff.isInitfull && ((this.cutoffObj.isInitfull) && (cutoff.cutoffs.at(-1).time > this.cutoffObj.cutoffs.at(-1).time))){
+        if (!this.cutoffObj.isInitfull||(cutoff.isInitfull && ((this.cutoffObj.isInitfull) && (cutoff.cutoffs.at(-1).time > this.cutoffObj.cutoffs.at(-1).time)))){
 
             this.cutoffObj = cutoff
             this.prevUpdate = Date.now()
@@ -91,7 +91,10 @@ export async function delSubscriptCache(server:Server,eventId:number,tier:number
     if (subscriptCacheMap.has(key)) subscriptCacheMap.delete(key)
     await saveSubscriptCacheList()
 }
-
+export async function delSubscriptCacheByKeyName(k){
+    if (subscriptCacheMap.has(k)) subscriptCacheMap.delete(k)
+    await saveSubscriptCacheList()
+}
 export async function saveSubscriptCacheList(): Promise<void> {
     const content = [...subscriptCacheMap.keys()].join("\n");
     await fs.writeFile(cacheListFile, content, "utf8");
@@ -141,11 +144,11 @@ async function updateSubscriptCache(): Promise<void> {
         const tasks: Promise<void>[] = [];
         subscriptCacheMap.forEach((item, key) => {
             if (item.removeFlags) {
-                subscriptCacheMap.delete(key);
+                delSubscriptCacheByKeyName(key);
                 return;
             }
             if (checkEventEndOrNot(item.server,item.eventId)){    // 该活动不一定举办过
-                subscriptCacheMap.delete(key);
+               delSubscriptCacheByKeyName(key);
                 return;
             }
             tasks.push(item.fetchNewData());
