@@ -46,6 +46,7 @@ export class AreaItem {
         if (!this.isExist) {
             return emptyStat
         }
+        if (!this.performance[areaItemLevel.toString()][server] && server!=Server.jp) server = Server.jp     // 如果当前找不到综合就去JP那边找
         if (this.targetAttributes.includes(card.attribute) && this.targetBandIds.includes(card.bandId)) {
             var finalStat = {
                 performance: this.performance[areaItemLevel.toString()][server] * cardSTat.performance / 100,
