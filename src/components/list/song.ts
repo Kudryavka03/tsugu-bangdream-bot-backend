@@ -34,14 +34,15 @@ export async function drawSongInListForQuerySongInto(
         maxWidth: 800
     })
     ctx.drawImage(IDImage, x, y)
-
+    let feverStatus = false // 是否指定了fever
+    if (useFever !=null && useFever !=undefined) feverStatus = true
     //曲名与乐队名
     var fullText = `${song.musicTitle[server]}\n`
-
     var serverMeta = displayedServerList[0]
     // 展示Meta：在 HD/EX/SP 中找出最佳两个难度，并显示 有Fever/无Fever 的百分比
-    if (song.hasMeta) {
-        const sosMeta = (new Song(306)).calcMeta(true, 3)
+    if (song.hasMeta && feverStatus) {
+       // console.log(feverStatus,useFever)
+        const sosMeta = (new Song(306)).calcMeta(useFever, 3)
         const candidateIds = [2, 3, 4] // hard, expert, special
         const candidates: Array<{
             id: number,
@@ -52,11 +53,11 @@ export async function drawSongInListForQuerySongInto(
         }> = []
         for (const id of candidateIds) {
             if (song.difficulty[id] === undefined) continue
-            const metaTrue = song.calcMeta(true, id)
-            const metaFalse = song.calcMeta(false, id)
-            const percentTrue = Math.round(metaTrue / sosMeta * 1000) / 10
-            const percentFalse = Math.round(metaFalse / sosMeta * 1000) / 10
-            candidates.push({ id, metaTrue, metaFalse, percentTrue, percentFalse })
+            const meta = song.calcMeta(useFever, id)
+            //const metaFalse = song.calcMeta(false, id)
+            const percent = Math.round(meta / sosMeta * 10000) / 100
+            //const percentFalse = Math.round(metaFalse / sosMeta * 1000) / 10
+            candidates.push({ id, metaTrue:meta, metaFalse:meta, percentTrue:percent, percentFalse:percent })
         }
         if (candidates.length === 0) {
             fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
@@ -81,7 +82,49 @@ export async function drawSongInListForQuerySongInto(
                 }
             }
         }
-    } else {
+    } else if (song.hasMeta && !feverStatus){
+        const sosMetaTrue = (new Song(306)).calcMeta(true, 3)
+        const sosMetaFalse = (new Song(306)).calcMeta(false, 3)
+        const candidateIds = [2, 3, 4] // hard, expert, special
+        const candidates: Array<{
+            id: number,
+            metaTrue: number,
+            metaFalse: number,
+            percentTrue: number,
+            percentFalse: number
+        }> = []
+        for (const id of candidateIds) {
+            if (song.difficulty[id] === undefined) continue
+            const metaTrue = song.calcMeta(true, id)
+            const metaFalse = song.calcMeta(false, id)
+            const percentTrue = Math.round(metaTrue / sosMetaTrue * 10000) / 100
+            const percentFalse = Math.round(metaFalse / sosMetaFalse * 10000) / 100
+            candidates.push({ id, metaTrue, metaFalse, percentTrue, percentFalse })
+        }
+        if (candidates.length === 0) {
+            fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
+        } else {
+            const scoreKey = (c: {metaTrue:number, metaFalse:number}) => {
+                if (useFever === true) return c.metaTrue
+                if (useFever === false) return c.metaFalse
+                return c.metaTrue // default: match drawEventStageSongHorizontal (uses fever)
+            }
+            candidates.sort((a, b) => scoreKey(b) - scoreKey(a))
+            const top = candidates.slice(0, 2)
+            const shortMap: { [key: string]: string } = { 'hard': 'HD', 'expert': 'EX', 'special': 'SP' }
+            for (const c of top) {
+                const name = difficultyNameList[c.id]
+                const short = shortMap[name] ?? name
+                if (useFever === true) {
+                    fullText += `${short}分数 ${c.percentTrue}% `
+                } else if (useFever === false) {
+                    fullText += `${short}分数 ${c.percentFalse}% `
+                } else {
+                    fullText += `${short}分数${c.percentTrue}%/${c.percentFalse}% `
+                }
+            }
+        }
+    } else{
         fullText += `该歌曲在${serverNameFullList[serverMeta]}尚未实装`
     }
     if (!text) {
