@@ -428,6 +428,30 @@ export class Cutoff {
                 }
             }
         }
+        // 缺少 03:45 采样点时，用此前一小时内最接近的记录作为近似日界点。
+        const approximateDays = new Set<number>()
+        const recordedDays = new Set(time.map(timestamp => this.getDaysOfEvent(timestamp)))
+        const fallback = new Map<number, { score: number; time: number }>()
+        for (const c of this.cutoffs) {
+            const timestamp = normalizeTimestamp(c.time)
+            const date = getDateByServerTimezone(timestamp, this.server)
+            const minuteOfDay = date.getUTCHours() * 60 + date.getUTCMinutes()
+            if (minuteOfDay < 2 * 60 + 45 || minuteOfDay >= 3 * 60 + 45) continue
+            const day = this.getDaysOfEvent(timestamp)
+            if (recordedDays.has(day)) continue
+            const previous = fallback.get(day)
+            if (!previous || timestamp > previous.time) fallback.set(day, { score: c.ep, time: timestamp })
+        }
+        for (const [day, point] of fallback) {
+            score.push(point.score)
+            time.push(point.time)
+            approximateDays.add(day)
+        }
+        const checkpoints = score.map((value, index) => ({ score: value, time: time[index] }))
+            .sort((a, b) => a.time - b.time)
+        score = checkpoints.map(point => point.score)
+        time = checkpoints.map(point => point.time)
+
         let dailyIncrement = []
         let dailyIncrementInvaildDays:number[]  = []
         let scoreFinal:number[] = []
@@ -440,8 +464,8 @@ export class Cutoff {
                     scoreFinal.push(this.cutoffs[this.cutoffs.length-1].ep)
                     break
                 }
-                let avgIncrementValue = Math.round(((this.cutoffs[this.cutoffs.length-1].ep)/(this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time))))    // 计算丢失的天数的平均增量
-                scoreFinal.push(Math.round(avgIncrementValue * (i+1)))  // 把丢失的天数的数据补全
+                const dayCount = this.getDaysOfEvent(this.cutoffs[this.cutoffs.length-1].time) + 1
+                scoreFinal.push(Math.round(this.cutoffs[this.cutoffs.length-1].ep * (i + 1) / dayCount))  // 末日必须等于实际档线
                 dailyIncrementInvaildDays.push(scoreFinal.length-1)  // 记录增量数据不完整的天数位置
                 j++ // 增加一天
             }
@@ -482,6 +506,7 @@ export class Cutoff {
             }
         }
         for (var i = 0;i<scoreFinal.length;i++){   // 计算增量
+            if (approximateDays.has(i) || approximateDays.has(i - 1)) dailyIncrementInvaildDays.push(i)
             if (i == 0){
                     dailyIncrement.push(`${Math.round(scoreFinal[i]/divisor)}${dailyIncrementInvaildDays.includes(i) ? '!' : ''}`)
             }
