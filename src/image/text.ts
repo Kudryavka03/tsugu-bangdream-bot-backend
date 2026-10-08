@@ -1,5 +1,6 @@
 import { FontLibrary, Image, Canvas, CanvasRenderingContext2D, loadImageData } from 'skia-canvas';
 import { assetsRootPath } from '@/config';
+import { GUIDE_THEME } from '@/image/theme';
 FontLibrary.use("old", [`${assetsRootPath}/Fonts/old.ttf`])
 FontLibrary.use("FangZhengHeiTi", [`${assetsRootPath}/Fonts/FangZhengHeiTi_GBK.ttf`])
 import * as path from 'path';
@@ -42,7 +43,7 @@ export async function drawTextInWorker({
     textSize = 40,
     maxWidth,
     lineHeight = textSize * 4 / 3,
-    color = "#505050",
+    color = GUIDE_THEME.text,
     font = "old"
 }: warpTextOptions): Promise<Canvas> {
     var wrappedTextData =  await wrapText({ text, maxWidth, lineHeight, textSize });
@@ -90,7 +91,7 @@ export  function drawText({
     textSize = 40,
     maxWidth,
     lineHeight = textSize * 4 / 3,
-    color = "#505050",
+    color = GUIDE_THEME.text,
     font = "old",
     forceSingleLine = false
 }: warpTextOptions): Canvas {
@@ -259,7 +260,7 @@ export function drawTextWithImages({
     lineHeight = textSize * 4 / 3,
     content,
     spacing = textSize / 3,
-    color = '#505050',
+    color = GUIDE_THEME.text,
     font = 'old'
 }: TextWithImagesOptions) {
     //var t1 = Date.now()
@@ -421,8 +422,8 @@ function warpTextWithImages({
 
 
 export var setFontStyle = function (ctx: CanvasRenderingContext2D, textSize: number, font: string) {//设置字体大小
-    ctx.font = textSize + 'px ' + font + ",Microsoft Yahei"
+    ctx.font = setFontStyleArgs(textSize, font)
 }
 export function setFontStyleArgs (textSize: number, font: string):string {//设置字体参数
-    return  textSize + 'px ' + font + ",Microsoft Yahei"
+    return textSize + 'px ' + (font === 'old' ? GUIDE_THEME.fontFamily : (font || 'old') + ', "Microsoft Yahei", sans-serif')
 }

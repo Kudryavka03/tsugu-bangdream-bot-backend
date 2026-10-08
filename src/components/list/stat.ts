@@ -6,6 +6,7 @@ import { drawRoundedRect, drawRoundedRectWithText } from "@/image/drawRect";
 import { Card, Stat, limitBreakRankStat } from "@/types/Card";
 import { eachCardStat } from '@/types/Player';
 import { Character } from '@/types/Character';
+import { GUIDE_THEME } from '@/image/theme';
 
 export const statConfig = {
     performance: { color: '#f76da1', name: '演出' },
@@ -121,8 +122,6 @@ export async function drawCharacterBonusList(ecs: eachCardStat[], key: string = 
     const keyImage = drawRoundedRectWithText({
         text: key,
         textSize: 30,
-        color: '#5b5b5b',
-        textColor: '#ffffff'
     })
     const canvas = new Canvas(800, keyImage.height + 10 + data.height)
     const ctx = canvas.getContext('2d')
@@ -163,7 +162,7 @@ export async function drawEachCardStatDetail(ecs: eachCardStat): Promise<Canvas>
             textSize: 18,
             maxWidth: 120,
             lineHeight: 18,
-            color: '#505050',
+            color: GUIDE_THEME.muted,
             forceSingleLine: true,
         })
         sectionCtx.drawImage(titleCanvas, 8, 12)

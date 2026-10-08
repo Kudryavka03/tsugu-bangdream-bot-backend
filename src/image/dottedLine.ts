@@ -1,4 +1,5 @@
 import { Canvas } from 'skia-canvas';
+import { GUIDE_THEME } from '@/image/theme';
 
 interface DrawDottedLineOptions {
   width: number;
@@ -24,7 +25,7 @@ export function drawDottedLine(options: DrawDottedLineOptions): Canvas {
     endY,
     color,
     lineWidth = 2,
-    shadowColor = 'rgba(84, 62, 73, 0.08)',
+    shadowColor = 'rgba(255, 59, 114, 0.025)',
   } = options;
 
   const canvas = new Canvas(width, height);
@@ -32,10 +33,10 @@ export function drawDottedLine(options: DrawDottedLineOptions): Canvas {
   if (width <= 0 || height <= 0) return canvas;
 
   // Keep the existing Canvas dimensions so every caller retains exactly the
-  // same layout. Legacy neutral dotted separators are mapped to the lighter
-  // solid system separator used by the modern skin; semantic custom colors
+  // same layout. Legacy neutral separators receive the guide's lighter
+  // dotted divider; semantic custom colors
   // remain untouched.
-  const strokeColor = color.toLowerCase() === '#a8a8a8' ? '#E6DFE3' : color;
+  const strokeColor = color.toLowerCase() === '#a8a8a8' ? GUIDE_THEME.divider : color;
   const safeLineWidth = Math.max(1, lineWidth);
   const edgePadding = safeLineWidth / 2 + 1;
   const clampX = (value: number) => Math.max(edgePadding, Math.min(width - edgePadding, value));
@@ -50,6 +51,7 @@ export function drawDottedLine(options: DrawDottedLineOptions): Canvas {
 
   ctx.save();
   ctx.lineCap = 'round';
+  ctx.setLineDash([Math.max(1, options.radius), Math.max(2, options.gap)]);
 
   if (x1 === x2 && y1 === y2) {
     ctx.fillStyle = shadowColor;

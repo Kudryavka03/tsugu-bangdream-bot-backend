@@ -1,4 +1,4 @@
-import { Chart, registerables } from 'chart.js';
+import { Chart, ChartOptions, registerables } from 'chart.js';
 import { Chart as ChartJSNode } from 'chart.js/auto';
 import { Canvas, FontLibrary, loadImage } from 'skia-canvas';
 import 'chartjs-adapter-moment';
@@ -7,6 +7,7 @@ import { assetErrorImageBuffer } from '@/image/utils';
 import { detachCanvasForChartDestroy, disposeChartButKeepingCanvas } from './utils';
 import { Server } from '@/types/Server';
 import { getDateByServerTimezone } from './list/time';
+import { GUIDE_THEME } from '@/image/theme';
 
 // 2. 注册 Chart.js 所有组件
 Chart.register(...registerables);
@@ -106,7 +107,12 @@ export async function drawTimeLineChart(
           min: start,
           max: end,
           display: !setStartToZero,
+          border: { color: GUIDE_THEME.border },
+          grid: { color: GUIDE_THEME.border, drawTicks: false },
           ticks: {
+            color: GUIDE_THEME.muted,
+            font: { family: GUIDE_THEME.fontFamily, size: 16 },
+            padding: 10,
             callback(value: any) {
               const date = getDateByServerTimezone(value,server);
               const month = date.getUTCMonth() + 1;
@@ -125,7 +131,12 @@ export async function drawTimeLineChart(
           min: start,
           max: end,
           display: true,
+          border: { color: GUIDE_THEME.border },
+          grid: { color: GUIDE_THEME.border, drawTicks: false },
           ticks: {
+            color: GUIDE_THEME.muted,
+            font: { family: GUIDE_THEME.fontFamily, size: 16 },
+            padding: 10,
             callback(value: any) {
               const date = new Date(value);
               const day = date.getUTCDate();
@@ -144,15 +155,42 @@ export async function drawTimeLineChart(
   }
   
   // 9. 配置 Chart.js 选项
-  const options = {
+  const options: ChartOptions<'line'> = {
+    color: GUIDE_THEME.text,
+    font: { family: GUIDE_THEME.fontFamily, size: 16 },
+    elements: {
+      line: {
+        // Explicit dataset colors remain unchanged.
+        borderColor: GUIDE_THEME.primary,
+        backgroundColor: GUIDE_THEME.surfaceTint,
+      },
+      point: {
+        borderColor: GUIDE_THEME.primary,
+        backgroundColor: GUIDE_THEME.surface,
+      },
+    },
     plugins: {
       legend: {
         labels: {
+          color: GUIDE_THEME.text,
           font: {
+            family: GUIDE_THEME.fontFamily,
             size: 20,
           },
+          padding: 18,
+          boxWidth: 16,
         },
         display: displayLabel,
+      },
+      tooltip: {
+        backgroundColor: GUIDE_THEME.surface,
+        titleColor: GUIDE_THEME.text,
+        bodyColor: GUIDE_THEME.text,
+        borderColor: GUIDE_THEME.border,
+        borderWidth: 1,
+        titleFont: { family: GUIDE_THEME.fontFamily },
+        bodyFont: { family: GUIDE_THEME.fontFamily },
+        cornerRadius: 8,
       },
     },
     scales: {
@@ -160,6 +198,13 @@ export async function drawTimeLineChart(
       y: {
         min: 0,
         max: Math.floor((yMax + 1000) * 1.1), // 美观输出
+        border: { color: GUIDE_THEME.border },
+        grid: { color: GUIDE_THEME.divider, drawTicks: false },
+        ticks: {
+          color: GUIDE_THEME.muted,
+          font: { family: GUIDE_THEME.fontFamily, size: 16 },
+          padding: 10,
+        },
       },
     },
   };

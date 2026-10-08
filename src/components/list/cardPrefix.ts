@@ -6,14 +6,17 @@ import { Character } from '@/types/Character'
 import { Server, getServerByPriority } from '@/types/Server'
 import { setFontStyle } from '@/image/text'
 import { drawRoundedRect } from '@/image/drawRect'
+import { GUIDE_THEME } from '@/image/theme'
 
 var prefixBG: Canvas
 async function loadImageOnce() {
     prefixBG = drawRoundedRect({
         width: 800,
         height: 155,
-        color: '#f1f1ef',
-        radius: [15, 15, 0, 0]
+        color: GUIDE_THEME.surfaceTint,
+        opacity: 1,
+        radius: [GUIDE_THEME.cardRadius, GUIDE_THEME.cardRadius, 0, 0],
+        cornerStyle: 'title-matched'
     })
 }
 loadImageOnce()
@@ -30,7 +33,7 @@ export async function drawCardPrefixInList(card: Card, displayedServerList: Serv
 
     //prefix
     const server = getServerByPriority(card.releasedAt, displayedServerList)
-    ctx.fillStyle = '#5b5b5b'
+    ctx.fillStyle = GUIDE_THEME.muted
     ctx.textBaseline = 'hanging'
     ctx.textAlign = 'left'
     setFontStyle(ctx, 30, 'old')
@@ -40,6 +43,7 @@ export async function drawCardPrefixInList(card: Card, displayedServerList: Serv
     const character = new Character(card.characterId)
     const tempserver = getServerByPriority(character.characterName, displayedServerList)
     const characterName = character.characterName[tempserver]
+    ctx.fillStyle = GUIDE_THEME.text
     setFontStyle(ctx, 40, 'old')
     ctx.fillText(characterName, 300, 75, 470)
 

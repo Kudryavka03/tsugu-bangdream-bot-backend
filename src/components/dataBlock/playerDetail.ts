@@ -8,7 +8,7 @@ import { Degree } from '@/types/Degree';
 import { Card } from '@/types/Card';
 import { drawTitle } from '@/components/title';
 import { getIcon } from '@/types/Server';
-import { drawDecoratedImage, registerLogicalHeight } from '@/image/surfaceShadow';
+import { drawDecoratedImage, registerLogicalHeight, SURFACE_SHADOW_PADDING } from '@/image/surfaceShadow';
 
 export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<Canvas> {
     var list: Array<Canvas | Image> = []
@@ -97,7 +97,7 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     var titleImage = drawTitle('查询', '玩家信息')
     const [resolvedTitleImage, resolvedDataBlock] = await Promise.all([titleImage, dataBlock])
     const logicalHeight = 900 + resolvedDataBlock.height
-    const shadowOverflow = 16
+    const shadowOverflow = SURFACE_SHADOW_PADDING
     var canvas = new Canvas(1000, logicalHeight + shadowOverflow)
     var ctx = canvas.getContext('2d')
     ctx.drawImage(illust, 0, 0, 1000, 1000)
@@ -105,6 +105,6 @@ export async function drawPlayerDetailBlockWithIllust(player: Player): Promise<C
     drawDecoratedImage(ctx, resolvedDataBlock, 0, 900)
 
     // Preserve the original layout height while keeping enough transparent
-    // pixels for the card's lower 9-slice shadow to remain visible.
+    // pixels for the guide's wider lower shadow to remain visible.
     return registerLogicalHeight(canvas, logicalHeight)
 }

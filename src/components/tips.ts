@@ -1,11 +1,7 @@
 import { Canvas, Image } from 'skia-canvas'
 import { drawText, releaseCanvas } from "@/image/text"
 import { resizeImage } from "@/components/utils"
-
-const line2 = new Canvas(1000, 3)
-const ctx2 = line2.getContext('2d')
-ctx2.fillStyle = '#ababab'
-ctx2.fillRect(50, 0, 420, 3)
+import { GUIDE_THEME } from '@/image/theme'
 
 interface drawTipsConfig {
     text: string,
@@ -27,7 +23,7 @@ export async function drawTips({
         text,
         maxWidth: textMaxWidth,
         textSize: 30,
-        color: '#505050',
+        color: GUIDE_THEME.muted,
     })
     let height = textImage.height
     //图片
@@ -41,7 +37,10 @@ export async function drawTips({
     }
     const canvas = new Canvas(maxWidth + 100, height + 20)
     const ctx = canvas.getContext('2d')
-    ctx.drawImage(line2, 0, 0)
+    ctx.fillStyle = GUIDE_THEME.divider
+    ctx.fillRect(50, 0, maxWidth, 2)
+    ctx.fillStyle = GUIDE_THEME.primary
+    ctx.fillRect(50, 0, Math.min(86, maxWidth), 3)
     ctx.drawImage(textImage, 50, 20)
 
     if (image) {

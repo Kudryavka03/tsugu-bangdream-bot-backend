@@ -1,27 +1,8 @@
 import { Canvas, Image } from 'skia-canvas';
-import { CreateBG, CreateBGEazy, CreateBGEazyOpt, CreateBGPure } from '@/image/BG';
-import { assetsRootPath } from '@/config';
-import * as path from 'path';
-import { loadImageFromPath } from '@/image/utils';
+import { BackgroundStyle, DEFAULT_BACKGROUND_STYLE, getBackgroundColor, CreateBG, CreateBGEazy, CreateBGPure } from '@/image/BG';
 import { logger } from '@/logger';
 import { drawDecoratedImage, getLogicalHeight } from '@/image/surfaceShadow';
-var BGDefaultImage: Image
 var useGpu = false  // 控制是否使用GPU
-async function loadImageOnce() {
-    BGDefaultImage = await loadImageFromPath(path.join(assetsRootPath, "/BG/live.png"));
-    /*
-    BGImageCache = await CreateBGPure({
-                width: 1334,
-                height: 1002
-            })
-                */
-}
-
-
-loadImageOnce()
-
-
-let BGImageCache = null
 interface outputFinalOptions {
     startWithSpace?: boolean;
     imageList: Array<Image | Canvas>;
@@ -31,6 +12,7 @@ interface outputFinalOptions {
     compress?: boolean;
     usePureBG?: boolean;
     useNoneBG?: boolean;
+    backgroundStyle?: BackgroundStyle;
 }
 
 //将图片列表从上到下叠在一起输出为一张图片
@@ -38,9 +20,10 @@ export var outputFinalCanv = async function ({ imageList,
     startWithSpace = true,
     useEasyBG = true,
     text = 'BanG Dream!',
-    BGimage = BGDefaultImage,
+    BGimage,
     usePureBG = false,
-    useNoneBG=false
+    useNoneBG=false,
+    backgroundStyle = DEFAULT_BACKGROUND_STYLE,
 }: outputFinalOptions
 ): Promise<Canvas> {
     //console.log(imageList)
@@ -62,17 +45,16 @@ export var outputFinalCanv = async function ({ imageList,
     
     var ctx = tempcanv.getContext("2d")
     ctx.imageSmoothingEnabled = false
-    const bgColor = '#fef3ef'
+    const bgColor = getBackgroundColor(backgroundStyle)
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, maxW, allH);
     var size = maxW*allH
-      if (size >=5750000) usePureBG = true
-        if (size >=78000000) useNoneBG = true
-         if (size <5750000) {
-            usePureBG = false
-            useEasyBG = true
-            useNoneBG= false
-         }
+    // Size-based fallbacks may simplify the default background, but explicit
+    // plain or event-artwork choices must not be overwritten.
+    if (!useNoneBG && useEasyBG && !usePureBG) {
+        if (size >= 5750000) usePureBG = true
+        if (size >= 78000000) useNoneBG = true
+    }
     if (useNoneBG){
 
     }
@@ -81,21 +63,15 @@ export var outputFinalCanv = async function ({ imageList,
             width: maxW,
             height: allH,
             canvas: tempcanv,
+            backgroundStyle,
         })
     }
     else if (useEasyBG) {
-        //if ((maxW * allH) < 5000000) ctx.drawImage(BGImageCache, 0, 0)
-        /*
-        await CreateBGPure({
-            width: maxW,
-            height: allH,
-            canvas: tempcanv,
-        })
-            */
         await CreateBGEazy({
             width: maxW,
             height: allH,
             canv: tempcanv,
+            backgroundStyle,
         })
             
     }
@@ -104,7 +80,8 @@ export var outputFinalCanv = async function ({ imageList,
             text,
             image: BGimage,
             width: maxW,
-            height: allH
+            height: allH,
+            backgroundStyle,
         }), 0, 0)
     }
 
@@ -133,7 +110,8 @@ export var outputFinalBuffer = async function ({
     BGimage,
     compress = true,
     usePureBG = false,
-    useNoneBG = false
+    useNoneBG = false,
+    backgroundStyle = DEFAULT_BACKGROUND_STYLE,
 }: outputFinalOptions): Promise<Buffer> {
     var tempcanv = await outputFinalCanv({
         startWithSpace,
@@ -143,6 +121,7 @@ export var outputFinalBuffer = async function ({
         useEasyBG,
         text,
         BGimage,
+        backgroundStyle,
     })
     var tempBuffer: Buffer
     if (compress != undefined && compress) {

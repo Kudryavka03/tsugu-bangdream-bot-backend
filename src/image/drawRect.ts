@@ -2,6 +2,7 @@ import { Canvas, FontLibrary } from 'skia-canvas';
 import { assetsRootPath } from '@/config';
 import { getTextWidth } from '@/image/utils';
 import { CornerRadius, CornerStyle, titleMatchedRoundedRectPath } from '@/image/surfaceShadow';
+import { GUIDE_THEME } from '@/image/theme';
 FontLibrary.use("old",[`${assetsRootPath}/Fonts/old.ttf`])
 
 interface RoundedRect {
@@ -19,10 +20,10 @@ interface RoundedRect {
 export function drawRoundedRect({
   width,
   height,
-  radius = 25,
-  color = "#ffffff",
+  radius = GUIDE_THEME.cardRadius,
+  color = GUIDE_THEME.surface,
   opacity = 0.9,
-  strokeColor = "#bbbbbb",
+  strokeColor = GUIDE_THEME.border,
   strokeWidth = 0,
   cornerStyle = 'legacy',
 }: RoundedRect): Canvas {
@@ -122,32 +123,39 @@ interface RoundedRectWithText {
 }
 
 //画圆角矩形并填充文字
-export function drawRoundedRectWithText({
-  text,
-  font = "old",
-  textColor = "#ffffff",
-  textSize,
-  textAlign = "center",
-  height = textSize * 4 / 3,
-  width = getTextWidth(text, textSize, font) + height,
-  radius = height / 2,
-  color = "#5b5b5b",
-  opacity = 1,
-  strokeColor = color,
-  strokeWidth = 0
-}: RoundedRectWithText): Canvas {
-  const canvas = drawRoundedRect({ width, height, radius, color, opacity, strokeColor, strokeWidth });
+export function drawRoundedRectWithText(options: RoundedRectWithText): Canvas {
+  // Shared keys retain their solid fill and the project's original gray palette.
+  // Explicit game, difficulty and stat colors keep their existing label style.
+  const themeLabel = options.color === undefined;
+  const {
+    text,
+    font = "old",
+    textColor = GUIDE_THEME.surface,
+    textSize,
+    textAlign = "center",
+    height = textSize * 4 / 3,
+    width = getTextWidth(text, textSize, font) + height,
+    radius = height / 2,
+    color = GUIDE_THEME.keyBackground,
+    opacity = 1,
+    strokeColor = color,
+    strokeWidth = 0
+  } = options;
+  const canvas = drawRoundedRect({
+    width, height, radius, color, opacity, strokeColor, strokeWidth,
+    cornerStyle: themeLabel ? 'title-matched' : 'legacy',
+  });
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = textColor;
   ctx.textBaseline = "alphabetic";
-  ctx.font = `${textSize}px old,Microsoft Yahei`;
+  ctx.font = `${textSize}px ${font === 'old' ? GUIDE_THEME.fontFamily : font + ', "Microsoft Yahei", sans-serif'}`;
 
   let x = 0, y = 0;
   if (textAlign === "left" || textAlign === "start") {
-    x = radius;
+    x = themeLabel ? height / 2 : radius;
   } else if (textAlign === "right" || textAlign === "end") {
-    x = width - radius;
+    x = width - (themeLabel ? height / 2 : radius);
   }
   else if (textAlign === "center") {
     x = width / 2;

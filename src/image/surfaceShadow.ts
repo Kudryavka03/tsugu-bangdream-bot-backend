@@ -1,9 +1,10 @@
 import { Canvas, CanvasRenderingContext2D, Image } from 'skia-canvas';
+import { GUIDE_THEME } from './theme';
 
 export type CornerRadius = number | [number, number, number, number];
 export type CornerStyle = 'legacy' | 'title-matched';
 
-export const CARD_CORNER_RADIUS = 35;
+export const CARD_CORNER_RADIUS = GUIDE_THEME.cardRadius;
 
 export interface SurfaceDecoration {
     x: number;
@@ -26,7 +27,8 @@ interface RoundedImageOptions {
 const decorations = new WeakMap<object, SurfaceDecoration[]>();
 const logicalHeights = new WeakMap<object, number>();
 
-const SHADOW_PADDING = 16;
+export const SURFACE_SHADOW_PADDING = 48;
+const SHADOW_PADDING = SURFACE_SHADOW_PADDING;
 const surfaceShadowAtlases = new Map<string, ShadowAtlas>();
 
 interface ShadowAtlas {
@@ -107,10 +109,13 @@ export function titleMatchedRoundedRectPath(
 }
 
 function createSurfaceShadowAtlas(cornerStyle: CornerStyle, radius: number): ShadowAtlas {
-    const core = radius * 2 + 2;
+    // Leave a real straight edge between the corners. With a wide guide
+    // shadow, a 2px centre would blur both corners together and make small
+    // radii (including square surfaces) lose their shadow entirely.
+    const core = radius * 2 + 106;
     const size = core + SHADOW_PADDING * 2;
     const sliceStart = SHADOW_PADDING + radius;
-    const sliceEnd = sliceStart + 2;
+    const sliceEnd = SHADOW_PADDING + core - radius;
     const atlas = new Canvas(size, size);
     const ctx = atlas.getContext('2d');
     const path = cornerStyle === 'title-matched' ? titleMatchedRoundedRectPath : roundedRectPath;
@@ -127,8 +132,9 @@ function createSurfaceShadowAtlas(cornerStyle: CornerStyle, radius: number): Sha
         ctx.restore();
     };
 
-    drawShadowPass('rgba(67, 45, 58, 0.11)', 9, 0, 0);
-    drawShadowPass('rgba(67, 45, 58, 0.07)', 3, 1, 2);
+    // Adapt the guide's 30px/30px/40px pink shadow to the bot's 900px cards.
+    // Nine-slice caching avoids a full-card blur on very tall result lists.
+    drawShadowPass(GUIDE_THEME.shadow, 26, 12, 12);
 
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
@@ -291,7 +297,7 @@ export function drawSurfaceBorders(
         const height = item.height * scaleY;
 
         ctx.save();
-        ctx.strokeStyle = 'rgba(150, 83, 111, 0.14)';
+        ctx.strokeStyle = GUIDE_THEME.border;
         ctx.lineWidth = 1;
         const path = cornerStyle === 'title-matched' ? titleMatchedRoundedRectPath : roundedRectPath;
         path(ctx, x + 0.5, y + 0.5, width - 1, height - 1, scaledRadius);
@@ -323,20 +329,20 @@ export function drawRoundedImage(
     width: number,
     height: number,
     {
-        radius = Math.max(6, Math.min(22, Math.min(width, height) * 0.08)),
+        radius = Math.max(6, Math.min(GUIDE_THEME.cardRadius, Math.min(width, height) * 0.08)),
         shadow = true,
         border = true,
-        borderColor = 'rgba(130, 76, 102, 0.22)',
+        borderColor = GUIDE_THEME.border,
     }: RoundedImageOptions = {},
 ): void {
     const safeRadius = Math.max(0, Math.min(radius, width / 2, height / 2));
 
     if (shadow) {
         ctx.save();
-        ctx.fillStyle = 'rgba(58, 34, 48, 0.09)';
+        ctx.fillStyle = 'rgba(150, 0, 51, 0.09)';
         titleMatchedRoundedRectPath(ctx, x + 1, y + 2, width, height, safeRadius);
         ctx.fill();
-        ctx.fillStyle = 'rgba(58, 34, 48, 0.045)';
+        ctx.fillStyle = 'rgba(150, 0, 51, 0.045)';
         titleMatchedRoundedRectPath(ctx, x + 2, y + 4, width, height, safeRadius);
         ctx.fill();
         ctx.restore();

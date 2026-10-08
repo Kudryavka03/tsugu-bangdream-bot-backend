@@ -1,281 +1,121 @@
-import { Canvas, Image } from 'skia-canvas';
-import { drawRoundedRect } from '@/image/drawRect';
-import { drawText, releaseCanvas } from '@/image/text';
-import { CARD_CORNER_RADIUS, drawDecoratedImage, inheritSurfaceDecorations, registerSurfaceDecorations } from '@/image/surfaceShadow';
+import { Canvas, Image, CanvasRenderingContext2D } from 'skia-canvas';
+import { setFontStyle } from '@/image/text';
+import { drawDecoratedImage, inheritSurfaceDecorations, registerSurfaceDecorations, titleMatchedRoundedRectPath } from '@/image/surfaceShadow';
+import { GUIDE_THEME, guideGradient, drawGuideHeadingDots, drawGuideSingleLineText } from '@/image/theme';
 
 interface datablockOptions {
-    list: Array<Canvas | Image>
-    BG?: boolean
-    topLeftText?: string
-    opacity?: number
-    maxWidth?: number
-}
-//组合表格子程序，使用block当做底，通过最大高度换行，默认高度无上限
-export async function drawDatablock({
-    list,
-    BG = true,
-    topLeftText,
-    opacity = 1,    // 0.9
-    maxWidth
-}: datablockOptions): Promise<Canvas> {
-    const topLeftTextHeight = 70
-    //计算高度
-    var allH = 0
-    var maxW = 0
-    if (BG) {
-        allH += 100
-    }
-    for (var i = 0; i < list.length; i++) {
-        allH = allH + list[i].height
-        if (list[i].width > maxW) {
-            maxW = list[i].width
-        }
-    }
-
-    //创建Canvas
-    if (topLeftText != undefined && BG) {
-        var tempcanv = new Canvas(maxW + 200, allH + topLeftTextHeight)
-    }
-    else {
-        var tempcanv = new Canvas(maxW + 200, allH)
-    }
-    var ctx = tempcanv.getContext("2d")
-
-    //画背景
-    if (BG) {
-        if (topLeftText != undefined) {
-            //右上角文字
-            ctx.drawImage(drawRoundedRect({//画字底，左下角右下角没有圆角
-                opacity: 1,
-                color: '#ea4e73',
-                width: 380,
-                height: topLeftTextHeight + 5,
-                radius: [25, 25, 0, 0],
-                cornerStyle: 'title-matched',
-                strokeColor: '#ffffff',
-                strokeWidth: 5
-            }), 50, 0)
-
-            var textImage = await drawText({//画字
-                color: '#ffffff',
-                text: topLeftText,
-                maxWidth: 370,
-                lineHeight: topLeftTextHeight - 5
-            })
-            ctx.drawImage(textImage, 240 - (textImage.width / 2), 5)
-
-            ctx.drawImage(drawRoundedRect({//画总底，左上角没有圆角
-                opacity,
-                width: maxW + 100,
-                height: allH,
-                radius: [0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
-                cornerStyle: 'title-matched',
-            }), 50, topLeftTextHeight)
-        }
-        else {
-            ctx.drawImage(drawRoundedRect({//画总底
-                opacity,
-                width: maxW + 100,
-                height: allH,
-                radius: CARD_CORNER_RADIUS,
-                cornerStyle: 'title-matched',
-            }), 50, 0)
-        }
-    }
-    var allH2 = 0
-    if (BG) {
-        allH2 += 50
-        if (topLeftText != undefined) {
-            allH2 += topLeftTextHeight
-        }
-    }
-
-    if (BG) {
-        var xStart = 100
-    }
-    else {
-        var xStart = 0
-    }
-
-    for (var i = 0; i < list.length; i++) {
-        if (BG) {
-            // Bake nested card shadows onto the opaque parent surface. Merely
-            // inheriting their metadata would draw the shadow behind that
-            // surface, where it would be invisible.
-            drawDecoratedImage(ctx, list[i], xStart, allH2)
-        }
-        else {
-            ctx.drawImage(list[i], xStart, allH2)
-            inheritSurfaceDecorations(tempcanv, list[i], xStart, allH2)
-        }
-        allH2 = allH2 + list[i].height
-    }
-
-    if (BG) {
-        if (topLeftText != undefined) {
-            registerSurfaceDecorations(tempcanv, [
-                {
-                    x: 50,
-                    y: 0,
-                    width: 380,
-                    height: topLeftTextHeight + 5,
-                    radius: [25, 25, 0, 0],
-                    cornerStyle: 'title-matched',
-                    border: false,
-                },
-                {
-                    x: 50,
-                    y: topLeftTextHeight,
-                    width: maxW + 100,
-                    height: allH,
-                    radius: [0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
-                    cornerStyle: 'title-matched',
-                    border: true,
-                },
-            ])
-        }
-        else {
-            registerSurfaceDecorations(tempcanv, [{
-                x: 50,
-                y: 0,
-                width: maxW + 100,
-                height: allH,
-                radius: CARD_CORNER_RADIUS,
-                cornerStyle: 'title-matched',
-                border: true,
-            }])
-        }
-    }
-
-    return (tempcanv)
+    list: Array<Canvas | Image>;
+    BG?: boolean;
+    topLeftText?: string;
+    opacity?: number;
+    maxWidth?: number;
 }
 
-export async function drawDatablockHorizontal({
-    list,
-    BG = true,
-    topLeftText
-}: datablockOptions): Promise<Canvas> {
-    const topLeftTextHeight = 70;
+const HEADING_SIZE = 70;
 
-    // 计算宽度和高度
-    var allW = 0;
-    var maxH = 0;
-    if (BG) {
-        allW += 200;
-    }
-    for (var i = 0; i < list.length; i++) {
-        allW += list[i].width;
-        if (list[i].height > maxH) {
-            maxH = list[i].height;
-        }
-    }
-
-    // 创建 Canvas
-    if (topLeftText !== undefined && BG) {
-        var tempcanv = new Canvas(allW + topLeftTextHeight, maxH + 100);
-    } else {
-        var tempcanv = new Canvas(allW, maxH + 100);
-    }
-    var ctx = tempcanv.getContext("2d");
-
-    // 绘制背景
-    if (BG) {
-        if (topLeftText !== undefined) {
-            // 右上角文字
-            ctx.drawImage(drawRoundedRect({
-                opacity: 1,
-                color: '#ea4e73',
-                width: topLeftTextHeight + 5,
-                height: 380,
-                radius: [25, 25, 0, 0],
-                cornerStyle: 'title-matched',
-                strokeColor: '#ffffff',
-                strokeWidth: 5
-            }), 0, 50);
-
-            var textImage = await drawText({
-                color: '#ffffff',
-                text: topLeftText,
-                maxWidth: topLeftTextHeight - 5,
-                lineHeight: 370
-            });
+/** Shared guide section: rounded white body and an attached gradient heading. */
+async function drawBlockSurface(
+    canvas: Canvas, ctx: CanvasRenderingContext2D,
+    width: number, height: number, opacity: number,
+    heading?: string, verticalHeading = false,
+) {
+    ctx.save();
+    titleMatchedRoundedRectPath(ctx, 50, 0, width, height, GUIDE_THEME.cardRadius);
+    ctx.clip();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = GUIDE_THEME.surface;
+    ctx.fillRect(50, 0, width, height);
+    ctx.globalAlpha = 1;
+    if (heading !== undefined) {
+        const headingWidth = verticalHeading ? HEADING_SIZE : width;
+        const headingHeight = verticalHeading ? height : HEADING_SIZE;
+        ctx.fillStyle = guideGradient(ctx, 50, 0, headingWidth, headingHeight);
+        ctx.fillRect(50, 0, headingWidth, headingHeight);
+        if (verticalHeading) {
+            // Rotate the same official background with the side heading.
             ctx.save();
-            ctx.translate(topLeftTextHeight - 5, 240);
+            ctx.translate(50, height);
             ctx.rotate(-Math.PI / 2);
-            ctx.drawImage(textImage, 0, 0);
-
+            await drawGuideHeadingDots(ctx, 0, 0, height, HEADING_SIZE);
             ctx.restore();
-
-            ctx.drawImage(drawRoundedRect({
-                width: allW - 100,
-                height: maxH + 100,
-                radius: [CARD_CORNER_RADIUS, 0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
-                cornerStyle: 'title-matched',
-            }), topLeftTextHeight, 50);
         } else {
-            ctx.drawImage(drawRoundedRect({
-                width: allW - 100,
-                height: maxH + 100,
-                radius: CARD_CORNER_RADIUS,
-                cornerStyle: 'title-matched',
-            }), 50, 0);
+            await drawGuideHeadingDots(ctx, 50, 0, headingWidth, headingHeight);
+        }
+        setFontStyle(ctx, 34, 'old');
+        ctx.fillStyle = GUIDE_THEME.surface;
+        ctx.textBaseline = 'middle';
+        if (verticalHeading) {
+            ctx.translate(50 + HEADING_SIZE / 2, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            drawGuideSingleLineText(ctx, heading, 0, 0, height - 70);
+        } else {
+            drawGuideSingleLineText(ctx, heading, 85, HEADING_SIZE / 2, width - 70);
         }
     }
-
-    var allW2 = 0;
-    if (BG) {
-        allW2 += 100;
-        if (topLeftText !== undefined) {
-            allW2 += topLeftTextHeight;
-        }
-    }
-    for (var i = 0; i < list.length; i++) {
-        if (BG) {
-            drawDecoratedImage(ctx, list[i], allW2, 50)
-        }
-        else {
-            ctx.drawImage(list[i], allW2, 50)
-            inheritSurfaceDecorations(tempcanv, list[i], allW2, 50)
-        }
-        allW2 += list[i].width;
-    }
-
-    if (BG) {
-        if (topLeftText !== undefined) {
-            registerSurfaceDecorations(tempcanv, [
-                {
-                    x: 0,
-                    y: 50,
-                    width: topLeftTextHeight + 5,
-                    height: 380,
-                    radius: [25, 25, 0, 0],
-                    cornerStyle: 'title-matched',
-                    border: false,
-                },
-                {
-                    x: topLeftTextHeight,
-                    y: 50,
-                    width: allW - 100,
-                    height: Math.max(0, tempcanv.height - 50),
-                    radius: [CARD_CORNER_RADIUS, 0, CARD_CORNER_RADIUS, CARD_CORNER_RADIUS],
-                    cornerStyle: 'title-matched',
-                    border: true,
-                },
-            ])
-        }
-        else {
-            registerSurfaceDecorations(tempcanv, [{
-                x: 50,
-                y: 0,
-                width: allW - 100,
-                height: maxH + 100,
-                radius: CARD_CORNER_RADIUS,
-                cornerStyle: 'title-matched',
-                border: true,
-            }])
-        }
-    }
-
-    return tempcanv;
+    ctx.restore();
+    registerSurfaceDecorations(canvas, [{
+        x: 50, y: 0, width, height,
+        radius: GUIDE_THEME.cardRadius,
+        cornerStyle: 'title-matched',
+        border: false,
+    }]);
 }
 
+/** Preserve the established +200px width, 50px padding and 70px heading slot. */
+export async function drawDatablock({
+    list, BG = true, topLeftText, opacity = 0.9,
+}: datablockOptions): Promise<Canvas> {
+    // Legacy callers pass null when a gacha has no section title.
+    const heading = topLeftText == null ? undefined : topLeftText;
+    const headingHeight = BG && heading !== undefined ? HEADING_SIZE : 0;
+    const contentHeight = list.reduce((sum, image) => sum + image.height, 0);
+    const maxW = list.reduce((width, image) => Math.max(width, image.width), 0);
+    const height = contentHeight + (BG ? 100 : 0) + headingHeight;
+    const canvas = new Canvas(maxW + 200, height);
+    const ctx = canvas.getContext('2d');
+    if (BG) await drawBlockSurface(canvas, ctx, maxW + 100, height, opacity, heading);
+
+    let y = (BG ? 50 : 0) + headingHeight;
+    const x = BG ? 100 : 0;
+    for (const image of list) {
+        if (BG) {
+            // Nested decorations must be baked onto an opaque parent body.
+            drawDecoratedImage(ctx, image, x, y);
+        } else {
+            ctx.drawImage(image, x, y);
+            inheritSurfaceDecorations(canvas, image, x, y);
+        }
+        y += image.height;
+    }
+    return canvas;
+}
+
+/** Horizontal layout keeps its legacy child coordinates and outer dimensions. */
+export async function drawDatablockHorizontal({
+    list, BG = true, topLeftText, opacity = 0.9,
+}: datablockOptions): Promise<Canvas> {
+    const heading = topLeftText == null ? undefined : topLeftText;
+    const headingWidth = BG && heading !== undefined ? HEADING_SIZE : 0;
+    const contentWidth = list.reduce((sum, image) => sum + image.width, 0);
+    const maxH = list.reduce((height, image) => Math.max(height, image.height), 0);
+    const width = contentWidth + (BG ? 200 : 0) + headingWidth;
+    const height = maxH + 100;
+    const canvas = new Canvas(width, height);
+    const ctx = canvas.getContext('2d');
+    if (BG) {
+        // One connected surface avoids the old title's fixed 380px side tab
+        // and the body being drawn 50px below the bottom of the canvas.
+        await drawBlockSurface(canvas, ctx, width - 100, height, opacity, heading, true);
+    }
+    let x = (BG ? 100 : 0) + headingWidth;
+    for (const image of list) {
+        if (BG) drawDecoratedImage(ctx, image, x, 50);
+        else {
+            ctx.drawImage(image, x, 50);
+            inheritSurfaceDecorations(canvas, image, x, 50);
+        }
+        x += image.width;
+    }
+    return canvas;
+}

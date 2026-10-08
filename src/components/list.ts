@@ -8,9 +8,10 @@ import { globalDefaultServer } from '@/config';
 import { setFontStyle } from '@/image/text';
 import { getFontCanvasCtxFromPool } from '@/image/utils';
 import { inheritSurfaceDecorations, roundedRectPath } from '@/image/surfaceShadow';
+import { GUIDE_THEME, guideGradient } from '@/image/theme';
 
 
-//表格用默认虚线
+// Shared separator; dimensions remain compatible with existing row layouts.
 export const line: Canvas = drawDottedLine({
     width: 800,
     height: 30,
@@ -20,7 +21,7 @@ export const line: Canvas = drawDottedLine({
     endY: 15,
     radius: 2,
     gap: 10,
-    color: "#a8a8a8"
+    color: GUIDE_THEME.divider
 })
 
 interface ListOptions {
@@ -43,15 +44,15 @@ interface ListOptions {
 //文字使用textSize，不缩放图片
 export function drawListTextWithImages({
     key,
-    content,
+    content = [],
     textSize = 40,
     spacing = textSize / 3,
     lineSpacing = 20,
-    color = '#505050',
+    color = GUIDE_THEME.text,
     maxWidth = 800,
     align = "center"
 }: ListOptions): Canvas {
-    const keyImage = drawRoundedRectWithText({
+    const keyImage = key === undefined ? undefined : drawRoundedRectWithText({
         text: key,
         textSize: 30,
     });
@@ -122,15 +123,15 @@ export function drawList({
     textSize = 40,
     lineHeight = textSize * 1.5,
     spacing = textSize / 3,
-    color = '#505050',
+    color = GUIDE_THEME.text,
     maxWidth = 800,
-    RoundedRectColor = '#5b5b5b',
-    RoundedRectTextColor = "#ffffff",
+    RoundedRectColor,
+    RoundedRectTextColor,
     leftPadding = 20,
 
 }: ListOptions): Canvas {
     const xmax = maxWidth - 40
-    const keyImage = drawRoundedRectWithText({
+    const keyImage = key === undefined ? undefined : drawRoundedRectWithText({
         text: key,
         textSize: 30,
         color:RoundedRectColor,
@@ -139,7 +140,7 @@ export function drawList({
     var isNeedToRelease = false
     var textImage: Canvas
     if (typeof text == "string") {
-        textImage =  drawText({ text, maxWidth: xmax, lineHeight });
+        textImage = drawText({ text, maxWidth: xmax, lineHeight, textSize, color });
         isNeedToRelease = true
     }
     else if (content != undefined) {
@@ -188,7 +189,7 @@ export async function drawTipsInList({
     const xmax = 760
     var textImage: Canvas
     if (typeof text == "string") {
-        textImage = await drawText({ text, textSize, maxWidth: xmax, lineHeight });
+        textImage = await drawText({ text, textSize, maxWidth: xmax, lineHeight, color: GUIDE_THEME.muted });
         
     }
     else if (content != undefined) {
@@ -197,17 +198,22 @@ export async function drawTipsInList({
             content,
             maxWidth: xmax,
             lineHeight,
-            spacing
+            spacing,
+            color: GUIDE_THEME.muted
         });
     }
     else {
-        textImage = null
+        return new Canvas(800, 11)
     }
-    const canvas = new Canvas(800, (textImage.height===null?1:textImage.height) + 10);
+    const canvas = new Canvas(800, textImage.height + 10);
     //const canvas = new Canvas(800, 1 + 10);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f1f1f1'
-    ctx.fillRect(0, 10, 800, textImage.height);
+    ctx.fillStyle = GUIDE_THEME.surfaceTint
+    roundedRectPath(ctx, 0, 10, 800, textImage.height, GUIDE_THEME.labelRadius)
+    ctx.fill();
+    ctx.fillStyle = GUIDE_THEME.primarySoft
+    roundedRectPath(ctx, 0, 10, 4, textImage.height, 2)
+    ctx.fill();
     ctx.drawImage(textImage, 20, 10);
 
 
@@ -301,7 +307,7 @@ export function drawListMergeMin(
         endY: canvas.height - 5,
         radius: 2,
         gap: 10,
-        color: "#a8a8a8"
+        color: GUIDE_THEME.divider
     });
 
     // 绘制
@@ -355,7 +361,7 @@ export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number
         endY: canvas.height - 5,
         radius: 2,
         gap: 10,
-        color: "#a8a8a8"
+        color: GUIDE_THEME.divider
     })
     for (let i = 0; i < imageList.length; i++) {
         const element = imageList[i];
@@ -400,7 +406,7 @@ export function drawListMergeWithoutWidth(imageList: Array<Canvas | Image>, maxW
         endY: canvas.height - 5,
         radius: 2,
         gap: 10,
-        color: "#a8a8a8"
+        color: GUIDE_THEME.divider
     })
     for (let i = 0; i < imageList.length; i++) {
         const element = imageList[i];
@@ -509,15 +515,9 @@ export function drawListWithLine(textImageList: Array<Canvas | Image>): Canvas {
     const lineY = 8
     const lineHeight = canvas.height - lineY * 2
     if (lineHeight > 0) {
-        // A filled capsule makes the semicircular caps more apparent than a
-        // thin stroked line. Its shadow is shifted only to the right, avoiding
-        // both bottom clipping and shadowBlur on long cards.
+        // The guide's pink accent follows the existing narrow left gutter.
         ctx.save()
-        ctx.fillStyle = 'rgba(84, 62, 73, 0.12)'
-        roundedRectPath(ctx, 11, lineY, 7, lineHeight, 3.5)
-        ctx.fill()
-
-        ctx.fillStyle = '#A8A1A6'
+        ctx.fillStyle = guideGradient(ctx, 10, lineY, 6, lineHeight)
         roundedRectPath(ctx, 10, lineY, 6, lineHeight, 3)
         ctx.fill()
         ctx.restore()
