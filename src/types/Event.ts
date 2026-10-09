@@ -365,65 +365,38 @@ export class Event {
         return (memberList)
     }
     async getRewardStamp(server:Server): Promise<Image[]> {
-        const stampReardsId:number[] = []   // 贴纸合集
-        //const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)
-        const allStamps = mainAPI['stamps']
-        const rewards = this.pointRewards[0]?this.pointRewards[0].concat(server==Server.jp?[]:this.pointRewards[server]).filter(Boolean):[]
-        
-        const rankingRewards = this.rankingRewards[0]?this.rankingRewards[0].concat(server==Server.jp?[]:this.rankingRewards[server]).filter(Boolean):[]
-        //let rewardId = -1
-        for(let i = 0; i < rewards?.length; i++){
-            if(rewards[i].rewardType == 'stamp'){
-                if (!stampReardsId.includes(rewards[i].rewardId)){
-                    stampReardsId.push(rewards[i].rewardId)
-                }
-                //rewardId = rewards[i].rewardId
-                //stampReardsId.push(rewards[i].rewardId)
-                //break
-            }
+        const stampRewardIds = new Set<number>();
+        const allStamps = mainAPI['stamps'] ?? {};
+        // 各服奖励可能不同；只有该服数据缺失时才使用日服备份。
+        const rewards = (this.pointRewards?.[server] ?? this.pointRewards?.[Server.jp] ?? []).filter(Boolean)
+        const rankingRewards = (this.rankingRewards?.[server] ?? this.rankingRewards?.[Server.jp] ?? []).filter(Boolean)
+        for (const reward of [...rewards, ...rankingRewards]) {
+            if (reward.rewardType === 'stamp' || reward.rewardType === 'voice_stamp') stampRewardIds.add(reward.rewardId);
         }
-        for(let i = 0; i < rankingRewards?.length; i++){
-            if(rankingRewards[i].rewardType == 'voice_stamp'){
-                if (!stampReardsId.includes(rankingRewards[i].rewardId)){
-                    stampReardsId.push(rankingRewards[i].rewardId)
-                }
-            }
-        }
-        const stampAssetName:string[] = []
-        for(const i in allStamps){
-            for(const j of stampReardsId){
-                if (j.toString() == i){
-                    if(allStamps[i]['imageName'][server]){
-                        stampAssetName.push(allStamps[i]['imageName'][server])
-                    }else if (allStamps[i]['imageName'][0]){
-                        stampAssetName.push(allStamps[i]['imageName'][0])       // 日服备份
-                    }
+        const preferredServer = this.startAt[server] != null && this.startAt[server] <= Date.now() ? server : Server.jp;
+        // Future activities prefer already available JP assets, but CN-exclusive
+        // rewards still retain their CN asset instead of disappearing.
+        const assetServers = [...new Set([preferredServer, server, Server.jp])];
+        const images = await Promise.all([...stampRewardIds].map(async stampId => {
+            const urls = assetServers.flatMap(assetServer => {
+                const name = allStamps[stampId]?.imageName?.[assetServer];
+                return name ? [`${Bestdoriurl}/assets/${Server[assetServer]}/stamp/01_rip/${name}.png`] : [];
+            });
+            for (const url of urls) {
+                try {
+                    const buffer = await downloadFileCache(url, false);
+                    if (!buffer?.length || (assetErrorImageBuffer && buffer.equals(assetErrorImageBuffer))) continue;
+                    return await loadImage(buffer);
+                } catch {
+                    // A failed download or decode retries the same reward ID's
+                    // other localized asset, without dropping unrelated stamps.
                 }
             }
-        }
-        if(stampAssetName.length == 0){
-            return undefined
-        }
-        let serverName = 'jp'
-        if(this.startAt[server] && this.startAt[server] < Date.now()){
-            serverName = Server[server]
-        }
-        try {
-            const ImageListPromise:Promise<Buffer>[] = []
-            for(const assetName of stampAssetName){
-                ImageListPromise.push(downloadFileCache(`${Bestdoriurl}/assets/${serverName}/stamp/01_rip/${assetName}.png`,false).catch(() => undefined))
-            }
-            const ImageBufferList = await Promise.all(ImageListPromise)
-            let ImageList:Image[] = []
-            for(const ImageBuffer of ImageBufferList){
-                if(ImageBuffer) ImageList.push(await loadImage(ImageBuffer))
-            }
-            if (ImageList.length == 0) return undefined
-            return ImageList
-        }
-        catch{
-            return undefined
-        }
+            logger('Event.getRewardStamp', `Unable to load event ${this.eventId} reward stamp ${stampId}; tried ${urls.join(', ') || 'no known asset'}`);
+            return undefined;
+        }));
+        const availableImages = images.filter((image): image is Image => image != null);
+        return availableImages.length ? availableImages : undefined;
     }
     async getRewardDeco(server:Server): Promise<Image> {
         
@@ -656,6 +629,23 @@ function getEventTimeWindowByServer(event: Event, server: Server, presentEvent: 
         endAt: forecastStartAt + (jpEndAt - jpStartAt),
     };
 }
+// 查询指令使用严格的开始时间，避免 getPresentEvent 提前一天选中下一期。
+export function getCurrentEvent(server: Server, time: number = Date.now()): Event | null {
+    let currentId: number | null = null;
+    let latestStartAt = -Infinity;
+    for (const [id, data] of Object.entries(mainAPI['events'] ?? {})) {
+        const rawStartAt = data['startAt']?.[server];
+        if (rawStartAt == null) continue;
+        const startAt = Number(rawStartAt);
+        if (!Number.isFinite(startAt) || startAt > time) continue;
+        if (startAt > latestStartAt || (startAt === latestStartAt && Number(id) > currentId)) {
+            latestStartAt = startAt;
+            currentId = Number(id);
+        }
+    }
+    return currentId == null ? null : new Event(currentId);
+}
+
 //获取当前进行中的活动,如果期间没有活动，则返回上一个刚结束的活动
 export function getPresentEvent(server: Server, time?: number) {
     //if (server == Server.cn) return new Event(301)

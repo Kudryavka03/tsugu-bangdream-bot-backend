@@ -1,13 +1,13 @@
 import { Card } from "@/types/Card";
 import mainAPI, { preCacheIcon, setMainAPI } from "@/types/_Main"
 import { match, checkRelationList, FuzzySearchResult } from "@/fuzzySearch"
-import { App, Canvas } from 'skia-canvas'
-import { drawDatablock, drawDatablockHorizontal } from '@/components/dataBlock';
+import { Canvas } from 'skia-canvas'
+import { drawDatablockHorizontal } from '@/components/dataBlock';
 import { line } from '@/components/list';
-import { stackImage, stackImageHorizontal, resizeImage, getOptHeight, getOptDrawCount } from '@/components/utils'
+import { stackImage, stackImageHorizontal, resizeImage } from '@/components/utils'
 import { drawTitle } from '@/components/title';
 import { outputFinalBuffer } from '@/image/output'
-import { Server, getIcon, getServerByName } from '@/types/Server'
+import { Server, getIcon, getServerByName, getServerByPriority } from '@/types/Server'
 import { Event, getPresentEvent, sortEventList } from '@/types/Event';
 import { drawCardListInList } from '@/components/list/cardIconList';
 import { GetProbablyTimeDifference, changeTimefomant } from '@/components/list/time';
@@ -20,13 +20,16 @@ import { Image } from 'skia-canvas';
 import pLimit from 'p-limit'
 import { logger } from "@/logger";
 import { drawTips } from "@/components/tips";
+import { getLogicalHeight } from '@/image/surfaceShadow';
+import { planEventListLayout, EventListColumn } from './eventListLayout';
+import { appendEventListRewardStamps, drawEventListHeading } from './eventListVisual';
 const configuredEventConcurrency = Number(process.env.TSUGU_EVENT_LIST_CONCURRENCY)
 const eventSubConcurrency = Number.isFinite(configuredEventConcurrency) && configuredEventConcurrency > 0
     ? Math.floor(configuredEventConcurrency)
     : 3
 const limitSub = pLimit(eventSubConcurrency);
 const limitMain = pLimit(7);
-let maxHeight = 7000
+const maxHeight = 7000
 const maxColumns = 7
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { loadImageOnce } from "@/components/card";
@@ -50,7 +53,7 @@ export async function initForWorker() {
     await loadImageOnce()
     await preCacheIcon()
 }
-export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+export async function drawEventList(matches: FuzzySearchResult, displayedServerList: Server[] = globalDefaultServer, compress: boolean,apiData?:object, mainServer: Server = displayedServerList[0] ?? globalDefaultServer[0]): Promise<Array<Buffer | string>> {
     if (apiData) {
         setMainAPI(apiData)
         //await loadImageOnce()
@@ -93,15 +96,13 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
         return ['没有搜索到符合条件的活动']
     }
     if (tempEventList.length == 1) {
-        return await drawEventDetail(tempEventList[0].eventId,displayedServerList,true,compress)
+        return await drawEventDetail(tempEventList[0].eventId,[...new Set([mainServer, ...displayedServerList])],true,compress)
     }
-    let offsetN:number = 0  // 定义列表Offset
     // 按照开始时间排序
     sortEventList(tempEventList,displayedServerList)
     if (tempEventList.length >= 25 && isMainThread) return null
 
     var eventPromises: Promise<{ index: number, image: Canvas }>[] = [];
-    var tempH = 0;
     //console.log(tempEventList)
     await Promise.all(tempEventList.map(e => e.initFull(false)));
     if (tempEventList.length <25 && isMainThread){ // 如果查询数量少于25且我不是Worker
@@ -111,7 +112,8 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
                     index: i,
                     image: await drawEventInList(
                         tempEventList[i],
-                        displayedServerList
+                        displayedServerList,
+                        mainServer
                     )
                 }))
             )
@@ -127,7 +129,8 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
                     index: i,
                     image: await drawEventInList(
                         tempEventList[i],
-                        displayedServerList
+                        displayedServerList,
+                        mainServer
                     )
                 }))
             )
@@ -138,109 +141,73 @@ export async function drawEventList(matches: FuzzySearchResult, displayedServerL
     eventPromises.length = 0    // 清理对promise的引用
     eventResults.sort((a, b) => a.index - b.index);
 
-    var tempEventImageList: Canvas[] = [];
-    var eventImageListHorizontal: Canvas[] = [];
-    //console.log(offsetN)
-    // 预判活动Height，设置合理的maxHeight
-    //maxHeight = getOptHeight(eventResults.length,1000,300,10,30,Math.ceil(offsetN / 300))
-    let maxCount = getOptDrawCount(eventResults.length,1000,290,10,30,Math.ceil(offsetN / 300)) 
-    if (maxCount > 31)maxCount=31
-    const line2: Canvas = drawDottedLine({
-        width: 30,
-        height: ((maxCount -3) * 280),
-        startX: 5,
-        startY: 0,
-        endX: 15,
-        endY: 6995,
-        radius: 2,
-        gap: 10,
-        color: "#a8a8a8"
-    })
-    for (var i = 0; i < eventResults.length; i++) {
-        var tempImage = eventResults[i].image;
-        tempH += tempImage.height;  // tempH > maxHeight
-        
-        if (i % (maxCount) == 0 && i!=0) {
-            if (tempEventImageList.length > 0) {
-                eventImageListHorizontal.push(stackImage(tempEventImageList));
-                eventImageListHorizontal.push(line2);
-            }
-            tempEventImageList = [];
-            tempH = tempImage.height;
+    const title = await drawTitle(`查询  共${tempEventList.length}条结果`, '活动列表');
+    const tips = heavyLoad ? await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}) : undefined;
+    const pages = planEventListLayout(eventResults.map(result => result.image), {
+        rowGap: line.height,
+        columnGap: 30,
+        minimumColumnWidth: line.width,
+        maxHeight,
+        maxColumns,
+        outerWidth: 200,
+        // drawDatablockHorizontal padding, output margin and component gaps.
+        outerHeight: 100 + 80 + getLogicalHeight(title) + 34 * (tips ? 3 : 2) + (tips ? getLogicalHeight(tips) : 0),
+        minimumOutputWidth: Math.max(title.width, tips?.width ?? 0),
+    });
+    const output: Array<Buffer | string> = [];
+    if (pages.length > 1) output.push('活动列表过长，已经拆分输出');
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        const page = pages[pageIndex];
+        const images: Canvas[] = [];
+        for (let columnIndex = 0; columnIndex < page.columns.length; columnIndex++) {
+            if (columnIndex > 0) images.push(drawDottedLine({
+                width: 30, height: page.height,
+                startX: 15, startY: 5, endX: 15, endY: page.height - 5,
+                radius: 2, gap: 10, color: '#a8a8a8',
+            }));
+            images.push(drawEventColumn(eventResults, page.columns[columnIndex]));
         }
-        tempEventImageList.push(tempImage);
-        tempEventImageList.push(line);
-        //最后一张图
-        if (i == eventResults.length - 1) {
-            tempEventImageList.pop()
-            eventImageListHorizontal.push(stackImage(tempEventImageList));
-            eventImageListHorizontal.push(line2);
+        const all: Canvas[] = [
+            pages.length === 1 ? title : await drawTitle(`查询  共${tempEventList.length}条结果`, `活动列表 ${pageIndex + 1}/${pages.length}`),
+            await drawDatablockHorizontal({ list: images }),
+        ];
+        if (tips) all.push(tips);
+        output.push(await outputFinalBuffer({ imageList: all, useEasyBG: true, compress }));
+        // Release each page's source activity canvases before rendering the next.
+        for (const column of page.columns) {
+            for (let index = column.start; index < column.end; index++) eventResults[index].image = undefined;
         }
     }
-
-    eventImageListHorizontal.pop();
-    eventResults.length = 0
-    tempEventImageList.length = 0   // 清内存
-    if (eventImageListHorizontal.length > maxColumns) {
-        let times = 0
-        let tempImageList: Array<string | Buffer> = []
-        tempImageList.push('活动列表过长，已经拆分输出')
-        for (let i = 0; i < eventImageListHorizontal.length; i++) {
-            const tempCanv = eventImageListHorizontal[i];
-            if (tempCanv == line2) {
-                continue
-            }
-            const all = []
-            if (times == 0) {
-                all.push(await drawTitle('查询', `活动列表 共${tempEventList.length}条结果`))
-            }
-            all.push(await drawDatablock({ list: [tempCanv] }))
-            if (heavyLoad) all.push(await drawTips({text:'[Priority Level Down] 模拟数量过多，CiRCLE工作人员喘不过气啦！'}))
-            tempImageList.push(await outputFinalBuffer({
-            imageList: all,
-             useEasyBG: true
-            }))
-            all.length = 0
-            /*
-            const buffer = await outputFinalBuffer({
-                imageList: all,
-                useEasyBG: true
-            })
-            tempImageList.push(buffer)
-            */
-            times += 1
-        }
-        eventImageListHorizontal.length = 0 // clear mem
-        return tempImageList
-    } else {
-        const all = []
-        const eventListImage = await drawDatablockHorizontal({
-            list: eventImageListHorizontal
-        })
-        eventImageListHorizontal.length = 0 // clear memory
-        all.push((await drawTitle(`查询  共${tempEventList.length}条结果`, `活动列表`)))
-        all.push(eventListImage)
-        if (heavyLoad) all.push(await drawTips({text:'[优先级降级] 查询数量过多，CiRCLE工作人员喘不过气啦！'}))
-        const buffer = await outputFinalBuffer({
-            imageList: all,
-            useEasyBG: true,
-            compress: compress,
-        })
-        return [buffer]
-    }
+    return output;
 
 }
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-async function drawEventInList(event: Event, displayedServerList: Server[] = globalDefaultServer): Promise<Canvas> {
+function drawEventColumn(eventResults: { image: Canvas }[], column: EventListColumn): Canvas {
+    const images: Canvas[] = [];
+    const rowLine = column.width === line.width ? line : drawDottedLine({
+        width: column.width, height: line.height,
+        startX: 5, startY: line.height / 2, endX: column.width - 5, endY: line.height / 2,
+        radius: 2, gap: 10, color: '#a8a8a8',
+    });
+    for (let index = column.start; index < column.end; index++) {
+        if (index > column.start) images.push(rowLine);
+        images.push(eventResults[index].image);
+    }
+    const content = stackImage(images);
+    // A single short activity can be narrower than the shared row separators.
+    if (content.width === column.width) return content;
+    const canvas = new Canvas(column.width, content.height);
+    canvas.getContext('2d').drawImage(content, 0, 0);
+    return canvas;
+}
+async function drawEventInList(event: Event, displayedServerList: Server[] = globalDefaultServer, mainServer: Server = displayedServerList[0] ?? globalDefaultServer[0]): Promise<Canvas> {
     //await event.initFull(false) //优化调度
 
     var textSize = 25 * 3 / 4;
     var content = []
     var Tips = []
     //活动类型
-    content.push(`ID: ${event.eventId.toString()}  ${await event.getTypeName()}\n`)
+    const nameServer = getServerByPriority(event.eventName.map(name => name || null), [mainServer, ...displayedServerList]);
+    const titleImage = drawEventListHeading(`ID: ${event.eventId}  ${event.getTypeName()}  ${event.eventName[nameServer] ?? ''}`, textSize);
     //活动时间
     var numberOfServer = Math.min(displayedServerList.length, 2)
     const currentEvent = getPresentEvent(getServerByName("cn"));
@@ -298,7 +265,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         //content.push(statText)
     }
     var getBannerImagePromise:Promise<Image | Canvas>[] = []
-    getBannerImagePromise.push(event.getBannerImage())
+    getBannerImagePromise.push(event.getBannerImage([...new Set([mainServer, ...displayedServerList])]))
 
 
     //活动期间卡池卡牌
@@ -325,14 +292,16 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         Promise.all(attributeListPromise),
         Promise.all(characterListPromise),
         Promise.all(getBannerImagePromise),
-        Promise.all(getEventGachaAndCardListPromise)
+        Promise.all(getEventGachaAndCardListPromise),
+        event.getRewardStamp(mainServer),
     ]);
     const [
         getIconResult,
         attributeListResult,
         characterListResult,
         getBannerImageResult,
-        getEventGachaAndCardListResult
+        getEventGachaAndCardListResult,
+        rewardStamps,
     ] = results
 
     // clear ref
@@ -366,11 +335,11 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
     var bannerImageR = getBannerImageResult[0]
 
 
-    var textImage = drawTextWithImages({
+    var textImage = stackImage([titleImage, drawTextWithImages({
         content: content,
         textSize,
         maxWidth: 500
-    })
+    })]);
     content.length = 0
     Tips.length = 0     // clear mem
     const eventBannerImage = resizeImage({
@@ -404,8 +373,7 @@ async function drawEventInList(event: Event, displayedServerList: Server[] = glo
         cardIdVisible: true,
         leftPadding: 3,
     })
-    //return stackImage([imageUp, imageDown])
-    const result = stackImage([imageUp, imageDown])
+    const result = stackImage([imageUp, appendEventListRewardStamps(imageDown, rewardStamps ?? [])]);
 
 
     return result

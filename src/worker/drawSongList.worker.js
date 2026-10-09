@@ -27,7 +27,8 @@ module.exports.drawEventList = async function (task) {
     task.matches,
     task.displayedServerList,
     task.compress,
-    task.mainAPI
+    task.mainAPI,
+    task.mainServer
   );
 };
 

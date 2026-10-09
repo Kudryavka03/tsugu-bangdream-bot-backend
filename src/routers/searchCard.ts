@@ -3,13 +3,16 @@ import { body, validationResult } from 'express-validator';
 import { drawCardDetail } from '@/view/cardDetail';
 import { drawCardList } from '@/view/cardList';
 import { isInteger, listToBase64 } from '@/routers/utils';
-import { isServerList } from '@/types/Server';
+import { isServer, isServerList } from '@/types/Server';
 import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import mainAPI from '@/types/_Main';
+import { getCurrentEvent } from '@/types/Event';
+import { getEventGachaAndCardList } from '@/view/eventDetail';
+import { globalDefaultServer, serverNameFullList } from '@/config';
 
 const router = express.Router();
 
@@ -17,6 +20,7 @@ router.post(
     '/',
     [
         body('displayedServerList').custom(isServerList),
+        body('mainServer').optional().custom(isServer),
         body('text').optional().isString(),
         body('fuzzySearchResult').optional().custom(isFuzzySearchResult),
         body('useEasyBG').isBoolean(),
@@ -24,27 +28,22 @@ router.post(
     ],
     middleware,
     async (req: Request, res: Response) => {
-        var { displayedServerList, text, fuzzySearchResult, useEasyBG, compress } = req.body;
+        var { displayedServerList, mainServer, text, fuzzySearchResult, useEasyBG, compress } = req.body;
         var after_training = true
-        var inputText = "";
-        inputText = text;
+        const inputText = text ?? '';
         if (inputText.includes('花前')) {
             after_training = false
             
             text = inputText.replace('花前','')
         }
-        if (text== "")    return res.send(listToBase64(["Character名都冇有，查咩野啫？"])) 
+        text = text?.trim();
         // 检查 text 和 fuzzySearchResult 是否同时存在
         if (text && fuzzySearchResult) {
             return res.status(500).json({ status: 'failed', data: 'text 与 fuzzySearchResult 不能同时存在' });
         }
-        // 检查 text 和 fuzzySearchResult 是否同时不存在
-        if (!text && !fuzzySearchResult) {
-            return res.status(422).json({ status: 'failed', data: '不能同时不存在 text 与 fuzzySearchResult' });
-        }
 
         try {
-            const result = await commandCard(displayedServerList, text || fuzzySearchResult, useEasyBG, compress,after_training);
+            const result = await commandCard(displayedServerList, text || fuzzySearchResult || '', useEasyBG, compress, after_training, mainServer);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -53,7 +52,11 @@ router.post(
     }
 );
 
-async function commandCard(displayedServerList: Server[], input: string | FuzzySearchResult, useEasyBG: boolean, compress?: boolean,after_training:boolean = true) {
+export async function commandCard(displayedServerList: Server[], input: string | FuzzySearchResult | undefined, useEasyBG: boolean, compress?: boolean,after_training:boolean = true, mainServer?: Server) {
+
+    if (input == null || (typeof input === 'string' && input.trim() === '')) {
+        return await commandCurrentEventCards(displayedServerList, useEasyBG, compress, mainServer, after_training);
+    }
     
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
@@ -85,6 +88,24 @@ async function commandCard(displayedServerList: Server[], input: string | FuzzyS
             after_training,
             mainAPI:null
         },{name:'drawCardList'})).map(toBuffer)
+}
+
+export async function commandCurrentEventCards(displayedServerList: Server[], useEasyBG: boolean, compress?: boolean, mainServer?: Server, after_training: boolean = true): Promise<Array<Buffer | string>> {
+    const server = mainServer ?? displayedServerList[0] ?? globalDefaultServer[0];
+    const event = getCurrentEvent(server);
+    if (!event) {
+        return [`错误: ${serverNameFullList[server]}没有已开始的活动`];
+    }
+    await event.initFull();
+    const { gachaCardList } = await getEventGachaAndCardList(event, server);
+    const cardIds = [...new Set([...gachaCardList.map(card => card.cardId), ...(event.rewardCards ?? [])])];
+    if (cardIds.length === 0) {
+        return [`${serverNameFullList[server]}当前活动没有卡池卡牌或奖励卡牌`];
+    }
+
+    const servers = [...new Set([server, ...displayedServerList])];
+    // 精确匹配活动卡牌，沿用单结果详情、多结果列表的输出方式。
+    return await commandCard(servers, { cardId: cardIds, _all: [] }, useEasyBG, compress, after_training, server);
 }
 
 

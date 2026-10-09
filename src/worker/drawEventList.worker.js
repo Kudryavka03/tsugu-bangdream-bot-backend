@@ -8,7 +8,8 @@ module.exports = async function (task) {
     task.matches,
     task.displayedServerList,
     task.compress,
-    task.mainAPI
+    task.mainAPI,
+    task.mainServer
   );
 };
 

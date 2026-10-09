@@ -26,7 +26,8 @@
     "start2": "node dist/app.js",
     "cpu": "set UV_THREADPOOL_SIZE=48  && node --inspect-brk -r  ts-node/register -r tsconfig-paths/register src/app.ts",
     "cpu2": "node --inspect-brk  dist/app.js",
-    "build": "npx tsc && npx tsc-alias"
+    "build": "npx tsc && npx tsc-alias",
+    "test": "tsc --noEmit && node --test tests/*.test.js"
   },
   "keywords": [
     "chatbot",

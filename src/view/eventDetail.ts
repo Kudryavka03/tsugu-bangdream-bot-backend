@@ -44,7 +44,7 @@ export async function drawEventDetail(eventId: number, displayedServerList: Serv
     BGImagePromise.push(event.getEventBGImage());
     // const [eventBannerImage,]
     //bannner
-    bannerImagePromise.push(event.getBannerImage())     // GetBannerImage的多线程IO
+    bannerImagePromise.push(event.getBannerImage(displayedServerList))
     // var eventBannerImage = await event.getBannerImage()     // 要改，往后
     //var eventBannerImageCanvas = drawBannerImageCanvas(eventBannerImage)    // 这个不需要
 

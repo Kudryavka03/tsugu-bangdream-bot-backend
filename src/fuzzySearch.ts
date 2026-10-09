@@ -39,16 +39,40 @@ function extractLvNumber(str: string): number | null {
 }
 
 function extractNoteNumber(str: string): number | null {
-  const regex = /^(?:nt|note)(?:s)?(\d+)$/i;
+  const regex = /^(?:nt|note)(?:s)?(\d+(?:\s*\+\s*\d+)*)$/i;
   const match = str.match(regex);
-  console.log(str)
-  if (match && match[1]) {
-    console.log('Match'+match[1])
-    return parseInt(match[1], 10);
-    
-  }
+  if (!match) return null;
 
-  return null;
+  let total = 0;
+  for (const term of match[1].split('+')) {
+    const value = Number(term.trim());
+    if (!Number.isSafeInteger(value) || !Number.isSafeInteger(total + value)) {
+      return null;
+    }
+    total += value;
+  }
+  return total;
+}
+
+function combineNoteExpressionTokens(tokens: string[]): string[] {
+  const combined: string[] = [];
+  for (let index = 0; index < tokens.length; index++) {
+    let token = tokens[index];
+    if (/^(?:nt|note)(?:s)?\d/i.test(token)) {
+      // Keep spaced additions together so an incomplete expression cannot become
+      // a valid note filter for only its first term. Other filters stay separate.
+      while (index + 1 < tokens.length) {
+        const next = tokens[index + 1];
+        if (!next.startsWith('+') && !(token.trimEnd().endsWith('+') && /^\d/.test(next))) {
+          break;
+        }
+        token += ' ' + next;
+        index++;
+      }
+    }
+    combined.push(token);
+  }
+  return combined;
 }
 
 function extractSkillNumber(str: string): number | null {
@@ -80,9 +104,9 @@ export function isFuzzySearchResult(value: any): boolean {
 
 export function fuzzySearch(keyword: string): FuzzySearchResult {
   //兼容引号
-  const keywordList = (keyword.match(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g) || []).map(item =>
+  const keywordList = combineNoteExpressionTokens((keyword.match(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g) || []).map(item =>
     item.replace(/^[\"“”『』「」]|[\"“”『』「」]$/g, '') // 去掉前后可能的中英文引号
-  );
+  ));
 
   console.log(keywordList)
   const matches: { [key: string]: (string | number)[] } = {};
@@ -196,13 +220,10 @@ export function fuzzySearch(keyword: string): FuzzySearchResult {
 }
 
 function isValidRelationStr(_relationStr: string): boolean {
-  const lessThanPattern = /^<\d+$/;
-  const greaterThanPattern = /^>\d+$/;
+  const comparisonPattern = /^(?:<=|>=|==|=|<|>)\d+$/;
   const rangePattern = /^\d+-\d+$/;
 
-  return lessThanPattern.test(_relationStr) ||
-    greaterThanPattern.test(_relationStr) ||
-    rangePattern.test(_relationStr);
+  return comparisonPattern.test(_relationStr) || rangePattern.test(_relationStr);
 }
 
 export function include(source: string, target: string) {
@@ -449,18 +470,18 @@ function splitSpaceAndConcatFirstLetter(str:string){
 // 以下为数字与范围函数
 export function checkRelationList(num: number, _relationStrList: string[]): boolean {
   function checkRelation(num: number, _relationStr: string): boolean {
-    const lessThanMatch = _relationStr.match(/^<(\d+)$/);
-    const greaterThanMatch = _relationStr.match(/^>(\d+)$/);
+    const comparisonMatch = _relationStr.match(/^(<=|>=|==|=|<|>)(\d+)$/);
     const rangeMatch = _relationStr.match(/^(\d+)-(\d+)$/);
 
-    if (lessThanMatch) {
-      const boundary = parseFloat(lessThanMatch[1]);
-      return num < boundary;
-    }
-
-    if (greaterThanMatch) {
-      const boundary = parseFloat(greaterThanMatch[1]);
-      return num > boundary;
+    if (comparisonMatch) {
+      const boundary = Number(comparisonMatch[2]);
+      switch (comparisonMatch[1]) {
+        case '<': return num < boundary;
+        case '>': return num > boundary;
+        case '<=': return num <= boundary;
+        case '>=': return num >= boundary;
+        default: return num === boundary;
+      }
     }
 
     if (rangeMatch) {

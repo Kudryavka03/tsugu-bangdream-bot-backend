@@ -6,6 +6,7 @@ import * as searchCard_1 from "./commands/searchCard";
 import * as searchEvent_1 from "./commands/searchEvent";
 import * as searchMonthlyRanking_1 from "./commands/searchMonthlyRanking";
 import * as searchSong_1 from "./commands/searchSong";
+import { parseNoteCountInput } from "./commands/searchSongByNotes";
 import * as searchGacha_1 from "./commands/searchGacha";
 import * as cutoffDetail_1 from "./commands/cutoffDetail";
 import * as cutoffSong_1 from "./commands/cutoffSong";
@@ -150,6 +151,7 @@ export function apply(ctx: Context, config: Config) {
             // 查卡面 一定要放在 查卡 前面
             const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
+            keywords.push('物量查曲');
             keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
             keywords.push('控分助手', '控分');
             keywords.push(...cutoffCacheKeywords);
@@ -395,17 +397,15 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, searchPlayer_1.commandSearchPlayer)(config, playerId, mainServer);
         return ((0, utils_1.paresMessageList)(list));
     });
-    ctx.command("查卡 <word:text>", "查卡", cmdConfig)
+    ctx.command("查卡 [word:text]", "查卡", cmdConfig)
         .alias('查卡牌')
-        .usage('根据关键词或卡牌ID查询卡片信息, 请使用空格隔开所有参数')
+        .usage('根据关键词或卡牌ID查询卡片信息, 请使用空格隔开所有参数；不加参数时查询主服务器最新活动期间的卡池卡牌和奖励卡牌。多结果返回列表，单结果返回详情')
+        .example('查卡 :查询主服务器最新活动期间的卡池卡牌和奖励卡牌，多张合并为列表，单张返回详情')
         .example('查卡 1399 :返回1399号卡牌的信息').example('查卡 绿 tsugu :返回所有属性为pure的羽泽鸫的卡牌列表')
         .action(async ({ session }, text) => {
-        if (text == undefined) {
-            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 查卡`;
-        }
         const tsuguUserData = await observeUserTsugu(session);
         const displayedServerList = tsuguUserData.displayedServerList;
-        const list = await (0, searchCard_1.commandCard)(config, displayedServerList, text);
+        const list = await (0, searchCard_1.commandCard)(config, displayedServerList, text, tsuguUserData.mainServer);
         return ((0, utils_1.paresMessageList)(list));
     });
     ctx.command('查卡面 <cardId:text>', '查卡面', cmdConfig)
@@ -431,16 +431,16 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, searchCharacter_1.commandCharacter)(config, displayedServerList, text);
         return (0, utils_1.paresMessageList)(list);
     });
-    ctx.command("查活动 <word:text>", "查活动", cmdConfig)
-        .usage('根据关键词或活动ID查询活动信息')
+    ctx.command("查活动 [word:text]", "查活动", cmdConfig)
+        .usage('根据关键词或活动ID查询活动信息；不加参数或使用 now、n、现在时返回主服务器当前活动详情。比较条件中的 now、n、现在或省略的数值表示主服务器当前活动，例如 >、>now、>n、>现在。多结果返回列表，单结果返回详情')
+        .example('查活动 :返回主服务器最新活动详情')
+        .example('查活动 now :返回主服务器当前活动详情')
+        .example('查活动 >now :查询主服务器当前活动之后的活动，多结果返回列表，单结果返回详情')
         .example('查活动 177 :返回177号活动的信息').example('查活动 绿 tsugu :返回所有属性加成为pure, 且活动加成角色中包括羽泽鸫的活动列表')
         .action(async ({ session }, text) => {
-        if (text == undefined) {
-            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 查活动`;
-        }
         const tsuguUserData = await observeUserTsugu(session);
         const displayedServerList = tsuguUserData.displayedServerList;
-        const list = await (0, searchEvent_1.commandEvent)(config, displayedServerList, text);
+        const list = await (0, searchEvent_1.commandEvent)(config, displayedServerList, text, tsuguUserData.mainServer);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查月榜 <word:text>", "查月榜", cmdConfig)
@@ -455,16 +455,26 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, searchMonthlyRanking_1.commandMonthlyRanking)(config, displayedServerList, text);
         return (0, utils_1.paresMessageList)(list);
     });
-    ctx.command("查曲 <word:text>", "查曲", cmdConfig)
-        .usage('根据关键词或曲目ID查询曲目信息')
+    ctx.command("查曲 [word:text]", "查曲", cmdConfig)
+        .usage('根据关键词或曲目ID查询曲目信息；物量条件支持 note1000+0+0+1+2，与 note1003 等价。不加参数时查询主服务器最新活动的歌榜歌曲，没有歌榜歌曲时查询该服相关歌曲。多结果返回列表，单结果返回详情')
+        .example('查曲 :查询主服务器最新活动的歌榜歌曲或该服相关歌曲，多首返回列表，单首返回详情')
+        .example('查曲 note1000+0+0+1+2 :查询物量为1003的歌曲')
         .example('查曲 1 :返回1号曲的信息').example('查曲 ag lv27 :返回所有难度为27的ag曲列表')
         .action(async ({ session }, text) => {
-        if (text == undefined) {
-            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 查曲`;
-        }
         const tsuguUserData = await observeUserTsugu(session);
         const displayedServerList = tsuguUserData.displayedServerList;
-        const list = await (0, searchSong_1.commandSong)(config, displayedServerList, text);
+        const list = await (0, searchSong_1.commandSong)(config, displayedServerList, text, tsuguUserData.mainServer);
+        return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command('物量查曲 [text:text]', '按谱面物量查询歌曲', cmdConfig)
+        .usage('输入非负整数或用 + 连接的非负整数，加号两侧可以留空格；按总物量查询歌曲。多结果返回列表，单结果返回详情')
+        .example('物量查曲 1003 :查询物量为1003的歌曲')
+        .example('物量查曲 1000+0+0+1+2 :与物量查曲 1003 等价')
+        .action(async ({ session }, text) => {
+        const parsed = parseNoteCountInput(text);
+        if (!parsed.ok) return parsed.error;
+        const tsuguUserData = await observeUserTsugu(session);
+        const list = await (0, searchSong_1.commandSong)(config, tsuguUserData.displayedServerList, parsed.value.searchText, tsuguUserData.mainServer);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查谱面 <songId:string> [difficultyText:text]", "查谱面", cmdConfig)
@@ -934,6 +944,7 @@ export function apply(ctx: Context, config: Config) {
       if (channel_get[0]?.tsugu_run === false) {
         const keywords = ['查询玩家', '查卡面', '查玩家', '查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', 'mycx10', '查月榜', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查卡池', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
         const messageContent = session.event.message.content;
+        keywords.push('物量查曲');
         // 检查消息是否以数组中的任意一个词开始
         const startsWithKeyword = keywords.some(keyword => messageContent.startsWith(keyword));
         if (startsWithKeyword) {

@@ -3,19 +3,19 @@ import { body } from 'express-validator';
 import { drawSongList } from '@/view/songList';
 import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
 import { isInteger, listToBase64 } from '@/routers/utils';
-import { isServerList } from '@/types/Server';
+import { isServer, isServerList } from '@/types/Server';
 import { drawSongDetail } from '@/view/songDetail';
-import { Song } from '@/types/Song';
+import { getPresentSongList, Song } from '@/types/Song';
 import { getServerByServerId, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import mainAPI, { appStartTime, loadMainAPINow } from '@/types/_Main';
-import { switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
+import { globalDefaultServer, serverNameFullList, switchDataSource, USE_HHWX_SOURCE_PREFER } from '@/config';
 import { clearMeasureCache } from '@/image/text';
 import { getApiDataCacheSize, getPD_Size } from '@/api/downloader';
 import { getCardDataCacheSize } from '@/types/Card';
-import { getEventDataCacheSize } from '@/types/Event';
+import { getCurrentEvent, getEventDataCacheSize } from '@/types/Event';
 import { getGachaDataCacheSize } from '@/types/Gacha';
 import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
 import { compareSameDataArray } from '@/view/cutoffEventTop';
@@ -29,6 +29,7 @@ router.post(
     [
         // Express-validator checks for type validation
         body('displayedServerList').custom(isServerList),
+        body('mainServer').optional().custom(isServer),
         body('fuzzySearchResult').optional().custom(isFuzzySearchResult),
         body('text').optional().isString(),
         body('compress').optional().isBoolean(),
@@ -36,7 +37,7 @@ router.post(
     middleware,
     async (req: Request, res: Response) => {
 
-        const { displayedServerList, fuzzySearchResult, text, compress } = req.body;
+        const { displayedServerList, mainServer, fuzzySearchResult, text, compress } = req.body;
         if (text == "fetch" || text == "同步数据"|| text == "立即同步"|| text == "33824"|| text == "873283"|| text == "7963" || text == "7337374"){
             return res.send(listToBase64([await loadMainAPINow()]));
         }
@@ -99,16 +100,13 @@ router.post(
             return res.send(listToBase64([str]));
         }
         // 检查 text 和 fuzzySearchResult 是否同时存在
-        if (text && fuzzySearchResult) {
+        const searchText = text?.trim();
+        if (searchText && fuzzySearchResult) {
             return res.status(422).json({ status: 'failed', data: 'text 与 fuzzySearchResult 不能同时存在' });
-        }
-        // 检查 text 和 fuzzySearchResult 是否同时不存在
-        if (!text && !fuzzySearchResult) {
-            return res.status(422).json({ status: 'failed', data: '不能同时不存在 text 与 fuzzySearchResult' });
         }
 
         try {
-            const result = await commandSongWorker(displayedServerList, text || fuzzySearchResult, compress);
+            const result = await commandSongWorker(displayedServerList, searchText || fuzzySearchResult || '', compress, mainServer);
             res.send(listToBase64(result));
         } catch (e) {
             console.log(e);
@@ -118,7 +116,11 @@ router.post(
 );
 
 
-export async function commandSong(displayedServerList: Server[], input: string | FuzzySearchResult, compress: boolean): Promise<Array<Buffer | string>> {
+export async function commandSong(displayedServerList: Server[], input: string | FuzzySearchResult | undefined, compress: boolean, mainServer?: Server): Promise<Array<Buffer | string>> {
+
+    if (input == null || (typeof input === 'string' && input.trim() === '')) {
+        return await commandCurrentEventSongs(displayedServerList, compress, mainServer);
+    }
 
     let fuzzySearchResult: FuzzySearchResult
 
@@ -139,7 +141,11 @@ export async function commandSong(displayedServerList: Server[], input: string |
     }
     return await drawSongList(fuzzySearchResult, displayedServerList, compress)
 }
-export async function commandSongWorker(displayedServerList, input, compress) {
+export async function commandSongWorker(displayedServerList, input, compress, mainServer?: Server) {
+
+    if (input == null || (typeof input === 'string' && input.trim() === '')) {
+        return await commandCurrentEventSongs(displayedServerList, compress, mainServer);
+    }
 
     let fuzzySearchResult: FuzzySearchResult;
     if (typeof input === 'string') {
@@ -173,6 +179,29 @@ export async function commandSongWorker(displayedServerList, input, compress) {
     }
     // ➜ 直接调用 worker
     return result;
+}
+
+export async function commandCurrentEventSongs(displayedServerList: Server[], compress: boolean, mainServer?: Server): Promise<Array<Buffer | string>> {
+    const server = mainServer ?? displayedServerList[0] ?? globalDefaultServer[0];
+    const event = getCurrentEvent(server);
+    if (!event) {
+        return [`错误: ${serverNameFullList[server]}没有已开始的活动`];
+    }
+    await event.initFull();
+
+    const hasMusicRanking = ['versus', 'challenge', 'medley'].includes(event.eventType);
+    const rankingSongIds = hasMusicRanking
+        ? (event.musics?.[server] ?? []).map(music => music.musicId)
+        : [];
+    const songIds = [...new Set(rankingSongIds.length > 0
+        ? rankingSongIds
+        : getPresentSongList(server, event.startAt[server], event.endAt[server] + 1000 * 60 * 60).map(song => song.songId))];
+    if (songIds.length === 0) {
+        return [`${serverNameFullList[server]}当前活动没有歌榜歌曲或相关歌曲`];
+    }
+
+    // 精确匹配活动歌曲，避免把歌曲 ID 当作其他模糊关键词。
+    return await commandSongWorker([...new Set([server, ...displayedServerList])], { songId: songIds, _all: [] }, compress, server);
 }
 
 function toBuffer(x: any): Buffer | string {

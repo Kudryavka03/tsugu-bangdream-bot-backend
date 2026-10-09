@@ -26,3 +26,9 @@ predictor.log
 ConfigRepo/
 .vs/
 *.dll
+
+# Generated test scripts
+/tests/
+/tests/*
+/FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests/*
+/FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests
