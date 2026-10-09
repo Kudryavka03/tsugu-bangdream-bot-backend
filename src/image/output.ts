@@ -52,7 +52,7 @@ export var outputFinalCanv = async function ({ imageList,
     // Size-based fallbacks may simplify the default background, but explicit
     // plain or event-artwork choices must not be overwritten.
     if (!useNoneBG && useEasyBG && !usePureBG) {
-        if (size >= 5750000) usePureBG = true
+        if (size >= 6150000) usePureBG = true
         if (size >= 78000000) useNoneBG = true
     }
     if (useNoneBG){
@@ -140,8 +140,3 @@ export var outputFinalBuffer = async function ({
     
     
 }
-
-
-  // Worker思想就是Post过去然后接收器接收。await就是等待message的
-  // 然后现在新开一个Worker给Canvas。由于toBuffer本身是使用skia线程池的，因此理论上可以占满CPU
-  // 目的就是不阻塞主线程
