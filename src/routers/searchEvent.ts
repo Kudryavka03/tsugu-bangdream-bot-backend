@@ -13,7 +13,7 @@ import { piscina } from '@/WorkerPool';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { getCurrentEvent, getEventListByTimeRange } from '@/types/Event';
 import { globalDefaultServer } from '@/config';
-import { hasCurrentEventReference, resolveCurrentEventReferences } from './eventSearchInput';
+import { getRequireCommand, hasCurrentEventReference, requireStatus, resolveCurrentEventReferences } from './eventSearchInput';
 
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
@@ -70,6 +70,23 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
+        let s: requireStatus = getRequireCommand(input)
+        let t = true
+        if (s === null) {
+            t = false
+        }
+        if (t && s == requireStatus.prev){
+            const currentEvent = getCurrentEvent(mainServer).eventId;
+            return await drawEventDetail(currentEvent-1,displayedServerList,useEasyBG,compress)
+        }
+        if (t &&  s == requireStatus.next){
+            const currentEvent = getCurrentEvent(mainServer).eventId;
+            return await drawEventDetail(currentEvent+1,displayedServerList,useEasyBG,compress)
+        }
+        if (t && s == requireStatus.latest){
+            const currentEvent = getCurrentEvent(Server.jp).eventId;
+            return await drawEventDetail(currentEvent,displayedServerList,useEasyBG,compress)
+        }
         input = resolveCurrentEventReferences(input);
         const referencesCurrentEvent = hasCurrentEventReference(input);
         if (referencesCurrentEvent) {

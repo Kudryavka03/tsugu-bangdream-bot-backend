@@ -21,3 +21,24 @@ export function resolveCurrentEventReferences(input: string, eventId?: number): 
         return eventId == null ? whole : `${prefix}${operator}${eventId}`;
     });
 }
+export enum requireStatus{
+    prev,
+    current,
+    next,
+    latest
+} 
+export function getRequireCommand(inputOri): requireStatus | null{
+    if (typeof inputOri == 'string'){
+        let input = inputOri.toLowerCase().replace('一','1')
+        if (input=='u'||input=='up'||input=='p'||input=='prev'||input=='f'||input=='front'||input=='上'||input=='前'||input.includes('前1')||input.includes('上1')){
+            return requireStatus.prev
+        }
+        if (input=='d'||input=='down'||input=='n'||input=='next'||input=='下'||input=='后'||input.includes('下1')||input.includes('后1')){
+             return requireStatus.next
+        }
+        if (input=='l'||input=='latest'||input=='late'||input=='lastest'||input=='last'||input.includes('最新')){
+            return requireStatus.latest
+        }
+        return null
+    }
+}
