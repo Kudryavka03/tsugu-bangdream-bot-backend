@@ -27,31 +27,32 @@ export enum requireStatus{
     next,
     latest
 } 
-export function getRequireCommand(inputOri): requireStatus | null{
+export function getRequireCommand(inputOri: unknown): requireStatus | null{
     if (typeof inputOri == 'string'){
-        let input = inputOri.toLowerCase().replace('一','1')
-        if (input=='u'||input=='up'||input=='p'||input=='prev'||input=='f'||input=='front'||input=='上'||input=='前'||input.includes('前1')||input.includes('上1')){
+        let input = inputOri.trim().toLowerCase().replace('一','1')
+        if (input=='--'||input=='-'||input=='——'||input=='u'||input=='up'||input=='p'||input=='prev'||input=='f'||input=='front'||input=='上'||input=='前'||input.includes('前1')||input.includes('上1')){
             return requireStatus.prev
         }
-        if (input=='d'||input=='down'||input=='n'||input=='next'||input=='下'||input=='后'||input.includes('下1')||input.includes('后1')){
+        if (input=='++'||input=='+'||input=='十'||input=='d'||input=='down'||input=='next'||input=='下'||input=='后'||input.includes('下1')||input.includes('后1')){
              return requireStatus.next
         }
         if (input=='l'||input=='latest'||input=='late'||input=='lastest'||input=='last'||input.includes('最新')){
             return requireStatus.latest
         }
-        return null
     }
+    return null
 }
-export function getRequireOffset(inputOri): requireStatus | null{
-    if (typeof inputOri == 'string'){
-        let offsetRight = inputOri.includes('+') || inputOri.includes('十')
+export function getRequireOffset(
+    inputOri: unknown
+): number | null {
+    if (typeof inputOri !== 'string') return null;
 
-        let input = Number(inputOri.toLowerCase().replace('-','').replace('+','').replace('——',''))
-        if (isNaN(input) )return 0
-        if (offsetRight){
-            return input
-        }else{
-            return -input
-        }
-    }
+    // 只将完整的带符号整数识别为偏移，保留普通 ID、日期和关键词查询。
+    const match = inputOri.trim().match(/^(\+|-|十|——)\s*(\d+)$/);
+    if (!match) return null;
+
+    const value = Number(match[2]);
+    if (!Number.isSafeInteger(value)) return null;
+
+    return match[1] === '+' || match[1] === '十' ? value : -value;
 }

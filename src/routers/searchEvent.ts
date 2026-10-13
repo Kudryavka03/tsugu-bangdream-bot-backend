@@ -11,7 +11,7 @@ import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
-import { getCurrentEvent, getEventListByTimeRange } from '@/types/Event';
+import { Event, getCurrentEvent, getEventListByTimeRange } from '@/types/Event';
 import { globalDefaultServer } from '@/config';
 import { getRequireCommand, getRequireOffset, hasCurrentEventReference, requireStatus, resolveCurrentEventReferences } from './eventSearchInput';
 
@@ -70,29 +70,27 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
-        let s: requireStatus = getRequireCommand(input)
-        let t = true
-        const currentEvent = getCurrentEvent(Server.jp);
-        if (s === null) {
-            t = false
+        const command = getRequireCommand(input);
+        const offset = getRequireOffset(input);
+        if (command !== null || offset !== null) {
+            const currentEvent = getCurrentEvent(mainServer);
+            if (!currentEvent) return ['错误: 该服务器没有已开始的活动'];
+            const eventOffset = offset ?? (command === requireStatus.prev ? -1 : command === requireStatus.next ? 1 : 0);
+            let eventId = currentEvent.eventId + eventOffset;
+            let detailServer = mainServer;
+            if (eventOffset > 0 && !new Event(eventId).isExist) {
+                const currentJpEvent = getCurrentEvent(Server.jp);
+                if (!currentJpEvent) return ['错误: 日服没有已开始的活动'];
+                eventId = currentJpEvent.eventId;
+                detailServer = Server.jp;
+            }
+            const servers = [detailServer, ...displayedServerList.filter(server => server !== detailServer)];
+            return await drawEventDetail(eventId, servers, useEasyBG, compress);
         }
-        if (t && s == requireStatus.prev){
-            return await drawEventDetail(currentEvent.eventId-1,displayedServerList,useEasyBG,compress)
-        }
-        if (t &&  s == requireStatus.next){
-            return await drawEventDetail(currentEvent.eventId+1,displayedServerList,useEasyBG,compress)
-        }
-        if (t && s == requireStatus.latest){
-            
-            return await drawEventDetail(currentEvent.eventId,displayedServerList,useEasyBG,compress)
-        }
-        let requireOffset = getRequireOffset(input)
-        if (!t && requireOffset!=0)
-            return await drawEventDetail(currentEvent.eventId + requireOffset,displayedServerList,useEasyBG,compress)
         input = resolveCurrentEventReferences(input);
         const referencesCurrentEvent = hasCurrentEventReference(input);
         if (referencesCurrentEvent) {
-            //const currentEvent = getCurrentEvent(mainServer);
+            const currentEvent = getCurrentEvent(mainServer);
             if (!currentEvent) return ['错误: 该服务器没有已开始的活动'];
             input = resolveCurrentEventReferences(input, currentEvent.eventId);
         }

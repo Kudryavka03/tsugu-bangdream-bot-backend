@@ -399,8 +399,12 @@ export function apply(ctx: Context, config: Config) {
     });
     ctx.command("查卡 [word:text]", "查卡", cmdConfig)
         .alias('查卡牌')
-        .usage('根据关键词或卡牌ID查询卡片信息, 请使用空格隔开所有参数；不加参数时查询主服务器最新活动期间的卡池卡牌和奖励卡牌。多结果返回列表，单结果返回详情')
-        .example('查卡 :查询主服务器最新活动期间的卡池卡牌和奖励卡牌，多张合并为列表，单张返回详情')
+        .usage([
+            '根据关键词或卡牌 ID 查询卡牌信息，多个查询条件请用空格分隔。',
+            '不输入参数时，查询你设置的主服务器最新已开始活动期间的卡池卡牌和活动奖励卡牌。',
+            '多张卡牌合并为列表，只有一张时返回卡牌详情。',
+        ].join('\n'))
+        .example('查卡 :查询你设置的主服务器最新活动的卡池卡牌和奖励卡牌')
         .example('查卡 1399 :返回1399号卡牌的信息').example('查卡 绿 tsugu :返回所有属性为pure的羽泽鸫的卡牌列表')
         .action(async ({ session }, text) => {
         const tsuguUserData = await observeUserTsugu(session);
@@ -431,11 +435,28 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, searchCharacter_1.commandCharacter)(config, displayedServerList, text);
         return (0, utils_1.paresMessageList)(list);
     });
-    ctx.command("查活动 [word:text]", "查活动", cmdConfig)
-        .usage('根据关键词或活动ID查询活动信息；不加参数或使用 now、n、现在时返回主服务器当前活动详情。比较条件中的 now、n、现在或省略的数值表示主服务器当前活动，例如 >、>now、>n、>现在。多结果返回列表，单结果返回详情')
-        .example('查活动 :返回主服务器最新活动详情')
+    ctx.command("查活动 [word:text]", "查活动", { ...cmdConfig, strictOptions: true })
+        .usage([
+            '根据关键词或活动 ID 查询活动信息，多个查询条件请用空格分隔。',
+            '不输入参数时，返回你设置的主服务器最新已开始活动的详情；以下“当前活动”均指该活动。',
+            'now、n、现在都代表当前活动 ID，单独使用时返回详情，也可与比较条件和其他关键词组合查询。',
+            '比较条件支持 >、<、=、>=、<=；例如 >now 表示活动 ID 大于当前活动。比较符号后省略数值时，也以当前活动为基准。',
+            '+N、-N 表示在当前活动 ID 上加减 N：+1 查询下一期，-1 查询上一期，+0、-0 查询当前活动。',
+            'next、down、d、下、后等同于 +1；prev、up、p、上、前等同于 -1；latest、l、最新返回当前活动。n 表示当前活动。',
+            '正偏移（包括 next）的目标活动不存在时，返回日服最新已开始的活动。',
+            '筛选结果有多项时返回活动列表，只有一项时返回活动详情。',
+        ].join('\n'))
+        .example('查活动 :返回你设置的主服务器最新一期已开始活动的详情')
         .example('查活动 now :返回主服务器当前活动详情')
+        .example('查活动 n :与查活动 now 等价')
+        .example('查活动 现在 :与查活动 now 等价')
+        .example('查活动 latest :返回主服务器最新已开始的活动详情')
+        .example('查活动 +1 :返回主服务器当前活动下一期的详情')
+        .example('查活动 next :同 +1，下一期不存在时返回日服最新已开始的活动')
+        .example('查活动 -1 :返回主服务器当前活动上一期的详情')
+        .example('查活动 prev :同 -1，返回主服务器当前活动上一期的详情')
         .example('查活动 >now :查询主服务器当前活动之后的活动，多结果返回列表，单结果返回详情')
+        .example('查活动 >now 蝶 :查询活动 ID 大于主服务器当前活动的 Morfonica 加成活动；当前活动 ID 为 325 时，等同于查活动 >325 蝶')
         .example('查活动 177 :返回177号活动的信息').example('查活动 绿 tsugu :返回所有属性加成为pure, 且活动加成角色中包括羽泽鸫的活动列表')
         .action(async ({ session }, text) => {
         const tsuguUserData = await observeUserTsugu(session);
@@ -456,9 +477,16 @@ export function apply(ctx: Context, config: Config) {
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查曲 [word:text]", "查曲", cmdConfig)
-        .usage('根据关键词或曲目ID查询曲目信息；物量条件支持 note1000+0+0+1+2，与 note1003 等价。不加参数时查询主服务器最新活动的歌榜歌曲，没有歌榜歌曲时查询该服相关歌曲。多结果返回列表，单结果返回详情')
-        .example('查曲 :查询主服务器最新活动的歌榜歌曲或该服相关歌曲，多首返回列表，单首返回详情')
-        .example('查曲 note1000+0+0+1+2 :查询物量为1003的歌曲')
+        .usage([
+            '根据关键词或歌曲 ID 查询歌曲信息，多个查询条件请用空格分隔。',
+            '不输入参数时，查询你设置的主服务器最新已开始活动的歌榜歌曲；没有歌榜歌曲时，查询该服务器在活动期间的相关歌曲。',
+            'note 后可填写谱面总物量，也可用 + 将 PERFECT、GREAT、GOOD、BAD、MISS 的数量相加；数量为 0 的项可以省略。',
+            '例如 note1018+81+20+101 等同于 note1220，也可以与乐队、等级等条件组合使用。',
+            '多首歌曲返回列表，只有一首时返回歌曲详情。',
+        ].join('\n'))
+        .example('查曲 :查询你设置的主服务器最新活动的歌榜歌曲或活动期间的相关歌曲')
+        .example('查曲 note1018+81+20+101 :按 PERFECT 1018、GREAT 81、GOOD 20、BAD 0、MISS 101 查询，总物量为 1220')
+        .example('查曲 note1220 :与查曲 note1018+81+20+101 等价')
         .example('查曲 1 :返回1号曲的信息').example('查曲 ag lv27 :返回所有难度为27的ag曲列表')
         .action(async ({ session }, text) => {
         const tsuguUserData = await observeUserTsugu(session);
@@ -467,9 +495,14 @@ export function apply(ctx: Context, config: Config) {
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command('物量查曲 [text:text]', '按谱面物量查询歌曲', cmdConfig)
-        .usage('输入非负整数或用 + 连接的非负整数，加号两侧可以留空格；按总物量查询歌曲。多结果返回列表，单结果返回详情')
-        .example('物量查曲 1003 :查询物量为1003的歌曲')
-        .example('物量查曲 1000+0+0+1+2 :与物量查曲 1003 等价')
+        .usage([
+            '仅按谱面总物量查询歌曲，无需添加 note 前缀。',
+            '输入一个非负整数，或用 + 将多个非负整数相加；加号两侧可以留空格。',
+            '此指令只接受物量，不接受歌曲名称、乐队、等级等其他条件；需要组合筛选时，请使用查曲的 note 条件。',
+            '多首歌曲返回列表，只有一首时返回歌曲详情。',
+        ].join('\n'))
+        .example('物量查曲 1220 :查询总物量为 1220 的歌曲')
+        .example('物量查曲 1018+81+20+101 :与物量查曲 1220 等价')
         .action(async ({ session }, text) => {
         const parsed = parseNoteCountInput(text);
         if (!parsed.ok) return parsed.error;
