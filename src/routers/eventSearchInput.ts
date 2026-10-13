@@ -44,9 +44,9 @@ export function getRequireCommand(inputOri): requireStatus | null{
 }
 export function getRequireOffset(inputOri): requireStatus | null{
     if (typeof inputOri == 'string'){
-        let offsetRight = inputOri.includes('+')
+        let offsetRight = inputOri.includes('+') || inputOri.includes('十')
 
-        let input = Number(inputOri.toLowerCase().replace('-','').replace('+',''))
+        let input = Number(inputOri.toLowerCase().replace('-','').replace('+','').replace('——',''))
         if (isNaN(input) )return 0
         if (offsetRight){
             return input
