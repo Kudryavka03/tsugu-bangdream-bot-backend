@@ -13,7 +13,7 @@ import { piscina } from '@/WorkerPool';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
 import { getCurrentEvent, getEventListByTimeRange } from '@/types/Event';
 import { globalDefaultServer } from '@/config';
-import { getRequireCommand, hasCurrentEventReference, requireStatus, resolveCurrentEventReferences } from './eventSearchInput';
+import { getRequireCommand, getRequireOffset, hasCurrentEventReference, requireStatus, resolveCurrentEventReferences } from './eventSearchInput';
 
 if (!isMainThread && parentPort) {
     console.log = (...args) => {
@@ -72,25 +72,27 @@ export async function commandEvent(displayedServerList: Server[], input: string 
     if (typeof input === 'string') {
         let s: requireStatus = getRequireCommand(input)
         let t = true
+        const currentEvent = getCurrentEvent(Server.jp);
         if (s === null) {
             t = false
         }
         if (t && s == requireStatus.prev){
-            const currentEvent = getCurrentEvent(mainServer).eventId;
-            return await drawEventDetail(currentEvent-1,displayedServerList,useEasyBG,compress)
+            return await drawEventDetail(currentEvent.eventId-1,displayedServerList,useEasyBG,compress)
         }
         if (t &&  s == requireStatus.next){
-            const currentEvent = getCurrentEvent(mainServer).eventId;
-            return await drawEventDetail(currentEvent+1,displayedServerList,useEasyBG,compress)
+            return await drawEventDetail(currentEvent.eventId+1,displayedServerList,useEasyBG,compress)
         }
         if (t && s == requireStatus.latest){
-            const currentEvent = getCurrentEvent(Server.jp).eventId;
-            return await drawEventDetail(currentEvent,displayedServerList,useEasyBG,compress)
+            
+            return await drawEventDetail(currentEvent.eventId,displayedServerList,useEasyBG,compress)
         }
+        let requireOffset = getRequireOffset(input)
+        if (!t && requireOffset!=0)
+            return await drawEventDetail(currentEvent.eventId + requireOffset,displayedServerList,useEasyBG,compress)
         input = resolveCurrentEventReferences(input);
         const referencesCurrentEvent = hasCurrentEventReference(input);
         if (referencesCurrentEvent) {
-            const currentEvent = getCurrentEvent(mainServer);
+            //const currentEvent = getCurrentEvent(mainServer);
             if (!currentEvent) return ['错误: 该服务器没有已开始的活动'];
             input = resolveCurrentEventReferences(input, currentEvent.eventId);
         }

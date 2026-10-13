@@ -42,3 +42,16 @@ export function getRequireCommand(inputOri): requireStatus | null{
         return null
     }
 }
+export function getRequireOffset(inputOri): requireStatus | null{
+    if (typeof inputOri == 'string'){
+        let offsetRight = inputOri.includes('+')
+
+        let input = Number(inputOri.toLowerCase().replace('-','').replace('+',''))
+        if (isNaN(input) )return 0
+        if (offsetRight){
+            return input
+        }else{
+            return -input
+        }
+    }
+}
