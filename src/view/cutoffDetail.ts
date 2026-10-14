@@ -537,7 +537,7 @@ export async function drawCutoffDetailWithCompare(eventId: number, tier: number,
                 let speedCmp = cutoffGroupResult[i].getAnyCutoffSpeedByTime(tpEP.time)
                 let speedCmp1 = cutoffGroupResult[i].getAnyCutoffSpeedByTime(tpEP.time)
                 let speedText =""
-                if (speedCmp==speedCmp1) speedText=`原始15分时速：{speedCmp1} / 补偿15分时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp1)}\n`
+                if (speedCmp==speedCmp1) speedText=`原始15分时速：${speedCmp1} / 补偿15分时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp1)}\n`
                 list.push(await drawList({
                     key: '同一时刻对比',
                     text: `原始分：${tpEP.value} / 补偿分: ${tpEP.valueWithRatio}\n${speedText}原始时速：${speedCmp} / 补偿时速: ${Math.round(compareEventRateOfFirstEvent[i]*speedCmp)}\n取样时间：${changeTimefomant(tpEP.time,mainServer)}`
