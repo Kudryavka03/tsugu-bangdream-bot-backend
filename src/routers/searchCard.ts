@@ -13,6 +13,8 @@ import mainAPI from '@/types/_Main';
 import { getCurrentEvent } from '@/types/Event';
 import { getEventGachaAndCardList } from '@/view/eventDetail';
 import { globalDefaultServer, serverNameFullList } from '@/config';
+import { getCharacterIdsByBirthday } from '@/types/Character';
+import { parseCharacterBirthday } from './characterSearchInput';
 
 const router = express.Router();
 
@@ -61,12 +63,23 @@ export async function commandCard(displayedServerList: Server[], input: string |
     let fuzzySearchResult: FuzzySearchResult
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
+        input = input.trim()
         if (isInteger(input)) {
             var inputId = parseInt(input)
             //if (inputId == 947) return getDoujinshiSayoHina()
             return await drawCardDetail(inputId, displayedServerList, useEasyBG, compress)
         }
-        fuzzySearchResult = fuzzySearch(input)
+        // 查卡只将完整的“月.日”识别为生日，保留纯数字卡牌 ID 的含义。
+        if (/^\d{1,2}\s*\.\s*\d{1,2}$/.test(input)) {
+            const birthday = parseCharacterBirthday(input)
+            if (!birthday) return ['错误: 无效的生日日期']
+            const characterIds = await getCharacterIdsByBirthday(birthday.month, birthday.day)
+            if (characterIds.length === 0) return ['没有搜索到该日期生日的角色']
+            fuzzySearchResult = { characterId: characterIds, type: ['birthday'] }
+            displayedServerList = [...new Set([...displayedServerList, Server.jp])]
+        } else {
+            fuzzySearchResult = fuzzySearch(input)
+        }
     } else {
         // 使用 fuzzySearch 逻辑
         fuzzySearchResult = input

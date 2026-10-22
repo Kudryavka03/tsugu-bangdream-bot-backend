@@ -4,8 +4,134 @@ import { Image, loadImage } from 'skia-canvas'
 import { downloadFileCache } from '@/api/downloadFileCache'
 import { formatNumber } from '@/types/utils';
 import { Bestdoriurl, globalDefaultServer } from "@/config"
+import pLimit from 'p-limit'
 
 let characterDataCache = {}
+const characterBirthdayLoader = pLimit(4)
+const characterBirthdayRequests = new Map<string, Promise<object>>()
+export type CharacterBirthday = { month: number, day: number, characterIds: number[] }
+
+function parseCharacterBirthday(birthday: unknown): { month: number, day: number } | null {
+    if (birthday == null || birthday === '') return null
+    const timestamp = Number(birthday)
+    if (!Number.isFinite(timestamp)) return null
+    // Bestdori stores birthdays at midnight in Japan time.
+    const date = new Date(timestamp + 9 * 60 * 60 * 1000)
+    if (!Number.isFinite(date.getTime())) return null
+    const month = date.getUTCMonth() + 1
+    const day = date.getUTCDate()
+    const check = new Date(Date.UTC(2000, month - 1, day))
+    return check.getUTCMonth() + 1 === month && check.getUTCDate() === day
+        ? { month, day } : null
+}
+
+async function loadCharacterBirthdayList(): Promise<CharacterBirthday[]> {
+    const groups = new Map<string, CharacterBirthday>()
+    await Promise.all(Object.keys(mainAPI['characters']).map(async characterId => {
+        let data = characterDataCache[characterId]
+        if (data === undefined) {
+            let request = characterBirthdayRequests.get(characterId)
+            if (!request) {
+                request = characterBirthdayLoader(async () => {
+                    const loaded = await new Character(Number(characterId)).getData(false)
+                    characterDataCache[characterId] = loaded
+                    return loaded
+                }).finally(() => characterBirthdayRequests.delete(characterId))
+                characterBirthdayRequests.set(characterId, request)
+            }
+            data = await request
+        }
+        const parsed = parseCharacterBirthday(data?.profile?.birthday)
+        if (!parsed) return
+        const key = `${parsed.month}-${parsed.day}`
+        let group = groups.get(key)
+        if (!group) {
+            group = { ...parsed, characterIds: [] }
+            groups.set(key, group)
+        }
+        group.characterIds.push(Number(characterId))
+    }))
+    return Array.from(groups.values())
+        .map(group => ({ ...group, characterIds: group.characterIds.sort((a, b) => a - b) }))
+        .sort((a, b) => a.month - b.month || a.day - b.day)
+}
+
+export async function getCharacterBirthdayList(): Promise<CharacterBirthday[]> {
+    // Rebuild from current master keys so newly added or removed characters are reflected.
+    // Individual character detail responses remain cached and in-flight requests are shared.
+    return loadCharacterBirthdayList()
+}
+
+export async function getCharacterIdsByBirthday(month: number, day: number): Promise<number[]> {
+    const group = (await getCharacterBirthdayList()).find(item => item.month === month && item.day === day)
+    return group ? [...group.characterIds] : []
+}
+
+function birthdayDate(year: number, birthday: CharacterBirthday): Date | null {
+    const date = new Date(Date.UTC(year, birthday.month - 1, birthday.day))
+    return date.getUTCMonth() + 1 === birthday.month && date.getUTCDate() === birthday.day ? date : null
+}
+
+function utcCalendarDate(date: Date): Date {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+}
+
+export async function getCharacterBirthdayByOffset(date: Date, offset: number): Promise<CharacterBirthday | null> {
+    if (!Number.isSafeInteger(offset)) return null
+    const list = await getCharacterBirthdayList()
+    if (list.length === 0) return null
+    const today = utcCalendarDate(date)
+    if (offset === 0) {
+        const todaysGroup = list.find(item => item.month === today.getUTCMonth() + 1 && item.day === today.getUTCDate())
+        return todaysGroup ?? getNearestCharacterBirthday(date)
+    }
+
+    const direction = offset > 0 ? 1 : -1
+    // The Gregorian calendar repeats every 400 years. Reducing very large
+    // offsets keeps the search bounded while preserving occurrence order.
+    const cycleOccurrenceCount = list.reduce((count, group) => count + (group.month === 2 && group.day === 29 ? 97 : 400), 0)
+    const steps = (Math.abs(offset) - 1) % cycleOccurrenceCount + 1
+    const events: Array<{ date: Date, group: CharacterBirthday }> = []
+    const firstYear = direction > 0 ? today.getUTCFullYear() : today.getUTCFullYear() - 400
+    const lastYear = direction > 0 ? today.getUTCFullYear() + 400 : today.getUTCFullYear()
+    for (let year = firstYear; year <= lastYear; year++) {
+        for (const group of list) {
+            const candidate = birthdayDate(year, group)
+            if (candidate && (direction > 0 ? candidate > today : candidate < today)) {
+                events.push({ date: candidate, group })
+            }
+        }
+    }
+    events.sort((a, b) => direction > 0
+        ? a.date.getTime() - b.date.getTime()
+        : b.date.getTime() - a.date.getTime())
+    return events[steps - 1]?.group ?? null
+}
+
+export async function getNearestCharacterBirthday(date: Date): Promise<CharacterBirthday | null> {
+    const list = await getCharacterBirthdayList()
+    if (list.length === 0) return null
+    const target = utcCalendarDate(date)
+    let bestGroup: CharacterBirthday | null = null
+    let bestDistance = Number.POSITIVE_INFINITY
+    let bestIsFuture = false
+    for (const group of list) {
+        // Eight years covers the longest gap between real leap days (e.g. 2096 to 2104).
+        for (let year = target.getUTCFullYear() - 8; year <= target.getUTCFullYear() + 8; year++) {
+            const occurrence = birthdayDate(year, group)
+            if (!occurrence) continue
+            const delta = occurrence.getTime() - target.getTime()
+            const distance = Math.abs(delta)
+            const isFuture = delta >= 0
+            if (distance < bestDistance || (distance === bestDistance && isFuture && !bestIsFuture)) {
+                bestGroup = group
+                bestDistance = distance
+                bestIsFuture = isFuture
+            }
+        }
+    }
+    return bestGroup
+}
 
 export class Character {
     characterId: number;

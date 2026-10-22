@@ -401,10 +401,13 @@ export function apply(ctx: Context, config: Config) {
         .alias('查卡牌')
         .usage([
             '根据关键词或卡牌 ID 查询卡牌信息，多个查询条件请用空格分隔。',
+            '也可用带点的月日查询当天生日角色的生日限定卡牌，例如 10.27、03.07、3.7、3.07、03.7；月和日可补零，生日查询必须包含点，纯数字仍按卡牌 ID 查询。',
             '不输入参数时，查询你设置的主服务器最新已开始活动期间的卡池卡牌和活动奖励卡牌。',
             '多张卡牌合并为列表，只有一张时返回卡牌详情。',
         ].join('\n'))
         .example('查卡 :查询你设置的主服务器最新活动的卡池卡牌和奖励卡牌')
+        .example('查卡 10.27 :查询10月27日生日角色的生日限定卡牌')
+        .example('查卡 03.07 :查询3月7日生日角色的生日限定卡牌')
         .example('查卡 1399 :返回1399号卡牌的信息').example('查卡 绿 tsugu :返回所有属性为pure的羽泽鸫的卡牌列表')
         .action(async ({ session }, text) => {
         const tsuguUserData = await observeUserTsugu(session);
@@ -423,16 +426,23 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, getCardIllustration_1.commandGetCardIllustration)(config, cardId);
         return (0, utils_1.paresMessageList)(list);
     });
-    ctx.command('查角色 <word:text>', '查角色', cmdConfig)
-        .usage('根据关键词或角色ID查询角色信息')
-        .example('查角色 10 :返回10号角色的信息').example('查角色 吉他 :返回所有角色模糊搜索标签中包含吉他的角色列表')
+    ctx.command('查角色 [word:text]', '查角色', { ...cmdConfig, strictOptions: true })
+        .usage([
+            '根据关键词、角色ID或生日查询角色信息。支持生日格式 10.27、1027、721、7.21、7月21日、7月21。',
+            '查角色 +、++、+N 查询后续第 N 个生日日期组；查角色 -、--、-N 查询之前第 N 个生日日期组，同日的多名角色会一起显示。+0、-0 查询今天生日；今天无人生日时返回最近生日。',
+            '不输入参数时，查询你设置的主服务器今天生日的角色；主服务器没有时会查询日服。',
+            '如果今天没有角色生日，会提示查询方法并显示当前日期前后最近生日的角色；前后距离相同时优先显示未来生日。',
+        ].join('\n'))
+        .example('查角色 :查询今天生日的角色')
+        .example('查角色 10 :返回10号角色的信息')
+        .example('查角色 10.27 :查询10月27日生日的角色')
+        .example('查角色 + :查询下一个生日日期组')
+        .example('查角色 -2 :查询之前第二个生日日期组')
+        .example('查角色 吉他 :返回所有角色模糊搜索标签中包含吉他的角色列表')
         .action(async ({ session }, text) => {
-        if (text == undefined) {
-            return `错误: 指令不完整\n使用以下指令以查看帮助:\n  help 查角色`;
-        }
         const tsuguUserData = await observeUserTsugu(session);
         const displayedServerList = tsuguUserData.displayedServerList;
-        const list = await (0, searchCharacter_1.commandCharacter)(config, displayedServerList, text);
+        const list = await (0, searchCharacter_1.commandCharacter)(config, displayedServerList, text, tsuguUserData.mainServer);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("查活动 [word:text]", "查活动", { ...cmdConfig, strictOptions: true })
