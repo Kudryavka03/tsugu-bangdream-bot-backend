@@ -226,9 +226,10 @@ function isValidRelationStr(_relationStr: string): boolean {
   return comparisonPattern.test(_relationStr) || rangePattern.test(_relationStr);
 }
 
-export function include(source: string, target: string) {
+export function include(source: string, target: string, allowShortTitlePrefix = false) {
   source = source.toLowerCase()
-  return source.includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 3)
+  return (allowShortTitlePrefix && /^[a-z]{3}$/.test(target) && source.startsWith(target))
+  || source.includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 3)
   || source.split(' ').includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 1)
   || source.split('-').includes(target) && (!/^[A-Za-z0-9]+$/.test(target) || target.length > 1)
   || source == target
@@ -370,7 +371,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
             }
           }
           if (match) break
-          if (include(target[key], matchValue)) {
+          if (include(target[key], matchValue, key === 'musicTitle')) {
             match = true;
             break;
           }
@@ -380,7 +381,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
             //console.log(mt,matchValue)
             //@ts-ignore
             var musicTitleReplaceSpace = mt?mt.replace(/ /g, ''):null
-            if (mt!= null && musicTitleReplaceSpace && include(musicTitleReplaceSpace, matchValueReplaceSpace)){
+            if (mt!= null && musicTitleReplaceSpace && include(musicTitleReplaceSpace, matchValueReplaceSpace, true)){
               match = true;
               break;
             }
@@ -419,7 +420,7 @@ export function match(matches: FuzzySearchResult, target: any, numberTypeKey: st
           for (let j = 0; j < target[key].length; j++) {
             if (typeof target[key][j] === 'string') {
               //@ts-ignore
-              if (include(target[key][j], matchValue)) {
+              if (include(target[key][j], matchValue, key === 'musicTitle')) {
                 match = true;
                 break;
               }

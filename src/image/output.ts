@@ -124,18 +124,32 @@ export var outputFinalBuffer = async function ({
         backgroundStyle,
     })
     var tempBuffer: Buffer
+    let qualityValue: number | undefined
     if (compress != undefined && compress) {
         var size = (tempcanv.height * tempcanv.width)
-        var qualityValue = 0.6
+        qualityValue = 0.8
         //console.log(size)
-        if (size >=5000000) qualityValue = 0.55
-        if (size >=70000000) qualityValue = 0.5
-        logger('adjustImageOutputQuality',`Image Size:${size} Final output quality:${qualityValue}`)
-        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:true })
+        if (size >= 6000000) qualityValue = 0.7
+        if (size >=70000000) qualityValue = 0.6
+        tempBuffer = await tempcanv.toBuffer('jpeg', { quality:qualityValue,downsample:(size >= 6000000)?true:false })
     }
     else {
         tempBuffer = await tempcanv.toBuffer('png')
     }
+    /*
+    logger('imageOutput', JSON.stringify({
+        width: tempcanv.width,
+        height: tempcanv.height,
+        pixels: tempcanv.width * tempcanv.height,
+        format: compress ? 'jpeg' : 'png',
+        compress,
+        ...(compress ? { quality: qualityValue, downsample: true } : {}),
+        bytes: tempBuffer.length,
+        startWithSpace,
+        requestedBackground: { useEasyBG, usePureBG, useNoneBG, backgroundStyle },
+        imageCount: imageList.length,
+    }))
+        */
     return (tempBuffer)
     
     
