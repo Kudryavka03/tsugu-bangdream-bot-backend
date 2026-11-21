@@ -140,7 +140,7 @@ export class CutoffEventTop{
     }
     getLatestRanking():{uid:number,point:number}[]{
         var result:{uid:number,point:number}[] =[]
-        var index = this.points.length -10;
+        var index = Math.max(0, this.points.length - 10);
         while(index<this.points.length){
             const element = this.points[index];
             result.push({uid:element.uid,point:element.value});

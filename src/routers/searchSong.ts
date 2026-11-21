@@ -1,12 +1,12 @@
 import express from 'express';
 import { body } from 'express-validator';
 import { drawSongList } from '@/view/songList';
-import { fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
+import { config as fuzzySearchConfig, fuzzySearch, FuzzySearchResult, isFuzzySearchResult } from '@/fuzzySearch';
 import { isInteger, listToBase64 } from '@/routers/utils';
 import { isServer, isServerList } from '@/types/Server';
 import { drawSongDetail } from '@/view/songDetail';
-import { getPresentSongList, Song } from '@/types/Song';
-import { getServerByServerId, Server } from '@/types/Server';
+import { getLatestReleasedSongs, getPresentSongList, Song } from '@/types/Song';
+import { getServerByName, Server } from '@/types/Server';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
@@ -126,6 +126,8 @@ export async function commandSong(displayedServerList: Server[], input: string |
 
     // 根据 input 的类型执行不同的逻辑
     if (typeof input === 'string') {
+        const latest = parseLatestSongQuery(input);
+        if (latest) return await commandLatestSongs(displayedServerList, compress, mainServer, latest[1]);
         if (isInteger(input)) {
             return await drawSongDetail(new Song(parseInt(input)), displayedServerList, compress)
         }
@@ -141,7 +143,7 @@ export async function commandSong(displayedServerList: Server[], input: string |
     }
     return await drawSongList(fuzzySearchResult, displayedServerList, compress)
 }
-export async function commandSongWorker(displayedServerList, input, compress, mainServer?: Server) {
+export async function commandSongWorker(displayedServerList: Server[], input: string | FuzzySearchResult | undefined, compress: boolean, mainServer?: Server): Promise<Array<Buffer | string>> {
 
     if (input == null || (typeof input === 'string' && input.trim() === '')) {
         return await commandCurrentEventSongs(displayedServerList, compress, mainServer);
@@ -149,6 +151,8 @@ export async function commandSongWorker(displayedServerList, input, compress, ma
 
     let fuzzySearchResult: FuzzySearchResult;
     if (typeof input === 'string') {
+        const latest = parseLatestSongQuery(input);
+        if (latest) return await commandLatestSongs(displayedServerList, compress, mainServer, latest[1]);
         if (isInteger(input)) {
             /*
             return await piscina.drawDetail.run({
@@ -179,6 +183,38 @@ export async function commandSongWorker(displayedServerList, input, compress, ma
     }
     // ➜ 直接调用 worker
     return result;
+}
+
+function parseLatestSongQuery(input: string): RegExpMatchArray | null {
+    return input.trim().match(/^latest(?:\s+(.+))?$/is);
+}
+
+export function resolveSongServerAlias(name: string): Server | undefined {
+    const alias = name.trim().toLowerCase();
+    const server = alias === '中国服' ? Server.cn : getServerByName(alias);
+    if (isServer(server)) return server;
+
+    for (const [id, aliases] of Object.entries(fuzzySearchConfig.server ?? {})) {
+        const serverId = Number(id);
+        if (isServer(serverId) && aliases.some(value => typeof value === 'string' && value.toLowerCase() === alias)) {
+            return serverId;
+        }
+    }
+    return undefined;
+}
+
+async function commandLatestSongs(displayedServerList: Server[], compress: boolean, mainServer?: Server, serverAlias?: string): Promise<Array<Buffer | string>> {
+    const server = serverAlias === undefined
+        ? mainServer ?? displayedServerList[0] ?? globalDefaultServer[0]
+        : resolveSongServerAlias(serverAlias);
+    if (server === undefined) return ['错误: 服务器不存在'];
+
+    const songs = getLatestReleasedSongs(server);
+    if (songs.length === 0) return [`${serverNameFullList[server]}没有已发布的歌曲`];
+
+    const servers = [...new Set([server, ...displayedServerList])];
+    if (songs.length === 1) return await drawSongDetail(songs[0], servers, compress);
+    return await commandSongWorker(servers, { songId: songs.map(song => song.songId), _all: [] }, compress, server);
 }
 
 export async function commandCurrentEventSongs(displayedServerList: Server[], compress: boolean, mainServer?: Server): Promise<Array<Buffer | string>> {

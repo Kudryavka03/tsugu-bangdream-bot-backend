@@ -242,6 +242,21 @@ export class Event {
         
         this.isInitfull = true
     }
+    getSongIds(server: Server): number[] {
+        const detailSongs = this.musics?.[server];
+        const songs = Array.isArray(detailSongs) && detailSongs.length > 0
+            ? detailSongs
+            : mainAPI['events'][this.eventId]?.['musics']?.[server];
+        if (!Array.isArray(songs)) return [];
+
+        const ids = new Set<number>();
+        for (const song of songs) {
+            const id = Number(typeof song === 'object' ? song?.musicId : song);
+            if (Number.isSafeInteger(id) && id > 0) ids.add(id);
+        }
+        return [...ids];
+    }
+
     async getData(update: boolean = true): Promise<object> {
         if(this.data!= null) return this.data   // 如果存在了则直接返回this.data,不再访问callAPIAndCacheResponse
         var time = update ? 0 : 1 / 0

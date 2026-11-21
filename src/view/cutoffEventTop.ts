@@ -9,16 +9,21 @@ import { drawDatablock } from '@/components/dataBlock';
 import { outputFinalBuffer } from '@/image/output';
 import { drawPlayerRankingInList } from '@/components/list/playerRanking';
 import { drawCutoffEventTopChart } from '@/components/chart/cutoffChart';
+import { drawCutoffScatterChart } from '@/components/chart/cutoffScatterChart';
 import { songChartRouter } from '@/routers/songChart';
 import { drawList, drawListMerge, drawListMergeMin, line } from '@/components/list';
 import { drawDottedLine } from '@/image/dottedLine';
 import { resizeImage } from '@/components/utils';
 import { stackImage } from '@/components/utils';
 import { logger } from '@/logger';
-import { drawText } from '@/image/text';
+import { drawText, setFontStyle } from '@/image/text';
+import { roundedRectPath } from '@/image/surfaceShadow';
+import { drawGuideSingleLineText, GUIDE_THEME } from '@/image/theme';
 import { drawTips } from '@/components/tips';
-import { changeTimePeriodFormat, changeTimefomant, formatSeconds, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
+import { changeTimePeriodFormat, changeTimefomant, formatSeconds, getDateByServerTimezone, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 import mainAPI, { TopRateSpeed } from '@/types/_Main';
+import { estimateChallengePoints } from '@/types/challengePointEstimate';
+import { summarizeTopRateSpeedWindow, TopRateTimeWindow } from '@/types/topRateSpeedWindow';
 import array from 'ref-array-di';
 import { min } from 'moment';
 import { getTop10AvgScore } from './cutoffDetail';
@@ -36,6 +41,114 @@ type TopRateLimit = {
 type PlayerRatingChange = {
     time: number,
     score: number
+}
+
+export async function drawTopRateScatter(eventId: number, playerId: number, tier: number, maxCount: number | undefined, mainServer: Server, compress: boolean, day?: number, limit?: TopRateLimit, range?: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    const serverName = serverNameFullList[mainServer];
+    const cutoff = new CutoffEventTop(eventId, mainServer);
+    if (!cutoff.isExist || !Number.isFinite(cutoff.startAt) || !Number.isFinite(cutoff.endAt) || cutoff.status === 'not_start') {
+        return [`错误：${serverName} 活动 ${eventId} 不存在或尚未开始`];
+    }
+    await cutoff.initFull();
+    if (!cutoff.isExist) {
+        return [`错误：${serverName} 活动 ${eventId} 前十数据不足`];
+    }
+
+    const ranking = cutoff.getLatestRanking();
+    const selectedId = tier ? ranking[tier - 1]?.uid : Number(playerId);
+    if (!selectedId) {
+        return [`${serverName} 活动 ${eventId} 的最新前十榜单中没有该排名`];
+    }
+
+    const rating = getRatingByPlayer(cutoff.points, selectedId)
+        .map(({ time, value }) => ({ time: normalizeTimestamp(time), value }))
+        .filter(({ time }) => Number.isFinite(time));
+    if (!rating.some(({ value }) => Number.isFinite(value) && value >= 0)) {
+        return [`玩家 ${selectedId} 在${serverName}活动 ${eventId} 中没有前十记录`];
+    }
+    const dayRange = day ? getEventDayRange(cutoff.startAt, mainServer, day) : undefined;
+    const begin = Math.max(normalizeTimestamp(cutoff.startAt), dayRange?.begin ?? -Infinity, range?.from ?? -Infinity);
+    const eventEnd = normalizeTimestamp(cutoff.endAt);
+    const availableEnd = cutoff.status === 'ended' ? eventEnd : Math.min(eventEnd, rating[0].time);
+    const end = Math.min(availableEnd, dayRange?.end ?? Infinity, range?.to ?? Infinity);
+    if (begin >= end) {
+        return ['所选范围内没有可绘制的分数变动记录'];
+    }
+
+    const gaps = rating.slice(1).map((point, index) => rating[index].time - point.time)
+        .filter(gap => gap > 0).sort((a, b) => a - b);
+    // A gap spanning more than one typical sampling interval cannot establish a single increment.
+    const maxSampleGap = gaps.length ? gaps[Math.floor(gaps.length / 2)] * 1.8 : Infinity;
+    const changes = getPlayerRatingChanges(rating, begin, end, limit, maxSampleGap)
+        .filter(({ time, score }) => Number.isFinite(time) && Number.isFinite(score))
+        .slice(0, maxCount).reverse();
+    if (!changes.length) {
+        return ['所选范围内没有可绘制的分数变动记录'];
+    }
+
+    const points = changes.map(({ time, score }) => ({ x: time, y: score }));
+    const title = await drawTitle('查散点图', `${serverName} 活动 ${eventId}`);
+    const index = ranking.findIndex(user => user.uid == selectedId);
+    const playerName = cutoff.getUserNameById(selectedId) || selectedId.toString();
+    const heading = index >= 0 ? `T${index + 1} ${playerName}` : playerName;
+    const chart = drawCutoffScatterChart(points, mainServer, { begin, end });
+    const formatTime = (time: number) => getDateByServerTimezone(time, mainServer).toISOString().slice(0, 16).replace('T', ' ');
+    const chartNote = drawList({
+        text: `${formatTime(begin)} 至 ${formatTime(end)}（服务器时间）\n散点表示连续前十记录间的分数差，横轴取两次记录的中间时刻。`,
+        textSize: 20,
+        color: GUIDE_THEME.muted,
+        leftPadding: 16,
+    });
+    const statistics = drawScatterStatistics(points.map(point => point.y), day);
+    const [block, eventInfo] = await Promise.all([
+        drawDatablock({ list: [chart, chartNote, statistics], topLeftText: heading }),
+        drawEventDatablock(new Event(eventId), [mainServer], '活动信息').catch(error => {
+            logger('drawEventDatablock error:', error);
+            return null;
+        }),
+    ]);
+    const imageList = eventInfo ? [title, block, eventInfo] : [title, block];
+    return [await outputFinalBuffer({ imageList, compress })];
+}
+
+function drawScatterStatistics(scores: number[], day?: number): Canvas {
+    const sorted = [...scores].sort((a, b) => a - b);
+    const count = sorted.length;
+    const average = sorted.reduce((sum, score) => sum + score, 0) / count;
+    const variance = sorted.reduce((sum, score) => sum + (score - average) ** 2, 0) / count;
+    const median = (sorted[Math.floor((count - 1) / 2)] + sorted[Math.floor(count / 2)]) / 2;
+    const formatPt = (score: number) => `${Math.round(score)} Pt`;
+    const metrics = [
+        ['变动次数', `${count.toLocaleString('zh-CN')} 次`],
+        ['平均分差', formatPt(average)],
+        ['标准差', formatPt(Math.sqrt(variance))],
+        ['最小分差', formatPt(sorted[0])],
+        ['中位分差', formatPt(median)],
+        ['最大分差', formatPt(sorted[count - 1])],
+    ];
+
+    const canvas = new Canvas(800, 216);
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = GUIDE_THEME.text;
+    setFontStyle(ctx, 27, 'old');
+    const heading = day ? `图中散点统计 · 活动第 ${day} 天` : '图中散点统计';
+    drawGuideSingleLineText(ctx, heading, 16, 24, 768);
+
+    for (const [index, [label, value]] of metrics.entries()) {
+        const x = 16 + (index % 3) * 260;
+        const y = 48 + Math.floor(index / 3) * 88;
+        roundedRectPath(ctx, x, y, 248, 80, GUIDE_THEME.cardRadius);
+        ctx.fillStyle = GUIDE_THEME.surfaceTint;
+        ctx.fill();
+        ctx.fillStyle = GUIDE_THEME.muted;
+        setFontStyle(ctx, 20, 'old');
+        drawGuideSingleLineText(ctx, label, x + 18, y + 23, 212);
+        ctx.fillStyle = GUIDE_THEME.text;
+        setFontStyle(ctx, 30, 'old');
+        drawGuideSingleLineText(ctx, value, x + 18, y + 54, 212);
+    }
+    return canvas;
 }
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
@@ -245,255 +358,29 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
         }
         all.push(await drawDatablock({ list, topLeftText: `最近${maxCount}次分数变化`}))
     }
-        // CP Traces
-    if (!hasLimit && mainAPI["events"][eventId.toString()]["eventType"]=="challenge" &&  playerRating.length > 70){
-
-    
-    // 根据t10的习惯，一般是先清火再计算CP。以3火一把的协力为基准，作为CP200的值（通常情况下）。
-    // 取前8次的CP平均值
-    const cpTraceList = []
-    let cpCount = playerRating.length   // 这里是player分数表总数
-    let cpCountTmp = 0  // 用来确定循环次数
-    let cooperationAvgPt = 0    // 定义协力平均Pt
-    let cooperationAvgPtTotalTmp = 0    // 确定协力总Pt的一个临时变量
-    //console.log(playerRating)
-    let errCount = 0
-    for(var cpindex = cpCount -2 - 50;cpindex > 0;cpindex--){// 避免fever，从第52次开始算
-        if (cpCountTmp >50) break    //如果大于50次就可以跳出了
-        // 判断数据是否正常
-        
-        if (playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
-            errCount ++
-            continue
-        }
-        else{
-            let tmp = playerRating[cpindex -1].value - playerRating[cpindex].value
-            if(tmp !=0 && tmp<15000){   // 防止意外计算
-                cpCountTmp++
-                cooperationAvgPtTotalTmp += tmp
+    if (!hasLimit && mainAPI['events']?.[eventId]?.eventType === 'challenge') {
+        const estimate = estimateChallengePoints(playerRating.map(({ time, value }) => ({
+            time: normalizeTimestamp(time),
+            value,
+        })));
+        if (estimate) {
+            const rows = [
+                ['估算协力次数', estimate.coopCount],
+                ['估算协力获得的CP', estimate.earnedCp],
+                ['把均Pt(协力/CP)', `${estimate.averageCoopPt} / ${estimate.averageClearPt}`],
+                ['把均Pt(近50把)', `${estimate.recentAverageCoopPt} / ${estimate.recentAverageClearPt}`],
+                ['估算清CP次数', estimate.clearCount],
+                ['估算现有CP', estimate.remainingCp ?? '数据不足'],
+                ['可归类分数占比', `${estimate.classifiedPercent}%`],
+            ];
+            const list = [];
+            for (const [key, value] of rows) {
+                if (list.length) list.push(line);
+                list.push(drawListMerge([await drawList({ text: key.toString() }), await drawList({ text: value.toString() })]));
             }
+            all.push(await drawDatablock({ list, topLeftText: 'CP估算 (Beta)' }));
         }
     }
-
-    if (!(cpCountTmp == 0 || cooperationAvgPtTotalTmp ==0)){
-        cooperationAvgPt = cooperationAvgPtTotalTmp / cpCountTmp
-    }
-    //console.log('该用户协力把均Pt基准：',cooperationAvgPt,' errCount',errCount)
-    // 定义各个CP的Pt增加基准
-    let cp200 = cooperationAvgPt    // cp200是没有办法与pt做区分的。但前排一般都是1600清cp。200清cp效率太低不太可能
-    let cp400 = cooperationAvgPt * 1.6
-    let cp800 = cooperationAvgPt * 3.5
-    let cp1600 = cooperationAvgPt * 7.4
-    let cooperationPtTotal = 0  // 判定为协力的总Pt
-    let cooperationCounts = 0   // 协力的数据量
-    let cpPtTotal = 0   // 判定为清CP的总Pt
-    let cpCounts = 0    // 清CP的数据量
-    let currentCps = 0; // CP数量（推断）
-    let cooperationToCpsTotal = 0;  // 获取到的总CP
-    let negativeOne = true // 是否存在-1
-    let negativeOneToVaildValue = 0 // 最后一个-1.
-    let totalCpToPts = 0   // 有效数据（记录内）清CP所获得的总Pt数
-    // 根据游戏内观察得出，CP一般是协力分数/20
-    let f100CpCounts = 0    // 前100次一共清CP次数
-    let f100CooeprCounts = 0 //  前100次一共协力次数
-    let cpTraceRange = 100  // 取样范围
-    for(var cpindex = cpCount -2 ;cpindex > 0;cpindex--){ 
-        // 判断数据是否正常
-        if (playerRating[cpindex -1].value == playerRating[cpindex].value || playerRating[cpindex -1].value == -1 || playerRating[cpindex].value == -1){
-            //if (negativeOne)negativeOne = true
-            continue
-        }
-        else{
-            if (negativeOne){   // 这里已经不是-1了
-                negativeOneToVaildValue = playerRating[cpindex].value +1
-                negativeOne = false
-            }
-            let onceAddPt = (playerRating[cpindex -1].value - playerRating[cpindex].value)  // index越小的value越大
-            if (onceAddPt >= cp1600){
-                currentCps -=1600
-                cpCounts++
-                cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
-                //console.log('清CP1600：',playerRating[cpindex -1].value,playerRating[cpindex].value)
-            }else if (onceAddPt >= cp800){
-                currentCps -=800
-                cpCounts++
-                cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
-               //console.log('清CP800：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
-            }
-            else if (onceAddPt >= cp400 && (playerRating[cpindex -1].value > 910000)){ // 与烧fever作分辨
-                currentCps -=400
-                cpCounts++
-                cpPtTotal += onceAddPt
-                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CpCounts++
-                //console.log('清CP400：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
-                // 不统计CP400，与BD记录间隙相鉴别
-            }
-            else{   // cp200 与 3火一把Pt没办法分辨。
-                currentCps += (onceAddPt / 20)
-                cooperationCounts++
-                cooperationPtTotal += onceAddPt
-                cooperationToCpsTotal+= (onceAddPt / 20)
-                if ((f100CooeprCounts + f100CpCounts) < cpTraceRange) f100CooeprCounts++
-                //console.log('清CP200：',playerRating[cpindex -1].value,playerRating[cpindex].value,playerRating[cpindex -1].value-playerRating[cpindex].value,(playerRating[cpindex -1].time - playerRating[cpindex].time)/1000)
-            }
-        }
-    }
-    let cooperationPtTotalLast50 = 0  // 判定为协力的总Pt
-    let cooperationCountsLast50 = 0   // 协力的数据量
-    let cpPtTotalLast50 = 0   // 判定为清CP的总Pt
-    let cpCountsLast50 = 0    // 清CP的数据量
-    let currentCpsLast50 = 0; // 
-    let cooperationToCpsTotalLast50 = 0;  // 获取到的总CP
-    let last50CalcCount = 0
-    // 根据游戏内观察得出，CP一般是协力分数/20
-    for(var cpindex = 0;cpindex < cpCount - 1;cpindex++){
-        // 判断数据是否正常
-        if (playerRating[cpindex ].value == playerRating[cpindex+1].value || playerRating[cpindex ].value == -1 || playerRating[cpindex].value == -1){
-            continue
-        }
-        if (last50CalcCount >= 50) break;
-        else{
-
-            let onceAddPt = (playerRating[cpindex].value - playerRating[cpindex+1].value)  // index越小的value越大
-            if (onceAddPt >= cp1600){
-                currentCpsLast50 -=1600
-                cpCountsLast50++
-                cpPtTotalLast50 += onceAddPt
-                last50CalcCount++
-            }else if (onceAddPt >= cp800){
-                currentCpsLast50 -=800
-                cpCountsLast50++
-                cpPtTotalLast50 += onceAddPt
-                last50CalcCount++
-            }
-            else if (onceAddPt >= cp400){
-                currentCpsLast50 -=400
-                cpCountsLast50++
-                cpPtTotalLast50 += onceAddPt
-                last50CalcCount++
-            }
-            else{   // cp200 与 3火一把Pt没办法分辨。
-                currentCpsLast50 += (onceAddPt / 20)
-                cooperationCountsLast50++
-                cooperationPtTotalLast50 += onceAddPt
-                cooperationToCpsTotalLast50 += (onceAddPt / 20)
-                last50CalcCount++
-            }
-        }
-    }
-    // 处理-1到有数据这段时间的数据
-    let fullFeverPts = cooperationAvgPt * 2 * 12    // 固定12次
-    let maxPts = playerRating[0].value  // 当前最高分数
-    let ptsTotalUnRecord = maxPts - cooperationPtTotal - cpPtTotal // 未被BD记录在内的总Pt
-    //console.log(maxPts,cooperationPtTotal,cpPtTotal)
-    // 1. 前排通常不会这么快清CP
-    // 2. 通常BD后期稳定CP记录的时候，t10排名基本稳定了
-    // 这里暂时使用已有数据协力次数与清CP次数之比来处理未被BD记录在内的数据。
-
-    // 记录当前有数据的协力与清cp的比例
-    /*
-     这里最开始的想法是记录所有的清CP/协力的比例，但是考虑到有些人一开始有一段时间没有在清CP
-     又有一些人是是后期清CP冲上来的，因此还是考虑
-     1. 取最后一次-1往后300条数据进行计算，计算ratio
-     2. 
-    */    let avgClearCpPts = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)  // 平均清CP所用的PT
-           let cp_clear_value = 0  // 确定清cp挡位
-            if (avgClearCpPts >= cp1600){
-                cp_clear_value = 1600
-            }else if (avgClearCpPts >= cp800){
-                cp_clear_value = 800
-            }
-            else if (avgClearCpPts >= cp400){
-                cp_clear_value = 400
-            }
-            else{
-                cp_clear_value = 200
-            }
-    let cooperationRatio = f100CooeprCounts / ( f100CpCounts +f100CooeprCounts)
-    let cpRatio = f100CpCounts / ( f100CpCounts +f100CooeprCounts)
-    // 这里如果cooperationRatio < 0.7,则明显是不对的
-    if (cooperationRatio < 0.7){
-        /*
-        // 我们就预估他CP收支是平很的
-        console.log(cp_clear_value)
-        let cor = cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)   // 协力获得的PT
-        let cpr = cpCounts==0?0:Math.round(cpPtTotal / cpCounts)    // 清CP获得的pt
-        /*
-            则我们可以得到以下方程
-           var cpcor = cpr / cor
-           ptsTotalUnRecord = cor x + cpr y
-
-
-        
-       let t1 = (cor / 20) / cp_clear_value // t1: 
-       let x = ptsTotalUnRecord / ((cpr*t1) + cor)   // 协力次数，x
-       let y = ((cor / 20) * x) / cp_clear_value // 清CP次数，y
-       console.log(x,y,cor,cpr)
-    cpRatio = y/(x+y)
-    cooperationRatio = x/(x+y)
-    */
-       cpRatio = 0.11    // 当无法推断出他的清CP比例的时候我们就假设他前面清了10% CP
-        cooperationRatio = 1-cpRatio
-    }
-    //console.log('cpRatio:',cpRatio,' cooperationRatio' , cooperationRatio)
-
-
-    // 根据avg推算清cp挡位
-    // 预估现有CP = 协力获得的CP - CP次数*CP挡位
-    let unRecordCooperationPts = Math.floor(ptsTotalUnRecord * cooperationRatio)    // 未记录的预估总协力Pt数
-    let unRecordCpPts = Math.floor(ptsTotalUnRecord * cpRatio)                         // 未记录的预估总清CP Pt数
-   
-    //console.log('unRecordCooperationPts',unRecordCooperationPts,'unRecordCpPts',unRecordCpPts)
-    let unRecordCooperationCounts = cooperationAvgPt == 0?0:Math.floor(unRecordCooperationPts / cooperationAvgPt)   //未记录的预估总协力次数
-    let unRecordPendingCpValue =  Math.floor(unRecordCooperationPts / 20)//维基路的预估通过协力获得的Cp数量
-    let unRecordClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCpPts / avgClearCpPts)// 预估未记录的已经清CP的次数
-    //console.log(unRecordCpPts,avgClearCpPts)s
-    let unRecordUnClearCpCounts =  avgClearCpPts == 0 ?0:Math.floor(unRecordCooperationPts / avgClearCpPts) - unRecordClearCpCounts// 预估未记录的未清CP次数
-
-
-    let unRecordCurrentCpValues = unRecordPendingCpValue - (unRecordClearCpCounts * cp_clear_value)
-    /*
-    if (currentCps + unRecordCurrentCpValues <0){   // 如果剩余CP小于0则全用于协力
-        unRecordCpPts = 0
-        unRecordCooperationPts =  Math.floor(ptsTotalUnRecord * cooperationRatio) 
-        unRecordCooperationCounts = Math.floor(unRecordCooperationPts / cooperationAvgPt)
-        unRecordCurrentCpValues = ptsTotalUnRecord / 20
-        unRecordClearCpCounts = 0
-    }
-        */
-    console.log(cooperationCounts,unRecordCooperationCounts)
-    cpTraceList.push(drawListMerge([await drawList({ text: `估算协力次数`}), await drawList({ text: `${cooperationCounts + unRecordCooperationCounts}`})]))// 记录的次数+估计的次数
-    cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `估算协力获得的CP`}), await drawList({ text: `${Math.round(cooperationToCpsTotal) + Math.round(unRecordCooperationPts / 20)}`})])) // 记录的CP+未记录的Pt转CP 
-    cpTraceList.push(line)
-    //console.log(cooperationToCpsTotal,unRecordCooperationPts)
-    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(协力/CP)`}), await drawList({ text: `${cooperationCounts == 0?0:Math.round(cooperationPtTotal / cooperationCounts)} / ${cpCounts==0?0:Math.round(cpPtTotal / cpCounts)}`})]))   // 真实数据
-    cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `把均Pt(近50把)`}), await drawList({ text: `${cooperationCountsLast50 == 0?0:Math.round(cooperationPtTotalLast50 / cooperationCountsLast50)} / ${cpCountsLast50==0?0:Math.round(cpPtTotalLast50 / cpCountsLast50)}`})]))    // 真实数据
-    cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `估算清CP次数`}), await drawList({ text: `${cpCounts + unRecordClearCpCounts}`})])) // 记录的次数+预估的次数
-    console.log(cpCounts,unRecordClearCpCounts)
-    cpTraceList.push(line)
-    cpTraceList.push(drawListMerge([await drawList({ text: `估算现有CP`}), await drawList({ text: `${Math.round(currentCps + unRecordCurrentCpValues)}`})]))  // 
-    //console.log(currentCps,unRecordCurrentCpValues)
-    cpTraceList.push(line)
-    all.push(await drawDatablock({ list:cpTraceList, topLeftText: `CP估算 (Beta)`}))
-    let cpTraceDebugFlags = false
-            if (cpTraceDebugFlags){
-    console.log('记录内协力次数：',cooperationCounts ,' 缺失数据的协力次数（估计）',unRecordCooperationCounts)
-    console.log('记录内协力获得的CP',cooperationToCpsTotal ,' 缺失数据的协力获得CP点数（预估）',Math.round(unRecordCooperationPts / 20))
-    console.log('把均Pt(协力/CP)',`${cooperationPtTotal / cooperationCounts}/${cpPtTotal / cpCounts}`)
-    console.log('把均Pt(近50把)',`${cooperationPtTotalLast50 / cooperationCountsLast50}/${cpPtTotalLast50 / cpCountsLast50}`)
-    console.log('记录内清CP次数 ',cpCounts,' 缺失数据的清CP次数（预估）',unRecordClearCpCounts)
-    console.log('记录内现有CP ',currentCps,'缺失数据的清CP次数（预估）',unRecordCurrentCpValues)
-    console.log('现有记录协力 / 清CP次数 ',cooperationCounts,' / ',cpCounts)
-    console.log('3火协力/CP200 基准估算：',cooperationAvgPt)
-    console.log('平均清CP获得的PT / 当前已有数据CP Value / 当前已有数据CP数量',avgClearCpPts,cpPtTotal,cpCounts)
-    console.log('f100CpCounts：',f100CpCounts,'f100CooeprCounts',f100CooeprCounts)
-            }
-        }
     //近期统计数据
     const timeList = [1, 3, 12, 24]
     {
@@ -540,7 +427,9 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     return [buffer];
 }
 
-export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean, apiData?: object, range?: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    if (range) return drawTopRateSpeedRankInWindow(eventId, mainServer, compress, range);
+
     console.log(eventId)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     /*
@@ -770,55 +659,80 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     catch{
         // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。（已完成）
     }
-    var all = [];
-    
-    all.push(await drawTitle('T10时速排名', `${serverNameFullList[mainServer]} ${subTimeTips}`));
-    var list = [], imageList = []
-    const widthMax = 200+300+420+250+275+300+300+300+200 + 200+200+200
-    var timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`
-    
-    list.push(drawListMergeMin([await drawList({ key: '排名' ,maxWidth:200}), await drawList({ key: 'UID',maxWidth:300 }), await drawList({ key: '昵称' ,maxWidth: 420}), await drawList({ key: pId==2?'统计时分数':'分数',maxWidth:275 })
+    const columns: [string, number][] = [
+        ['排名', 200], ['UID', 300], ['昵称', 420], [pId == 2 ? '统计时分数' : '分数', 275],
+        ['上下分差', 250], ['1小时内分差', 300], ['速度排名', 300], ['分数变动次数', 300],
+        ['把均PT', 200], ['前空白', 200], ['尾空白', 200], ['猜房间', 200],
+    ];
+    const rows = userInRankings.map(({ uid }, index) => [
+        index + 1, uid, userName[index], rank[index], rankBetween[index], rankBetweenLastTick[index],
+        rankForBetween[index], rankChangeCount[index], avgRankChange[index],
+        `${isFinite(prevNull[index]) ? prevNull[index] : '--'}min`, `${isFinite(nextNull[index]) ? nextNull[index] : '--'}min`,
+        getPossibleRoom(possibleAtSameRoom, uid),
+    ]);
+    const timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`;
+    return drawTopRateSpeedReport(mainServer, subTimeTips, columns, rows,
+        `${timeTips}\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度`, drawEventDatablockPromise, compress);
+}
 
-    ,await drawList({ key: '上下分差',maxWidth:250 }),await drawList({ key: '1小时内分差',maxWidth:300 }),await drawList({ key: '速度排名',maxWidth:300 }),await drawList({ key: '分数变动次数',maxWidth:300 }),
-    await drawList({ key: '把均PT' ,maxWidth:200}),await drawList({ key: '前空白' ,maxWidth:200}),await drawList({ key: '尾空白' ,maxWidth:200}),await drawList({ key: '猜房间' ,maxWidth:200})]))
+async function drawTopRateSpeedRankInWindow(eventId: number, server: Server, compress: boolean, range: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    const cutoff = new CutoffEventTop(eventId, server);
+    if (!cutoff.isExist || cutoff.status === 'not_start' || !Number.isFinite(cutoff.startAt) || !Number.isFinite(cutoff.endAt)) {
+        return [`错误：${serverNameFullList[server]} 活动 ${eventId} 不存在或尚未开始`];
+    }
+    await cutoff.initFull();
+    if (!cutoff.isExist) return ['该活动的前十榜单数据不足'];
+
+    const from = Math.max(range.from ?? cutoff.startAt, cutoff.startAt);
+    const to = Math.min(range.to ?? cutoff.endAt + 1, cutoff.endAt + 1);
+    const points = cutoff.points.map(point => ({ ...point, time: normalizeTimestamp(point.time) }));
+    const summary = summarizeTopRateSpeedWindow(points, from, to);
+    if (!summary) return ['所选时段内至少需要两次前十榜单记录'];
+
+    const columns: [string, number][] = [
+        ['排名', 200], ['UID', 300], ['昵称', 420], ['时段末分数', 275], ['上下分差', 250],
+        ['时段增量', 275], ['每小时PT', 275], ['速度排名', 230], ['变动次数', 235],
+        ['次均PT', 235], ['前空白', 200], ['尾空白', 200],
+    ];
+    const rows = summary.rows.map((row, index) => [
+        index + 1, row.uid, cutoff.getUserNameById(row.uid) || String(row.uid), row.score, row.gap,
+        row.gain ?? '--', row.hourlyGain ?? '--', row.gain == null ? '--' : 1 + summary.rows.filter(candidate => candidate.gain != null && candidate.gain > row.gain).length,
+        row.changeCount ?? '--', row.averageGain ?? '--',
+        row.changeCount === 0 ? '未变动' : row.leadingMinutes == null ? '--' : `${row.leadingMinutes}min`,
+        row.changeCount === 0 ? '未变动' : row.trailingMinutes == null ? '--' : `${row.trailingMinutes}min`,
+    ]);
+    const formatTime = (time: number) => getDateByServerTimezone(time, server).toISOString().slice(0, 19).replace('T', ' ');
+    const timeTips = `采样时段：${formatTime(summary.first)} 至 ${formatTime(summary.last)}（服务器时间）\n排名取时段末榜单，变动按相邻记录计算，-- 表示记录不完整或分数回调。`;
+    const eventInfo = drawEventDatablock(new Event(eventId), [server]).catch(error => {
+        logger('drawEventDatablock error:', error);
+        return null;
+    });
+    return drawTopRateSpeedReport(server, '时段统计', columns, rows, timeTips, eventInfo, compress);
+}
+
+async function drawTopRateSpeedReport(server: Server, subtitle: string, columns: [string, number][], rows: Array<Array<string | number>>, timeTips: string, eventInfo: Promise<Canvas>, compress: boolean): Promise<Buffer[]> {
+    const width = columns.reduce((sum, [, columnWidth]) => sum + columnWidth, 0);
+    const drawRow = (cells: Array<string | number>) => drawListMergeMin(cells.map((cell, index) => drawList({ key: String(cell), maxWidth: columns[index][1] })));
     const FullLine: Canvas = drawDottedLine({
-        width: widthMax,
+        width,
         height: 30,
         startX: 15,
         startY: 15,
-        endX: widthMax,
+        endX: width,
         endY: 15,
         radius: 2,
         gap: 10,
         color: "#a8a8a8"
-    })
-    list.push(FullLine)
-    for(let k = 0;k<10;k++){
-        //console.log(`${k+1}   ${userInRankings[k].uid}   ${rank[k]}   ${rankBetween[k]}   ${rankBetweenLastTick[k]}   ${rankChangeCount[k]}   ${avgRankChange[k]}`)
-        imageList.push(drawListMergeMin([
-            await drawList({ key: `${k+1}`,maxWidth:200}),
-            await drawList({ key: `${userInRankings[k].uid}`,maxWidth:300}),
-            await drawList({ key: `${userName[k]}`,maxWidth:420}),
-            await drawList({ key: `${rank[k]}`,maxWidth:275}),
-            await drawList({ key: `${rankBetween[k]}`,maxWidth:250}),
-            await drawList({ key: `${rankBetweenLastTick[k]}`,maxWidth:300}),
-            await drawList({ key: `${rankForBetween[k]}`,maxWidth:300}),
-            await drawList({ key: `${rankChangeCount[k]}`,maxWidth:300}),
-            await drawList({ key: `${avgRankChange[k]}`,maxWidth:200}),
-            await drawList({ key: `${isFinite(prevNull[k])?prevNull[k]:'--'}min`,maxWidth:200}),
-            await drawList({ key: `${isFinite(nextNull[k])?nextNull[k]:'--'}min`,maxWidth:200}),
-            await drawList({key:`${getPossibleRoom(possibleAtSameRoom,userInRankings[k].uid)}`,maxWidth:200})
-        ]))
-        imageList.push(FullLine)
-    }
-    list.push(...imageList)
-    all.push(await drawDatablock({ list}))
-    all.push(await drawTips({text:timeTips + '\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度',maxWidth:widthMax}))
-    //all.push(...list)
-    all.push(await drawEventDatablockPromise)
-    var buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, compress: compress, })
-
-    return [buffer];
+    });
+    const list = [drawRow(columns.map(([name]) => name)), FullLine, ...rows.flatMap(row => [drawRow(row), FullLine])];
+    const [title, table, tips, event] = await Promise.all([
+        drawTitle('T10时速排名', `${serverNameFullList[server]} ${subtitle}`),
+        drawDatablock({ list }),
+        drawTips({ text: timeTips, maxWidth: width }),
+        eventInfo,
+    ]);
+    const images = event ? [title, table, tips, event] : [title, table, tips];
+    return [await outputFinalBuffer({ imageList: images, compress })];
 }
 
 export async function drawTopRateSleep(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
@@ -1615,7 +1529,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
 function getPlayerRatingChanges(playerRating: Array<{
     time: number,
     value: number
-}>, begin?: number, end?: number, limit?: TopRateLimit): PlayerRatingChange[] {
+}>, begin?: number, end?: number, limit?: TopRateLimit, maxSampleGap?: number): PlayerRatingChange[] {
     const result: PlayerRatingChange[] = []
     for (let i = 0; i + 1 < playerRating.length; i += 1) {
         if (playerRating[i].value == -1 || playerRating[i + 1].value == -1) {
@@ -1623,6 +1537,10 @@ function getPlayerRatingChanges(playerRating: Array<{
         }
         if (playerRating[i].value == playerRating[i + 1].value) {
             continue
+        }
+        if (maxSampleGap !== undefined) {
+            const sampleGap = playerRating[i].time - playerRating[i + 1].time;
+            if (sampleGap <= 0 || sampleGap > maxSampleGap) continue;
         }
         const score = playerRating[i].value - playerRating[i + 1].value
         if (limit?.min != undefined && (limit.minInclusive ? score < limit.min : score <= limit.min)) {

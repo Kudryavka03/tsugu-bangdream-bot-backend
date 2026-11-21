@@ -16,7 +16,7 @@ if (!isMainThread && parentPort) {
 const isWorker = !isMainThread
 
 interface FuzzySearchConfig {
-  [type: string]: { [key: string]: (string | number)[] };
+  [type: string]: { [key: string]: (string | number | (string | number)[] | Record<string, unknown>)[] };
 }
 
 function loadConfig(): FuzzySearchConfig {
@@ -26,7 +26,10 @@ function loadConfig(): FuzzySearchConfig {
 }
 
 export function manualLoadFuzzyConfig() {
-  if (config!=undefined) config = loadConfig()
+  if (config != undefined) {
+    config = loadConfig();
+    cardSearchAliases = getCardSearchAliases(config);
+  }
 }
 
 function extractLvNumber(str: string): number | null {
@@ -85,6 +88,52 @@ function extractSkillNumber(str: string): number | null {
 }
 
 export let config: FuzzySearchConfig = loadConfig();
+let cardSearchAliases = getCardSearchAliases(config);
+
+function getCardSearchAliases(settings: FuzzySearchConfig) {
+  const types = ['rarity', 'attribute', 'characterId', 'bandId', 'type', 'skillType', 'scoreUpMaxValue'];
+  const aliases = new Set<string>();
+  for (const type of types) {
+    for (const values of Object.values(settings[type] ?? {})) {
+      for (const value of values) {
+        const entries = typeof value === 'string' ? [value]
+          : Array.isArray(value) ? value
+          : typeof value === 'object' && value !== null ? Object.keys(value) : [];
+        for (const alias of entries) {
+          if (typeof alias === 'string' && alias && !/\s/.test(alias)) aliases.add(alias);
+        }
+      }
+    }
+  }
+  const lengths = [...new Set([...aliases].map(alias => alias.length))].sort((a, b) => b - a);
+  return { aliases, lengths };
+}
+
+function splitCardKeyword(token: string): string[] {
+  const keyword = token.toLowerCase();
+  const { aliases, lengths } = cardSearchAliases;
+  if (aliases.has(keyword) || isInteger(keyword)) return [token];
+
+  // Only split when every part is a configured alias. Prefer the longest viable alias at each position.
+  const next = new Array<number>(keyword.length + 1);
+  next[keyword.length] = keyword.length;
+  for (let start = keyword.length - 1; start >= 0; start--) {
+    for (const length of lengths) {
+      const end = start + length;
+      if (next[end] !== undefined && aliases.has(keyword.slice(start, end))) {
+        next[start] = end;
+        break;
+      }
+    }
+  }
+  if (next[0] === undefined) return [token];
+
+  const parts: string[] = [];
+  for (let start = 0; start < keyword.length; start = next[start]) {
+    parts.push(keyword.slice(start, next[start]));
+  }
+  return parts;
+}
 
 export interface FuzzySearchResult {
   [key: string]: (string | number)[];
@@ -102,11 +151,13 @@ export function isFuzzySearchResult(value: any): boolean {
   );
 }
 
-export function fuzzySearch(keyword: string): FuzzySearchResult {
+export function fuzzySearch(keyword: string, splitCardKeywords = false): FuzzySearchResult {
   //兼容引号
-  const keywordList = combineNoteExpressionTokens((keyword.match(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g) || []).map(item =>
-    item.replace(/^[\"“”『』「」]|[\"“”『』「」]$/g, '') // 去掉前后可能的中英文引号
-  ));
+  const tokens = [...keyword.matchAll(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g)];
+  const keywordList = combineNoteExpressionTokens(tokens.flatMap(([raw, quoted]) => {
+    const token = raw.replace(/^["“”『』「」]|["“”『』「」]$/g, '');
+    return splitCardKeywords && !quoted ? splitCardKeyword(token) : [token];
+  }));
 
   console.log(keywordList)
   const matches: { [key: string]: (string | number)[] } = {};
@@ -199,7 +250,7 @@ export function fuzzySearch(keyword: string): FuzzySearchResult {
             }
           }
 
-          if (typeof value === 'object') {
+          if (typeof value === 'object' && value !== null) {
             if (Object.keys(value).includes(keyword)) {
               if (!matches[type]) {
                 matches[type] = [];

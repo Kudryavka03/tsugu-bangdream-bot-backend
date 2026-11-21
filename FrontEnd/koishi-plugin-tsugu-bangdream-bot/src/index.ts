@@ -34,7 +34,13 @@ import * as utils_1 from "./utils";
 import * as remoteDB_1 from "./api/remoteDB";
 import * as fuzzySearch_1 from "./api/fuzzySearch";
 import * as topRateDetail_1 from "./commands/topRateDetail";
+import { joinActivityTimeRangeArgs, resolveActivityTimeWindow, splitActivityTimeRange } from './commands/topRateWindow';
 import { registerMonthlyRankingCommands } from "./registerMonthlyRankingCommands";
+
+const songDiffAliases = ['songsdiffs', 'songsdiff', 'songdiffs', 'musicdiff'];
+const scatterAliases = ['查分数图', '散点图', '分数图'];
+const activityFromOption = '--from <time:string> 开始时间（服务器时间，例如 15:00、11.21 或 "11.21 15:00"）';
+const activityToOption = '--to <time:string> 结束时间（服务器时间，仅填日期时统计至该日结束）';
 
 declare module 'koishi' {
     interface User {
@@ -148,13 +154,15 @@ export function apply(ctx: Context, config: Config) {
     // 使得打指令不需要加空格
     ctx.middleware((session, next) => {
         if (config.noSpace) {
-            // 查卡面 一定要放在 查卡 前面
-            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池','查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            // 优先匹配以查卡开头的较长命令。
+            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池', '查卡牌', '查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            keywords.unshift('ycxmusic', 'gb10', 'cgb10', 'gb', 'cgb');
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
             keywords.push('物量查曲');
             keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
             keywords.push('控分助手', '控分');
             keywords.push(...cutoffCacheKeywords);
+            keywords.push(...songDiffAliases, 'songdiff', '查散点图', ...scatterAliases, '前十车速');
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
@@ -400,7 +408,7 @@ export function apply(ctx: Context, config: Config) {
     ctx.command("查卡 [word:text]", "查卡", cmdConfig)
         .alias('查卡牌')
         .usage([
-            '根据关键词或卡牌 ID 查询卡牌信息，多个查询条件请用空格分隔。',
+            '根据关键词或卡牌 ID 查询卡牌信息。可连写已收录的条件，例如 5x绿萝。',
             '也可用带点的月日查询当天生日角色的生日限定卡牌，例如 10.27、03.07、3.7、3.07、03.7；月和日可补零，生日查询必须包含点，纯数字仍按卡牌 ID 查询。',
             '不输入参数时，查询你设置的主服务器最新已开始活动期间的卡池卡牌和活动奖励卡牌。',
             '多张卡牌合并为列表，只有一张时返回卡牌详情。',
@@ -408,6 +416,7 @@ export function apply(ctx: Context, config: Config) {
         .example('查卡 :查询你设置的主服务器最新活动的卡池卡牌和奖励卡牌')
         .example('查卡 10.27 :查询10月27日生日角色的生日限定卡牌')
         .example('查卡 03.07 :查询3月7日生日角色的生日限定卡牌')
+        .example('查卡 5x绿萝（查找 Roselia 的绿属性五星卡牌）')
         .example('查卡 1399 :返回1399号卡牌的信息').example('查卡 绿 tsugu :返回所有属性为pure的羽泽鸫的卡牌列表')
         .action(async ({ session }, text) => {
         const tsuguUserData = await observeUserTsugu(session);
@@ -490,11 +499,13 @@ export function apply(ctx: Context, config: Config) {
         .usage([
             '根据关键词或歌曲 ID 查询歌曲信息，多个查询条件请用空格分隔。',
             '不输入参数时，查询你设置的主服务器最新已开始活动的歌榜歌曲；没有歌榜歌曲时，查询该服务器在活动期间的相关歌曲。',
+            'latest 查询主服务器最新发布的曲目，也可以在 latest 后指定服务器别名。',
             'note 后可填写谱面总物量，也可用 + 将 PERFECT、GREAT、GOOD、BAD、MISS 的数量相加；数量为 0 的项可以省略。',
             '例如 note1018+81+20+101 等同于 note1220，也可以与乐队、等级等条件组合使用。',
             '多首歌曲返回列表，只有一首时返回歌曲详情。',
         ].join('\n'))
         .example('查曲 :查询你设置的主服务器最新活动的歌榜歌曲或活动期间的相关歌曲')
+        .example('查曲 latest jp（查询日服最新发布的曲目）')
         .example('查曲 note1018+81+20+101 :按 PERFECT 1018、GREAT 81、GOOD 20、BAD 0、MISS 101 查询，总物量为 1220')
         .example('查曲 note1220 :与查曲 note1018+81+20+101 等价')
         .example('查曲 1 :返回1号曲的信息').example('查曲 ag lv27 :返回所有难度为27的ag曲列表')
@@ -503,6 +514,20 @@ export function apply(ctx: Context, config: Config) {
         const displayedServerList = tsuguUserData.displayedServerList;
         const list = await (0, searchSong_1.commandSong)(config, displayedServerList, text, tsuguUserData.mainServer);
         return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command('songdiff [...word:string]', '比较两个服务器的歌曲列表', cmdConfig)
+        .alias(...songDiffAliases)
+        .option('sourceServer', '-s <server:string> 源服务器，默认日服')
+        .option('destinationServer', '-d <server:string> 目标服务器，默认主服务器，主服务器为日服时默认国服')
+        .usage('默认比较 1 到两服最新发布曲目中较小的 ID，支持查曲的模糊搜索条件。比较国服时，默认跳过已排期但尚未上线的曲目。单独输入 all 比较全部当前可用曲目。+ 表示目标服独有，− 表示源服独有。')
+        .example('songdiff paspal lv25')
+        .example('songdiff all')
+        .example('songdiff paspal lv25 -s 日服 -d 国服')
+        .action(async ({ session, options }, ...keywords) => {
+        const { mainServer } = await observeUserTsugu(session);
+        const text = keywords.map(word => /\s/.test(word) ? `"${word}"` : word).join(' ');
+        const list = await searchSong_1.commandSongDiff(config, mainServer, text, options.sourceServer, options.destinationServer);
+        return utils_1.paresMessageList(list);
     });
     ctx.command('物量查曲 [text:text]', '按谱面物量查询歌曲', cmdConfig)
         .usage([
@@ -783,17 +808,34 @@ export function apply(ctx: Context, config: Config) {
         const list = await (0, cutoffListOfRecentEvent_1.commandCutoffListOfRecentEvent)(config, mainServer, tier, eventId);
         return (0, utils_1.paresMessageList)(list);
     });
-    ctx.command("歌榜 <tiers:string> [eventId:integer] [serverName]", "查询歌榜档位分数", cmdConfig)
-    .alias('查歌榜').alias('gb').alias('cgb')
-        .option('song', '-s <songId:integer> 指定歌曲ID，仅歌榜T10可用')
-        .usage(`查询歌榜活动指定档位的分数线。如果没有服务器名的话, 服务器为用户的默认服务器。如果没有活动ID的话, 活动为当前活动\n可用档线: 1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000`)
-        .example('歌榜 1000 :返回默认服务器当前活动1000档位的歌榜分数').example('歌榜 1000 300 jp:返回日服300号活动1000档位的歌榜分数')
-        .action(async ({ session, options }, tiers, eventId, serverName) => {
+    ctx.command('歌榜 <tier:string> [...args:string]', '查询歌榜档位分数', cmdConfig)
+        .alias('查歌榜', 'gb', 'cgb', 'ycxmusic')
+        .option('song', '-s <songId:integer> 指定歌曲 ID')
+        .usage('档位后可填活动 ID，或者依次填歌曲 ID 和活动 ID。服务器名放在最后，默认主服务器。省略活动 ID 时查询当前活动。\n可用档线：1、10、20、30、40、50、100、200、300、400、500、1000、2000、5000、10000、20000')
+        .example('歌榜 1000 300 jp')
+        .example('ycxmusic t10 767 320 cn')
+        .example('gb t10 320 cn -s 767')
+        .action(async ({ session, options }, tierText, ...args) => {
         const validTiers = [1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000];
-        let tier:number = Number(tiers.toLowerCase().replace('t',''))
-        if (tier == undefined ||isNaN(tier)|| !validTiers.includes(tier)) {
+        const tier = Number(tierText?.replace(/^t/i, ''));
+        if (!validTiers.includes(tier)) {
             return `错误: 档位必须为以下之一: ${validTiers.join(', ')}`;
         }
+
+        const serverName = args.length && !/^\d+$/.test(args.at(-1)) ? args.pop() : undefined;
+        if (args.length > 2 || args.some(arg => !/^\d+$/.test(arg) || !Number.isSafeInteger(Number(arg)))) {
+            return '错误: 请填写 <档位> [活动ID] [服务器] 或 <档位> <歌曲ID> <活动ID> [服务器]';
+        }
+        const eventId = args.length ? Number(args.at(-1)) : undefined;
+        const positionalSongId = args.length === 2 ? Number(args[0]) : undefined;
+        if (positionalSongId !== undefined && options.song !== undefined && positionalSongId !== options.song) {
+            return '错误: 位置参数与 -s 指定的歌曲 ID 不一致';
+        }
+        const songId = positionalSongId ?? options.song;
+        if (songId !== undefined && (!Number.isSafeInteger(songId) || songId < 1)) {
+            return '错误: 歌曲 ID 必须为正整数';
+        }
+
         const tsuguUserData = await observeUserTsugu(session);
         let mainServer = tsuguUserData.mainServer;
         if (serverName) {
@@ -803,14 +845,11 @@ export function apply(ctx: Context, config: Config) {
             }
             mainServer = serverFromServerNameFuzzySearch;
         }
-        if (options.song != undefined) {
-            if (tier != 10) {
-                return '错误: 歌曲ID筛选仅支持歌榜T10';
-            }
-            const list = await (0, songTop10_1.commandSongTop10)(config, mainServer, eventId, options.song);
+        if (tier === 10 && songId !== undefined) {
+            const list = await (0, songTop10_1.commandSongTop10)(config, mainServer, eventId, songId);
             return (0, utils_1.paresMessageList)(list);
         }
-        const list = await (0, cutoffSong_1.commandCutoffSong)(config, mainServer, tier, eventId);
+        const list = await (0, cutoffSong_1.commandCutoffSong)(config, mainServer, tier, eventId, songId);
         return (0, utils_1.paresMessageList)(list);
     });
     ctx.command("歌榜T10 [eventId] [serverName]", "查询歌榜T10", cmdConfig)
@@ -855,25 +894,110 @@ export function apply(ctx: Context, config: Config) {
             return '抽卡功能已关闭';
         }
     });
-    ctx.command('查岗 <playerId:string> [limit:string] [eventId] [serverName:string]', '查询前十车速', cmdConfig)
+    async function resolveTopRateActivity(session, args) {
+        const eventArgs = [];
+        let range;
+        for (const arg of joinActivityTimeRangeArgs(args)) {
+            const period = splitActivityTimeRange(arg);
+            if (period) {
+                if (range) return { error: '错误: 只能指定一个时间范围' };
+                range = period;
+            } else {
+                eventArgs.push(arg);
+            }
+        }
+        if (eventArgs.length > 2) return { error: '错误: 可指定一个活动 ID 和一个服务器，时间范围示例为 15:00-17:00' };
+        let [eventIdOrServer, serverName] = eventArgs;
+        let eventId;
+        if (eventIdOrServer !== undefined) {
+            if (/^\d+$/.test(eventIdOrServer)) {
+                eventId = Number(eventIdOrServer);
+                if (!Number.isSafeInteger(eventId) || eventId < 1) return { error: '错误: 活动 ID 必须为正整数' };
+            } else if (serverName === undefined) {
+                serverName = eventIdOrServer;
+            } else {
+                return { error: '错误: 活动 ID 必须为正整数' };
+            }
+        }
+        let { mainServer } = await observeUserTsugu(session);
+        if (serverName !== undefined) {
+            mainServer = await fuzzySearch_1.serverNameFuzzySearchResult(config, serverName);
+            if (mainServer === -1) return { error: '错误: 服务器名未能匹配任何服务器' };
+        }
+        return { eventId, mainServer, range };
+    }
+
+    ctx.command('查散点图 <playerId:string> [...参数:string]', '查询前十玩家的活动分数变动散点图', { ...cmdConfig, strictOptions: true })
+        .alias(...scatterAliases)
+        .option('count', '-c <count:posint> 只显示最近指定次数的分数变动')
+        .option('day', '-d <day:posint> 只显示活动第几天的记录')
+        .option('from', activityFromOption)
+        .option('to', activityToOption)
+        .usage('输入玩家 ID 或 t1 到 t10 的档位，可选活动 ID、服务器和开始-结束时间。默认统计整个活动时段。')
+        .example('散点图 t10')
+        .example('查散点图 t10 15:00-17:00')
+        .example('查分数图 t3 300 日服 -d 2')
+        .example('查散点图 t10 "11.20 15:00-17:00"')
+        .action(async ({ session, options }, playerId, ...args) => {
+        const rank = /^t(10|[1-9])$/i.exec(playerId ?? '');
+        if (!rank && !/^\d+$/.test(playerId ?? '')) {
+            return '错误: 请输入玩家 ID 或 t1 到 t10 的档位';
+        }
+        const { error, eventId, mainServer, range } = await resolveTopRateActivity(session, args);
+        if (error) return error;
+        const window = resolveActivityTimeWindow(options, range, mainServer);
+        if (!window.ok) return window.error;
+        const list = await topRateDetail_1.commandTopRateDetail(config, options.count,
+            rank ? undefined : playerId, rank ? Number(rank[1]) : undefined, mainServer, 4, eventId, options.day, undefined, window.value);
+        return utils_1.paresMessageList(list);
+    });
+    ctx.command('前十车速 [...参数:string]', '查询活动前十车速', { ...cmdConfig, strictOptions: true })
+        .option('from', activityFromOption)
+        .option('to', activityToOption)
+        .usage('默认查询当前活动的即时车速。可选活动 ID、服务器和开始-结束时间，按服务器时间计算。')
+        .example('前十车速')
+        .example('前十车速 329 国服 11.20T15:00-17:00')
+        .action(async ({ session, options }, ...args) => {
+        const { error, eventId, mainServer, range } = await resolveTopRateActivity(session, args);
+        if (error) return error;
+        const window = resolveActivityTimeWindow(options, range, mainServer);
+        if (!window.ok) return window.error;
+        const list = await topRateDetail_1.commandTopRateDetail(config, undefined, undefined, undefined, mainServer, 1,
+            eventId, undefined, undefined, window.value);
+        return utils_1.paresMessageList(list);
+    });
+    ctx.command('查岗 [playerId:string] [...参数:string]', '查询前十车速', { ...cmdConfig, strictOptions: true })
         .option('count', '-c <count:number> 指定显示最近的几次分数变化，默认20次')
         .option('day', '-d <day:number> 指定活动开始的第几天的分数变动详情')
-        .action(async ({ session, options }, playerId, limit, eventId, serverName) => {
+        .option('from', activityFromOption)
+        .option('to', activityToOption)
+        .example('查岗 0 15:00-17:00')
+        .action(async ({ session, options }, ...positionals) => {
+        let [playerId, ...args] = joinActivityTimeRangeArgs(positionals);
         var mode = 0;
         const tsuguUserData = await observeUserTsugu(session);
         let mainServer = tsuguUserData.mainServer;
         var tier;
         let cgLimit;
         let cgEventId;
-        const optionalArgs = [limit, eventId, serverName].filter(arg => arg != undefined);
-        for (const arg of optionalArgs) {
+        let serverName;
+        let range = playerId === undefined ? undefined : splitActivityTimeRange(playerId);
+        if (range) playerId = undefined;
+        const isSpeedTable = playerId === undefined || ['0', '1'].includes(playerId);
+        for (const arg of args) {
             const text = String(arg);
             const normalizedLimit = text.trim()
                 .replace(/＞/g, '>')
                 .replace(/＜/g, '<')
                 .replace(/＝/g, '=')
                 .replace(/\s/g, '');
-            if (/^>\d+$/.test(normalizedLimit) || /^<\d+$/.test(normalizedLimit) || /^>=\d+$/.test(normalizedLimit) || /^<=\d+$/.test(normalizedLimit) || /^\d+-\d+$/.test(normalizedLimit)) {
+            const isScoreLimit = /^(?:(?:>=?|<=?)\d+|\d+-\d+)$/.test(normalizedLimit);
+            const period = isSpeedTable || !isScoreLimit ? splitActivityTimeRange(text) : undefined;
+            if (period) {
+                if (range) return '错误: 只能指定一个时间范围';
+                range = period;
+            }
+            else if (isScoreLimit) {
                 cgLimit = text;
             }
             else if (/^\d+$/.test(text)) {
@@ -885,10 +1009,7 @@ export function apply(ctx: Context, config: Config) {
         }
         if (playerId == undefined) {
             mode = 1;
-            const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, mode, cgEventId, options.day, cgLimit);
-            return ((0, utils_1.paresMessageList)(list));
-        }
-        if (isNaN(parseInt(playerId))) {
+        } else if (isNaN(parseInt(playerId))) {
             if (playerId[0] == 't' && !isNaN(parseInt(playerId.slice(1)))) {
                 tier = parseInt(playerId.slice(1));
                 playerId = undefined;
@@ -907,7 +1028,12 @@ export function apply(ctx: Context, config: Config) {
             }
             mainServer = serverFromServerNameFuzzySearch;
         }
-        const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, 0, cgEventId, options.day, cgLimit);
+        const window = resolveActivityTimeWindow(options, range, mainServer);
+        if (!window.ok) return window.error;
+        if ((window.value.from !== undefined || window.value.to !== undefined) && mode !== 1 && !['0', '1'].includes(playerId)) {
+            return '错误: 此时段选项用于前十车速总表，请使用前十车速命令';
+        }
+        const list = await (0, topRateDetail_1.commandTopRateDetail)(config, options.count, playerId, tier, mainServer, mode, cgEventId, options.day, cgLimit, window.value);
         return ((0, utils_1.paresMessageList)(list));
     });
     ctx.command('查变动 <playerId:string> [serverName:string]', '查询任意Top10玩家的分数变动统计情况', cmdConfig)

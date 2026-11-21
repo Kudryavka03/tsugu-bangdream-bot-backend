@@ -31,7 +31,7 @@ const eventTypes: string[] = ['versus', 'challenge', 'medley'];
 const T1_ABNORMAL_THRESHOLD = 0.977;
 const T1_ABNORMAL_COLOR = '#dc3545';
 
-export async function drawCutoffSongsDetail(eventId: number, tier: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+export async function drawCutoffSongsDetail(eventId: number, tier: number, mainServer: Server, compress: boolean, songIdFilter?: number): Promise<Array<Buffer | string>> {
     const event = new Event(eventId);
     if (!event.isExist) {
         return ['错误: 活动不存在'];
@@ -39,18 +39,22 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
     await event.initFull();
 
-    //const eventTypes: string[] = ['versus', 'challenge', 'medley'];
-    // versus只有一首歌
-    let isMedley = false
-    if (!eventTypes.includes(event.eventType) || !event.musics || event.musics.length === 0) {
+    const isMedley = event.eventType === 'medley';
+    const defaultServer = songIdFilter === undefined ? Server.jp : mainServer;
+    const defaultSongs = event.getSongIds(defaultServer);
+    const songIds = defaultSongs.length > 0 ? defaultSongs : event.getSongIds(defaultServer === Server.jp ? mainServer : Server.jp);
+    if (!eventTypes.includes(event.eventType) || songIds.length === 0) {
         return ['错误: 该活动不是歌榜活动或没有歌曲数据'];
     }
+    if (isMedley && songIdFilter !== undefined) return ['错误: 组曲活动只提供整组歌榜'];
+    if (songIdFilter !== undefined && !songIds.includes(songIdFilter)) return [`错误: 活动中不存在歌曲${songIdFilter}`];
+    const selectedSongs = songIdFilter !== undefined ? [songIdFilter] : isMedley ? songIds.slice(0, 1) : songIds;
+    const songList = selectedSongs.map(songId => new Song(songId));
+
     const drawEventDatablockP = await drawEventDatablock(event, [mainServer]).catch(err => {
             logger('drawEventDatablock error:', err);
             return null;
         });
-    const defaultServer = Server.jp;
-    const songList: Song[] = [];
 
 
     //console.log(songList)
@@ -59,7 +63,6 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const SongT1Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=1`;
     const SongT10Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=10`;
     if(event.eventType == 'medley'){
-        isMedley = true
             var [vTier1, vTierN, vTier10] = await Promise.all([
             callAPIAndCacheResponse(SongT1Url, 0, 1, false, 2),
             callAPIAndCacheResponse(SongTierUrl, 0, 1, false, 2),
@@ -72,15 +75,6 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
             null//tier==10?null:callAPIAndCacheResponse(SongT10Url, 0, 1, false, 2)
         ]) as [cutoffSongsResponse, cutoffSongsResponse, cutoffSongsResponse];
     }
-    if (!isMedley){
-        for (let i = 0; i < event.musics[defaultServer].length; i++) {
-            songList.push(new Song(event.musics[defaultServer][i].musicId));
-        }
-    }
-    else{
-        songList.push(new Song(event.musics[defaultServer][0].musicId));
-    }
-    
     if (tier==10 && !isMedley) {
         tier10 = tier1//tier10 = tierN
     }else if(tier==10 && isMedley){

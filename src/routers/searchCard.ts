@@ -78,7 +78,7 @@ export async function commandCard(displayedServerList: Server[], input: string |
             fuzzySearchResult = { characterId: characterIds, type: ['birthday'] }
             displayedServerList = [...new Set([...displayedServerList, Server.jp])]
         } else {
-            fuzzySearchResult = fuzzySearch(input)
+            fuzzySearchResult = fuzzySearch(input, true)
         }
     } else {
         // 使用 fuzzySearch 逻辑

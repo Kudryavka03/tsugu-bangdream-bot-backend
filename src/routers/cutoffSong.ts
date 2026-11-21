@@ -47,10 +47,11 @@ export async function commandCutoffSong(mainServer: Server, tier: number, compre
     if (!eventId) {
         eventId = getPresentEvent(mainServer).eventId;
     }
+    const normalizedSongId = songId == undefined ? undefined : Number(songId);
     if (normalizedTier === 10) {
-        return await drawSongTop10(eventId, mainServer, compress ?? false, songId == undefined ? undefined : Number(songId));
+        return await drawSongTop10(eventId, mainServer, compress ?? false, normalizedSongId);
     }
-    return await drawCutoffSongsDetail(eventId, normalizedTier, mainServer, compress);
+    return await drawCutoffSongsDetail(eventId, normalizedTier, mainServer, compress, normalizedSongId);
 }
 
 export { router as cutoffSongRouter }

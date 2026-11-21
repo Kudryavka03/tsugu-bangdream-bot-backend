@@ -116,7 +116,7 @@ export async function drawSongDetail(song: Song, displayedServerList: Server[] =
     list.push(line)
 
     list.push(drawListTextWithImages({
-        key: 'Notes',
+        key: '物量',
         content: [await drawDifficulityListWithNotes(song)],
     }))
     list.push(line)

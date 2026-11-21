@@ -8,3 +8,13 @@ export async function commandSong(config, displayedServerList, text = '', mainSe
         compress: config.compress
     });
 }
+
+export async function commandSongDiff(config, mainServer, text, sourceServer?, destinationServer?) {
+    return getReplyFromBackend_1.getReplyFromBackend(`${config.backendUrl}/songDiff`, {
+        mainServer,
+        text,
+        sourceServer,
+        destinationServer,
+        compress: config.compress,
+    });
+}

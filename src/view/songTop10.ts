@@ -12,7 +12,6 @@ import { drawCutoffEventTopChart } from '@/components/chart/cutoffChart';
 import { drawSongInList } from '@/components/list/song';
 import { drawList, line } from '@/components/list';
 import { outputFinalBuffer } from '@/image/output';
-import mainAPI from '@/types/_Main';
 import { logger } from '@/logger';
 import { Cutoff } from '@/types/Cutoff';
 import { drawT10CutoffSummary } from '@/view/t10CutoffSummary';
@@ -38,20 +37,6 @@ function getEventTime(event: Event, server: Server): { startAt?: number, endAt?:
         }
     }
     return { startAt, endAt };
-}
-
-function getEventSongIdList(event: Event, mainServer: Server): number[] {
-    const result: number[] = [];
-    let musicList = event.musics?.[mainServer];
-    if (!Array.isArray(musicList) || musicList.length === 0) {
-        musicList = mainAPI['events'][event.eventId.toString()]?.['musics']?.[mainServer];
-    }
-    if (!Array.isArray(musicList)) return result;
-    for (const music of musicList) {
-        const musicId = Number(typeof music === 'object' ? music?.musicId : music);
-        if (musicId > 0 && !result.includes(musicId)) result.push(musicId);
-    }
-    return result;
 }
 
 async function drawSongTopBlock(song: Song, trackerTop: TrackerTop10, mainServer: Server): Promise<Canvas> {
@@ -117,8 +102,9 @@ export async function drawSongTop10(
         // 单活动详情不可用时，继续使用现役活动汇总数据中的歌曲列表。
     }
     let isNotMedley = event.eventType!='medley'
-    const songIdList = getEventSongIdList(event, mainServer);
+    const songIdList = event.getSongIds(mainServer);
     if (songIdList.length === 0) return ['错误: 该活动没有歌曲数据'];
+    if (!isNotMedley && songIdFilter !== undefined) return ['错误: 组曲活动只提供整组歌榜'];
     if (songIdList.length > 1 && songIdFilter == undefined && isNotMedley) {
         const songOptions = songIdList.map(songId => {
             const song = new Song(songId);

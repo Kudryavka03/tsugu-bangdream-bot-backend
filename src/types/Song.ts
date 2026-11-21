@@ -186,6 +186,11 @@ export class Song {
         const songData = await callAPIAndCacheResponse(`${Bestdoriurl}/api/songs/${this.songId}.json`,1,3,false,0)
         return songData
     }
+    isAvailableOn(server: Server, time: number): boolean {
+        const publishedAt = this.publishedAt?.[server];
+        const closedAt = this.closedAt?.[server];
+        return Number.isFinite(publishedAt) && publishedAt > 0 && publishedAt <= time && !(closedAt > 0 && closedAt <= time);
+    }
     getSongRip(): number {
         return Math.ceil(this.songId / 10) * 10
     }
@@ -557,6 +562,24 @@ export class Chart {
 }
 
 
+
+export function getLatestReleasedSongs(server: Server, now: number = Date.now()): Song[] {
+    let latestPublishedAt = -Infinity;
+    let latestSongs: Song[] = [];
+    for (const id of Object.keys(mainAPI['songs'])) {
+        const song = new Song(Number(id));
+        if (!song.isAvailableOn(server, now)) continue;
+
+        const publishedAt = song.publishedAt[server];
+        if (publishedAt > latestPublishedAt) {
+            latestPublishedAt = publishedAt;
+            latestSongs = [song];
+        } else if (publishedAt === latestPublishedAt) {
+            latestSongs.push(song);
+        }
+    }
+    return latestSongs;
+}
 
 //获取时间范围内指定服务器推出的新歌
 export function getPresentSongList(mainServer: Server, start: number = Date.now(), end: number = Date.now()): Song[] {
