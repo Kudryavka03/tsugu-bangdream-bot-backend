@@ -137,7 +137,7 @@ export async function drawCutoffSongsDetail(
                     drawList({ key: '修正后 T1 分数', text: String(correction.effectiveT1Score) }),
                 ]));
                 songDetailList.push(drawList({
-                    key: '⚠ T1分数异常',
+                    key: '⚠T1分数异常',
                     RoundedRectColor: '#dc3545',
                     RoundedRectTextColor: '#ffffff',
                 }));
