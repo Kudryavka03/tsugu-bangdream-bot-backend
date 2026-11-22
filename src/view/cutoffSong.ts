@@ -134,13 +134,8 @@ export async function drawCutoffSongsDetail(
             if (tier === 1 && correction) {
                 songDetailList.push(drawListMerge([
                     drawList({ key: '原 T1 分数', text: String(correction.originalT1Score) }),
-                    drawList({ key: '修正后 T1 分数', text: String(correction.effectiveT1Score) }),
+                    drawList({ key: `T${correction.effectiveT1Rank} 分数（修正）`, text: String(correction.effectiveT1Score) }),
                 ]));
-                songDetailList.push(drawList({
-                    key: '⚠T1分数异常',
-                    RoundedRectColor: '#dc3545',
-                    RoundedRectTextColor: '#ffffff',
-                }));
             } else {
                 songDetailList.push(await drawList({ key: '最新分数', text: `${latest} (${timeTips} ${incrementText})` }));
             }
@@ -149,6 +144,13 @@ export async function drawCutoffSongsDetail(
                 songDetailList.push(await drawList({
                     key: '占比T1',
                     text: formatSongCutoffRatio(latest, t1, correction?.effectiveT1Rank),
+                }));
+            }
+            if (correction) {
+                songDetailList.push(drawList({
+                    key: tier === 1 ? '⚠T1分数异常' : '⚠原始T1分数异常',
+                    RoundedRectColor: '#dc3545',
+                    RoundedRectTextColor: '#ffffff',
                 }));
             }
             return drawDatablock({ list: songDetailList });

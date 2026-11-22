@@ -82,6 +82,13 @@ async function drawSongTopBlock(
         key: '占比T1',
         text: formatSongCutoffRatio(ranking[9].point, t1, correction?.effectiveT1Rank),
     }));
+    if (correction) {
+        list.push(drawList({
+            key: '⚠原始T1分数异常',
+            RoundedRectColor: '#dc3545',
+            RoundedRectTextColor: '#ffffff',
+        }));
+    }
     list.push(line);
 
     const playerRankingPromise: Promise<Canvas>[] = [];
