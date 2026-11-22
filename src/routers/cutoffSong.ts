@@ -1,7 +1,8 @@
 import { drawCutoffSongsDetail } from '@/view/cutoffSong';
 import { drawSongTop10 } from '@/view/songTop10';
 import { Server, getServerByServerId } from '@/types/Server';
-import { getPresentEvent } from '@/types/Event';
+import { getLatestSongRankingEventId } from '@/types/Event';
+import { serverNameFullList } from '@/config';
 import { listToBase64 } from '@/routers/utils';
 import { isServer } from '@/types/Server';
 import { body } from 'express-validator';
@@ -44,14 +45,18 @@ export async function commandCutoffSong(mainServer: Server, tier: number, compre
     if (!validTiers.includes(normalizedTier)) {
         return [`错误: 档位必须为以下之一: ${validTiers.join(', ')}`];
     }
-    if (!eventId) {
-        eventId = getPresentEvent(mainServer).eventId;
-    }
     const normalizedSongId = songId == undefined ? undefined : Number(songId);
-    if (normalizedTier === 10) {
-        return await drawSongTop10(eventId, mainServer, compress ?? false, normalizedSongId);
+    const selectedEventId = Number(eventId) || getLatestSongRankingEventId(mainServer, normalizedSongId);
+    if (selectedEventId === undefined) {
+        const serverName = serverNameFullList[mainServer];
+        return [normalizedSongId === undefined
+            ? `${serverName}没有已开始的歌榜活动`
+            : `${serverName}没有已开始的活动提供歌曲 ${normalizedSongId} 的单曲歌榜`];
     }
-    return await drawCutoffSongsDetail(eventId, normalizedTier, mainServer, compress, normalizedSongId);
+    if (normalizedTier === 10) {
+        return await drawSongTop10(selectedEventId, mainServer, compress ?? false, normalizedSongId);
+    }
+    return await drawCutoffSongsDetail(selectedEventId, normalizedTier, mainServer, compress, normalizedSongId);
 }
 
 export { router as cutoffSongRouter }

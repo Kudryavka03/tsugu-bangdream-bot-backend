@@ -811,8 +811,10 @@ export function apply(ctx: Context, config: Config) {
     ctx.command('歌榜 <tier:string> [...args:string]', '查询歌榜档位分数', cmdConfig)
         .alias('查歌榜', 'gb', 'cgb', 'ycxmusic')
         .option('song', '-s <songId:integer> 指定歌曲 ID')
-        .usage('档位后可填活动 ID，或者依次填歌曲 ID 和活动 ID。服务器名放在最后，默认主服务器。省略活动 ID 时查询当前活动。\n可用档线：1、10、20、30、40、50、100、200、300、400、500、1000、2000、5000、10000、20000')
-        .example('歌榜 1000 300 jp')
+        .option('event', '-e <eventId:integer> 指定活动 ID')
+        .usage('档位后可依次填歌曲 ID、活动 ID 和服务器名。默认使用主服务器，并按开赛时间查找最近一期符合条件的歌榜活动。可用 -e 只指定活动，或用旧写法 [活动 ID] [服务器] -s <歌曲 ID>。\n可用档线：1、10、20、30、40、50、100、200、300、400、500、1000、2000、5000、10000、20000')
+        .example('ycxmusic 10 789')
+        .example('歌榜 1000 jp -e 300')
         .example('ycxmusic t10 767 320 cn')
         .example('gb t10 320 cn -s 767')
         .action(async ({ session, options }, tierText, ...args) => {
@@ -823,17 +825,25 @@ export function apply(ctx: Context, config: Config) {
         }
 
         const serverName = args.length && !/^\d+$/.test(args.at(-1)) ? args.pop() : undefined;
-        if (args.length > 2 || args.some(arg => !/^\d+$/.test(arg) || !Number.isSafeInteger(Number(arg)))) {
-            return '错误: 请填写 <档位> [活动ID] [服务器] 或 <档位> <歌曲ID> <活动ID> [服务器]';
+        if (args.length > 2 || args.some(arg => !/^\d+$/.test(arg) || !Number.isSafeInteger(Number(arg)) || Number(arg) < 1)) {
+            return '错误: 请填写 <档位> [歌曲ID] [活动ID] [服务器]';
         }
-        const eventId = args.length ? Number(args.at(-1)) : undefined;
-        const positionalSongId = args.length === 2 ? Number(args[0]) : undefined;
+        const [firstId, secondId] = args.map(Number);
+        const positionalSongId = secondId !== undefined || options.song === undefined ? firstId : undefined;
+        const positionalEventId = secondId ?? (options.song !== undefined ? firstId : undefined);
         if (positionalSongId !== undefined && options.song !== undefined && positionalSongId !== options.song) {
             return '错误: 位置参数与 -s 指定的歌曲 ID 不一致';
         }
         const songId = positionalSongId ?? options.song;
         if (songId !== undefined && (!Number.isSafeInteger(songId) || songId < 1)) {
             return '错误: 歌曲 ID 必须为正整数';
+        }
+        if (positionalEventId !== undefined && options.event !== undefined && positionalEventId !== options.event) {
+            return '错误: 位置参数与 -e 指定的活动 ID 不一致';
+        }
+        const eventId = positionalEventId ?? options.event;
+        if (eventId !== undefined && (!Number.isSafeInteger(eventId) || eventId < 1)) {
+            return '错误: 活动 ID 必须为正整数';
         }
 
         const tsuguUserData = await observeUserTsugu(session);

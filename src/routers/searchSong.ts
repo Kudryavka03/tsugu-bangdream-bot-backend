@@ -15,7 +15,7 @@ import { globalDefaultServer, serverNameFullList, switchDataSource, USE_HHWX_SOU
 import { clearMeasureCache } from '@/image/text';
 import { getApiDataCacheSize, getPD_Size } from '@/api/downloader';
 import { getCardDataCacheSize } from '@/types/Card';
-import { getCurrentEvent, getEventDataCacheSize } from '@/types/Event';
+import { getCurrentEvent, getEventDataCacheSize, hasSongRanking } from '@/types/Event';
 import { getGachaDataCacheSize } from '@/types/Gacha';
 import { getDownloadFileCacheSize } from '@/api/downloadFileCache';
 import { compareSameDataArray } from '@/view/cutoffEventTop';
@@ -225,8 +225,7 @@ export async function commandCurrentEventSongs(displayedServerList: Server[], co
     }
     await event.initFull();
 
-    const hasMusicRanking = ['versus', 'challenge', 'medley'].includes(event.eventType);
-    const rankingSongIds = hasMusicRanking
+    const rankingSongIds = hasSongRanking(event.eventType)
         ? (event.musics?.[server] ?? []).map(music => music.musicId)
         : [];
     const songIds = [...new Set(rankingSongIds.length > 0

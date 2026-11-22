@@ -1,5 +1,5 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
-import { Event } from '@/types/Event';
+import { Event, hasSongRanking } from '@/types/Event';
 import { Server } from '@/types/Server';
 import { Song } from '@/types/Song';
 import { Image, Canvas } from 'skia-canvas';
@@ -27,7 +27,6 @@ interface cutoffSongsDetail {
     time: number;
     ep: number;
 }
-const eventTypes: string[] = ['versus', 'challenge', 'medley'];
 const T1_ABNORMAL_THRESHOLD = 0.977;
 const T1_ABNORMAL_COLOR = '#dc3545';
 
@@ -43,7 +42,7 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const defaultServer = songIdFilter === undefined ? Server.jp : mainServer;
     const defaultSongs = event.getSongIds(defaultServer);
     const songIds = defaultSongs.length > 0 ? defaultSongs : event.getSongIds(defaultServer === Server.jp ? mainServer : Server.jp);
-    if (!eventTypes.includes(event.eventType) || songIds.length === 0) {
+    if (!hasSongRanking(event.eventType) || songIds.length === 0) {
         return ['错误: 该活动不是歌榜活动或没有歌曲数据'];
     }
     if (isMedley && songIdFilter !== undefined) return ['错误: 组曲活动只提供整组歌榜'];

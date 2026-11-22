@@ -30,6 +30,21 @@ const typeName = {
     "medley": "组曲LIVE (3组曲)"
 }
 
+export function hasSongRanking(eventType: string): boolean {
+    return eventType === 'versus' || eventType === 'challenge' || eventType === 'medley';
+}
+
+function getEventSongIds(songs: unknown): number[] {
+    if (!Array.isArray(songs)) return [];
+
+    const ids = new Set<number>();
+    for (const song of songs) {
+        const id = Number(typeof song === 'object' ? song?.musicId : song);
+        if (Number.isSafeInteger(id) && id > 0) ids.add(id);
+    }
+    return [...ids];
+}
+
 export interface EventTeamListEntry {
     eventId: number;
     teamId: number;
@@ -247,14 +262,7 @@ export class Event {
         const songs = Array.isArray(detailSongs) && detailSongs.length > 0
             ? detailSongs
             : mainAPI['events'][this.eventId]?.['musics']?.[server];
-        if (!Array.isArray(songs)) return [];
-
-        const ids = new Set<number>();
-        for (const song of songs) {
-            const id = Number(typeof song === 'object' ? song?.musicId : song);
-            if (Number.isSafeInteger(id) && id > 0) ids.add(id);
-        }
-        return [...ids];
+        return getEventSongIds(songs);
     }
 
     async getData(update: boolean = true): Promise<object> {
@@ -646,19 +654,40 @@ function getEventTimeWindowByServer(event: Event, server: Server, presentEvent: 
 }
 // 查询指令使用严格的开始时间，避免 getPresentEvent 提前一天选中下一期。
 export function getCurrentEvent(server: Server, time: number = Date.now()): Event | null {
-    let currentId: number | null = null;
+    const currentId = getLatestStartedEventId(server, time);
+    return currentId == null ? null : new Event(currentId);
+}
+
+type EventSummary = {
+    startAt: (string | number | null)[];
+    eventType: string;
+    musics?: unknown[];
+};
+
+function getLatestStartedEventId(server: Server, time: number, matches?: (data: EventSummary) => boolean): number | undefined {
+    let currentId: number | undefined;
     let latestStartAt = -Infinity;
-    for (const [id, data] of Object.entries(mainAPI['events'] ?? {})) {
-        const rawStartAt = data['startAt']?.[server];
+    for (const [id, data] of Object.entries<EventSummary>(mainAPI['events'] ?? {})) {
+        const rawStartAt = data.startAt?.[server];
         if (rawStartAt == null) continue;
         const startAt = Number(rawStartAt);
         if (!Number.isFinite(startAt) || startAt > time) continue;
         if (startAt > latestStartAt || (startAt === latestStartAt && Number(id) > currentId)) {
+            if (matches && !matches(data)) continue;
             latestStartAt = startAt;
             currentId = Number(id);
         }
     }
-    return currentId == null ? null : new Event(currentId);
+    return currentId;
+}
+
+export function getLatestSongRankingEventId(server: Server, songId?: number, time: number = Date.now()): number | undefined {
+    return getLatestStartedEventId(server, time, event => {
+        if (!hasSongRanking(event.eventType)) return false;
+        const songIds = getEventSongIds(event.musics?.[server]);
+        if (songId === undefined) return songIds.length > 0;
+        return event.eventType !== 'medley' && songIds.includes(songId);
+    });
 }
 
 //获取当前进行中的活动,如果期间没有活动，则返回上一个刚结束的活动

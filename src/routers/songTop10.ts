@@ -4,8 +4,7 @@ import { Request, Response } from 'express';
 import { middleware } from '@/routers/middleware';
 import { listToBase64 } from '@/routers/utils';
 import { isServer, Server, getServerByServerId } from '@/types/Server';
-import { getPresentEvent } from '@/types/Event';
-import { drawSongTop10 } from '@/view/songTop10';
+import { commandCutoffSong } from '@/routers/cutoffSong';
 
 const router = express.Router();
 
@@ -42,12 +41,7 @@ export async function commandSongTop10(
     songId?: number,
     compress: boolean = false,
 ): Promise<Array<Buffer | string>> {
-    if (eventId == undefined || Number(eventId) === 0) {
-        const presentEvent = getPresentEvent(mainServer);
-        if (!presentEvent) return [`错误: ${ mainServer } 当前没有可用活动`];
-        eventId = presentEvent.eventId;
-    }
-    return await drawSongTop10(Number(eventId), mainServer, compress, songId == undefined ? undefined : Number(songId));
+    return await commandCutoffSong(mainServer, 10, compress, eventId, songId);
 }
 
 export { router as songTop10Router };
