@@ -682,8 +682,30 @@ function getLatestStartedEventId(server: Server, time: number, matches?: (data: 
     return currentId;
 }
 
+function getActiveEventId(server: Server, time: number): number | undefined {
+    return getLatestStartedEventId(server, time, event => Number(event.endAt?.[server] ?? NaN) >= time);
+}
+
+export function getCurrentOrLatestEndedEventId(server: Server, time: number = Date.now()): number | undefined {
+    const activeId = getActiveEventId(server, time);
+    if (activeId !== undefined) return activeId;
+
+    let latestId: number | undefined;
+    let latestEndAt = -Infinity;
+    for (const [id, event] of Object.entries<EventSummary>(mainAPI['events'] ?? {})) {
+        const startAt = Number(event.startAt?.[server] ?? NaN);
+        const endAt = Number(event.endAt?.[server] ?? NaN);
+        if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || endAt < startAt || endAt > time) continue;
+        if (endAt > latestEndAt || (endAt === latestEndAt && Number(id) > latestId)) {
+            latestId = Number(id);
+            latestEndAt = endAt;
+        }
+    }
+    return latestId;
+}
+
 export function getEventIdBySchedule(server: Server, offset?: number, time: number = Date.now()): number | undefined {
-    const activeId = getLatestStartedEventId(server, time, event => Number(event.endAt?.[server] ?? NaN) >= time);
+    const activeId = getActiveEventId(server, time);
     if (offset === undefined && activeId !== undefined) return activeId;
 
     const events = Object.entries<EventSummary>(mainAPI['events'] ?? {}).map(([id, event]) => ({

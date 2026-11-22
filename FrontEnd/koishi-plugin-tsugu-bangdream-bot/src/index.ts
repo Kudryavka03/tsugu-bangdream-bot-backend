@@ -156,7 +156,7 @@ export function apply(ctx: Context, config: Config) {
         if (config.noSpace) {
             // 优先匹配以查卡开头的较长命令。
             const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池', '查卡牌', '查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
-            keywords.unshift('ycxmusic', 'gb10', 'cgb10', 'gb', 'cgb');
+            keywords.unshift('ycxmusicall', 'gball', 'ycxmusic', 'gb10', 'cgb10', 'gb', 'cgb');
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
             keywords.push('物量查曲');
             keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
@@ -810,18 +810,23 @@ export function apply(ctx: Context, config: Config) {
     });
     ctx.command('歌榜 <tier:string> [...args:string]', '查询歌榜档位分数', cmdConfig)
         .alias('查歌榜', 'gb', 'cgb', 'ycxmusic')
+        .alias('gball', { args: ['all'] })
+        .alias('ycxmusicall', { args: ['all'] })
         .option('song', '-s <songId:integer> 指定歌曲 ID')
         .option('event', '-e <eventId:integer> 指定活动 ID')
-        .usage('档位后可依次填歌曲 ID、活动 ID 和服务器名。默认使用主服务器，并按开赛时间查找最近一期符合条件的歌榜活动。可用 -e 只指定活动，或用旧写法 [活动 ID] [服务器] -s <歌曲 ID>。\n可用档线：1、10、20、30、40、50、100、200、300、400、500、1000、2000、5000、10000、20000')
+        .usage('用 all 查询所有常用档位的档线、预测与 T1 占比，也可以直接输入 gball 或 ycxmusicall。档位后可依次填歌曲 ID、活动 ID 和服务器名。默认使用主服务器最近一期符合条件的歌榜活动。可用 -e 只指定活动，或用旧写法 [活动 ID] [服务器] -s <歌曲 ID>。\n可用档线：1、10、20、30、40、50、100、200、300、400、500、1000、2000、5000、10000、20000')
+        .example('gb all')
+        .example('gball 789 329 cn')
+        .example('ycxmusic all cn -e 329')
         .example('ycxmusic 10 789')
         .example('歌榜 1000 jp -e 300')
         .example('ycxmusic t10 767 320 cn')
         .example('gb t10 320 cn -s 767')
         .action(async ({ session, options }, tierText, ...args) => {
         const validTiers = [1, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 5000, 10000, 20000];
-        const tier = Number(tierText?.replace(/^t/i, ''));
-        if (!validTiers.includes(tier)) {
-            return `错误: 档位必须为以下之一: ${validTiers.join(', ')}`;
+        const tier = tierText?.toLowerCase() === 'all' ? 'all' : Number(tierText?.replace(/^t/i, ''));
+        if (tier !== 'all' && !validTiers.includes(tier)) {
+            return `错误: 请输入 all 或以下档位之一: ${validTiers.join(', ')}`;
         }
 
         const serverName = args.length && !/^\d+$/.test(args.at(-1)) ? args.pop() : undefined;

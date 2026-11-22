@@ -1,37 +1,27 @@
-import { callAPIAndCacheResponse } from '@/api/getApi';
+import { formatSongCutoffRatio, getSongCutoffData, getSongCutoffPoints } from '@/api/songCutoffData';
+import { getSongT1History } from '@/api/songTopScoreData';
 import { Event, hasSongRanking } from '@/types/Event';
 import { Server } from '@/types/Server';
 import { Song } from '@/types/Song';
 import { Image, Canvas } from 'skia-canvas';
 import { drawList, line, drawListMerge } from '@/components/list';
 import { drawDatablock } from '@/components/dataBlock';
-import { drawBannerImageCanvas } from '@/components/dataBlock/utils';
 import { drawTitle } from '@/components/title';
-import { drawSongListInListWithMoreDetail, drawSongListInListWithMoreDetailKey } from '@/components/list/song';
+import { drawSongListInListWithMoreDetailKey } from '@/components/list/song';
 import { outputFinalBuffer } from '@/image/output';
-import { changeTimePeriodFormat, changeTimefomant } from '@/components/list/time';
+import { changeTimePeriodFormat } from '@/components/list/time';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { logger } from '@/logger';
 import { drawCutoffSongChart, CutoffSongChartEntry } from '@/components/chart/cutoffSongChart';
 
-// 暂时全部集中在一个页面，待上游合入。
-interface cutoffSongsResponse {
-    result: boolean;
-    cutoffs: Record<string, cutoffSongsDetail[]>;
-}
-interface cutoffSongsResponseVersus {
-    result: boolean;
-    cutoffs: cutoffSongsDetail[];
-}
-interface cutoffSongsDetail {
-    time: number;
-    ep: number;
-}
-const T1_ABNORMAL_THRESHOLD = 0.977;
-const T1_ABNORMAL_COLOR = '#dc3545';
-
-export async function drawCutoffSongsDetail(eventId: number, tier: number, mainServer: Server, compress: boolean, songIdFilter?: number): Promise<Array<Buffer | string>> {
-    const event = new Event(eventId);
+export async function drawCutoffSongsDetail(
+    eventId: number,
+    tier: number,
+    mainServer: Server,
+    compress: boolean,
+    songIdFilter?: number,
+    event: Event = new Event(eventId),
+): Promise<Array<Buffer | string>> {
     if (!event.isExist) {
         return ['错误: 活动不存在'];
     }
@@ -50,96 +40,44 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     const selectedSongs = songIdFilter !== undefined ? [songIdFilter] : isMedley ? songIds.slice(0, 1) : songIds;
     const songList = selectedSongs.map(songId => new Song(songId));
 
-    const drawEventDatablockP = await drawEventDatablock(event, [mainServer]).catch(err => {
-            logger('drawEventDatablock error:', err);
-            return null;
-        });
+    const eventBannerPromise = drawEventDatablock(event, [mainServer]).catch(err => {
+        logger('drawEventDatablock error:', err);
+        return null;
+    });
 
-
-    //console.log(songList)
-
-    const SongTierUrl = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=${tier}`;
-    const SongT1Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=1`;
-    const SongT10Url = `https://hhwx.org/api/bandori/tracker/data?server=${mainServer}&event=${eventId}&type=song&tier=10`;
-    if(event.eventType == 'medley'){
-            var [vTier1, vTierN, vTier10] = await Promise.all([
-            callAPIAndCacheResponse(SongT1Url, 0, 1, false, 2),
-            callAPIAndCacheResponse(SongTierUrl, 0, 1, false, 2),
-            null//tier==10?null:callAPIAndCacheResponse(SongT10Url, 0, 1, false, 2)
-        ]) as [cutoffSongsResponseVersus, cutoffSongsResponseVersus, cutoffSongsResponseVersus];
-    }else{
-        var [tier1, tierN, tier10] = await Promise.all([
-            callAPIAndCacheResponse(SongT1Url, 0, 1, false, 2),
-            callAPIAndCacheResponse(SongTierUrl, 0, 1, false, 2),
-            null//tier==10?null:callAPIAndCacheResponse(SongT10Url, 0, 1, false, 2)
-        ]) as [cutoffSongsResponse, cutoffSongsResponse, cutoffSongsResponse];
-    }
-    if (tier==10 && !isMedley) {
-        tier10 = tier1//tier10 = tierN
-    }else if(tier==10 && isMedley){
-        vTier10 = vTier1//vTier10 = vTierN
-    }
-       // console.log(songList)
+    const [t1Data, tierData] = await Promise.all([
+        getSongCutoffData(mainServer, eventId, 1),
+        tier === 1 ? undefined : getSongCutoffData(mainServer, eventId, tier),
+    ]);
 
     const t1Score = new Map<number, number>();
-    const t10Score = new Map<number, number>();
-    const ratioBaseScore = new Map<number, number>();
-    const t1ScoreAbnormal = new Map<number, boolean>();
+    const t1SourceRanks = new Map<number, number>();
     const tierScore = new Map<number, number>();
-    const t1PrevScore = new Map<number, number>();
     const tierPrevScore = new Map<number, number>();
     const latestUpdateTime = new Map<number, number>();
-        const tierFirstSameScore = new Map<number, number>();
-    const t1FirstSameScore = new Map<number, number>()
+    const tierFirstSameScore = new Map<number, number>();
     const chartEntries: CutoffSongChartEntry[] = [];
 
-    for (const song of songList) {
-        const songId = song.songId.toString();
-
-        if (!isMedley && (!tier1.cutoffs[songId] || !tierN.cutoffs[songId])) {
-            continue;
-        }
-        if (isMedley && (!vTier1.cutoffs || !vTierN.cutoffs)) {
-            continue;
-        }
-        let t1List = isMedley?vTier1.cutoffs:tier1.cutoffs[songId];
-        let tierList = isMedley?vTierN.cutoffs:tierN.cutoffs[songId];
-        //let t10List = isMedley?vTier10.cutoffs:tier10.cutoffs?.[songId];
+    const histories = await Promise.all(songList.map(song =>
+        getSongT1History(event, mainServer, isMedley ? undefined : song.songId,
+            getSongCutoffPoints(t1Data, isMedley, song.songId))));
+    for (const [index, song] of songList.entries()) {
+        const songId = song.songId;
+        const { points: t1List, latestCorrection } = histories[index];
+        const tierList = tier === 1 ? t1List : getSongCutoffPoints(tierData, isMedley, songId);
         if (!t1List.length || !tierList.length) {
             continue;
         }
-        let lastT1 = t1List[t1List.length - 1];
-        let lastTier = tierList[tierList.length - 1];
-        //let lastT10 = t10List?.[t10List.length - 1];
-        //let isT1Abnormal = !!lastT10 && lastT1.ep > 0 && lastT10.ep / lastT1.ep < T1_ABNORMAL_THRESHOLD;
-        let prevT1 = [...t1List]
-                .reverse()
-                .find(x => x.ep < lastT1.ep)
-                ?.ep;
-        let prevTier = [...tierList]
-                .reverse()
-                .find(x => x.ep < lastTier.ep)
-                ?.ep;
-        let firstSamePointTier = [...tierList]
-                .find(x => x.ep == lastTier.ep)
-                ?.time;
-        let firstSamePointT1 = [...t1List]
-                .find(x => x.ep == lastT1.ep)
-                ?.time;
-        t1Score.set(Number(songId), lastT1.ep);
-        /*
-        if (lastT10) {
-            t10Score.set(Number(songId), lastT10.ep);
-        }
-            */
-        ratioBaseScore.set(Number(songId), lastT1.ep);
-        //t1ScoreAbnormal.set(Number(songId), isT1Abnormal);
-        tierScore.set(Number(songId), lastTier.ep);
-        t1PrevScore.set(Number(songId), prevT1);
-        tierPrevScore.set(Number(songId), prevTier);
-        latestUpdateTime.set(Number(songId), lastTier.time);
-        tierFirstSameScore.set(Number(songId),firstSamePointTier)
-        t1FirstSameScore.set(Number(songId),firstSamePointT1)
+        const lastT1 = t1List[t1List.length - 1];
+        const lastTier = tierList[tierList.length - 1];
+        const prevTier = [...tierList].reverse().find(point => point.ep < lastTier.ep)?.ep;
+        const firstSamePointTier = tierList.find(point => point.ep === lastTier.ep)?.time;
+        t1Score.set(songId, lastT1.ep);
+        if (latestCorrection) t1SourceRanks.set(songId, latestCorrection.effectiveT1Rank);
+        tierScore.set(songId, lastTier.ep);
+        tierPrevScore.set(songId, prevTier);
+        latestUpdateTime.set(songId, lastTier.time);
+        tierFirstSameScore.set(songId, firstSamePointTier);
         chartEntries.push({
             song,
             t1List,
@@ -147,9 +85,6 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
             currentT1: lastT1.ep,
         });
     }
-
-
-
     const summaryList: Array<Image | Canvas> = [];
 
     summaryList.push(new Canvas(800, 30));
@@ -176,48 +111,37 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
     }
 
     const songDataBlockPromises: Promise<Canvas>[] = [];
-    let indexFlags  = 1
+    let songIndex = 0;
     for (const song of songList) {
         const songId = song.songId;
         const latest = tierScore.get(songId);
-        const prev = tierPrevScore.get(songId)
+        const prev = tierPrevScore.get(songId);
         const t1 = t1Score.get(songId);
-        const t10 = t10Score.get(songId);
-        const ratioBase = ratioBaseScore.get(songId);
-        //const isT1Abnormal = t1ScoreAbnormal.get(songId) === true;
-        if (latest == null || t1 == null || ratioBase == null) {
+        const t1SourceRank = t1SourceRanks.get(songId);
+        if (latest == null || t1 == null) {
             continue;
         }
 
-        const ratio = ratioBase === 0 ? 'N/A' : `${((latest / ratioBase) * 100).toFixed(2)}%`;
         const incrementText = prev == null ? '+0' : `+${latest - prev}`;
 
-        const songIndex = indexFlags;
+        const label = `歌曲${++songIndex}`;
         songDataBlockPromises.push((async () => {
-           // debugger
             const songDetailList: Array<Image | Canvas> = [];
-            songDetailList.push(await drawSongListInListWithMoreDetailKey([song], undefined, `歌曲${songIndex}`, [mainServer], false));
-            let timeTips = '现在'
-            if (latestUpdateTime.get(songId) != tierFirstSameScore.get(songId)){
-                timeTips = `${changeTimePeriodFormat(latestUpdateTime.get(songId) - tierFirstSameScore.get(songId),false)}前`
-            }
-            songDetailList.push(line)
-            songDetailList.push(await drawList({ key: '最新分数', text: latest.toString() + ` (${timeTips} ${incrementText})` }))
+            songDetailList.push(await drawSongListInListWithMoreDetailKey([song], undefined, label, [mainServer], false));
+            const timeSinceSameScore = latestUpdateTime.get(songId) - tierFirstSameScore.get(songId);
+            const timeTips = timeSinceSameScore > 0 ? `${changeTimePeriodFormat(timeSinceSameScore, false)}前` : '现在';
             songDetailList.push(line);
-            songDetailList.push(await drawList({ key:  '占比T1', text: ratio }));
-            /*
-            if (isT1Abnormal) {
+            songDetailList.push(await drawList({ key: '最新分数', text: `${latest} (${timeTips} ${incrementText})` }));
+            if (tier !== 1) {
+                songDetailList.push(line);
                 songDetailList.push(await drawList({
-                    key: '⚠T1分数异常',
-                    RoundedRectColor: T1_ABNORMAL_COLOR
+                    key: '占比T1',
+                    text: formatSongCutoffRatio(latest, t1, t1SourceRank),
                 }));
             }
-                */
             return drawDatablock({ list: songDetailList });
         })());
-        indexFlags++
     }
-    //console.log(songDataBlockPromises)
     const songDataBlocks = await Promise.all(songDataBlockPromises);
     if (songDataBlocks.length === 0) {
         return ['错误: 歌曲信息加载失败'];
@@ -225,14 +149,14 @@ export async function drawCutoffSongsDetail(eventId: number, tier: number, mainS
 
     const all: Array<Image | Canvas> = [];
     all.push(await drawTitle('查询', `歌榜 T${tier}`));
-    const eventBannerCanvas = await drawEventDatablockP;
+    const eventBannerCanvas = await eventBannerPromise;
 
-    all.push(eventBannerCanvas);
+    if (eventBannerCanvas) all.push(eventBannerCanvas);
     all.push(await drawDatablock({ list: summaryList }));
     all.push(...songDataBlocks);
 
     if (startAt != null && endAt != null && chartEntries.length > 0) {
-        all.push(await drawDatablock({list:[await drawCutoffSongChart(chartEntries, tier, startAt, endAt, mainServer)]}));
+        all.push(await drawDatablock({ list: [await drawCutoffSongChart(chartEntries, tier, startAt, endAt, mainServer)] }));
     }
 
     const buffer = await outputFinalBuffer({ imageList: all, useEasyBG: true, text: 'Event', compress });

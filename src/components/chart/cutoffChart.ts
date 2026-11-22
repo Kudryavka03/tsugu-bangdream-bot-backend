@@ -8,7 +8,7 @@ import { getPresetColor } from '@/types/Color';
 import { drawList } from '@/components/list'
 import { stackImage } from '@/components/utils'
 
-export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp'],drawPredict=false,drawPredictHistory=true) {
+export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp'], drawPredict = false, prediction: boolean | 'current' = true) {
     // drawPredict是官方的
     // drawPredictHistory是后加上去的
     //setStartToZero:是否将开始时间设置为0
@@ -81,33 +81,14 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
             })
                 
 
-            if (cutoff.predictEP != null && cutoff.predictEP != 0) {
-                let data = []
-                if (!drawPredictHistory)break
-                const history = cutoff.getPredictionHistory()
-                if (history.length > 0) {
-                    if (setStartToZero) {
-                        for (const p of history) {
-                            data.push({ x: new Date(p.time - cutoff.startAt), y: p.ep })
-                        }
-                        data.push({ x: new Date(cutoff.endAt - cutoff.startAt), y: history[history.length - 1].ep })
-                    }
-                    else {
-                        for (const p of history) {
-                            data.push({ x: new Date(p.time), y: p.ep })
-                        }
-                        data.push({ x: new Date(cutoff.endAt), y: history[history.length - 1].ep })
-                    }
-                }
-                else {
-                    if (setStartToZero) {
-                        data = [{ x: new Date(0), y: cutoff.predictEP }, { x: new Date(cutoff.endAt - cutoff.startAt), y: cutoff.predictEP }]
-                    }
-                    else {
-                        data = [{ x: new Date(cutoff.startAt), y: cutoff.predictEP }, { x: new Date(cutoff.endAt), y: cutoff.predictEP }]
-                    }
-                }
-                const tempColor = getPresetColor(i)
+            if (prediction && cutoff.predictEP != null && cutoff.predictEP != 0) {
+                const timeOffset = setStartToZero ? cutoff.startAt : 0;
+                const history = prediction === 'current' ? [cutoff.latestCutoff] : cutoff.getPredictionHistory();
+                const data = history.length > 0
+                    ? history.map(point => ({ x: new Date(point.time - timeOffset), y: point.ep }))
+                    : [{ x: new Date(cutoff.startAt - timeOffset), y: cutoff.predictEP }];
+                const finalPrediction = prediction === 'current' ? cutoff.predictEP : history.at(-1)?.ep ?? cutoff.predictEP;
+                data.push({ x: new Date(cutoff.endAt - timeOffset), y: finalPrediction });
                 datasets.push({
                     label: `T${cutoff.tier} 预测线`,
                     borderColor: [tempColor.getRGBA(1)],
@@ -163,7 +144,15 @@ export async function drawCutoffChart(cutoffList: Cutoff[], setStartToZero = fal
     }
 
 }
-export async function drawCutoffEventTopChart(CutoffEventTop: CutoffEventTop, setStartToZero = false, server: Server = Server['jp'],playerId?:number,w:number =800,h:number =900) {
+export async function drawCutoffEventTopChart(
+    CutoffEventTop: Pick<CutoffEventTop, 'getChartData' | 'getUserNameById' | 'startAt' | 'endAt'>,
+    setStartToZero = false,
+    server: Server = Server.jp,
+    playerId?: number,
+    w = 800,
+    h = 900,
+    excludedPlayerIds?: ReadonlySet<number>,
+) {
     var datasets = []
     if (CutoffEventTop == undefined) {
         return (new Canvas(1, 1))
@@ -175,6 +164,7 @@ export async function drawCutoffEventTopChart(CutoffEventTop: CutoffEventTop, se
     }
     let colorNumber = 0
     for (const key in allData) {
+        if (excludedPlayerIds?.has(Number(key))) continue;
         const tempColor = getPresetColor(colorNumber)
         datasets.push({
             label: removeBraces(CutoffEventTop.getUserNameById(Number(key))),

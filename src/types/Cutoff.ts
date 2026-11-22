@@ -217,7 +217,7 @@ export class Cutoff {
         }
         this.isInitfull = true
     }
-    predict(): number {
+    predict(points: readonly { time: number, ep: number }[] = this.cutoffs): number {
         if (this.isExist == false) {
             return
         }
@@ -226,8 +226,7 @@ export class Cutoff {
         let end_ts = Math.floor(event.endAt[this.server] / 1000)
         let cutoff_ts: { time: number, ep: number }[] = []
         let maxEP = 0
-        for (let i = 0; i < this.cutoffs.length; i++) {
-            const element = this.cutoffs[i];
+        for (const element of points) {
             if (element.ep>=maxEP){
                 cutoff_ts.push({ time: Math.floor(element.time / 1000), ep: element.ep })
                 maxEP = element.ep
