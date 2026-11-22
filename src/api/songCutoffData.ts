@@ -13,18 +13,22 @@ export interface SongCutoffData {
     cutoffs?: SongCutoffPoint[] | Record<string, SongCutoffPoint[]>;
 }
 
-const limitSongCutoffRequests = pLimit(8);
-const pendingSongCutoffRequests = new Map<string, Promise<SongCutoffData>>();
+const limitSongTrackerRequests = pLimit(8);
+const pendingSongTrackerRequests = new Map<string, Promise<object>>();
+
+export function getSongTrackerResponse(url: string, retryCount: number, realtimeLevel: number): Promise<object> {
+    const pending = pendingSongTrackerRequests.get(url);
+    if (pending) return pending;
+    const request = limitSongTrackerRequests(
+        () => callAPIAndCacheResponse(url, 0, retryCount, false, realtimeLevel),
+    ).finally(() => pendingSongTrackerRequests.delete(url));
+    pendingSongTrackerRequests.set(url, request);
+    return request;
+}
 
 export async function getSongCutoffData(server: Server, eventId: number, tier: number): Promise<SongCutoffData> {
     const url = `${HHWX_Url}/api/bandori/tracker/data?server=${server}&event=${eventId}&type=song&tier=${tier}`;
-    const pending = pendingSongCutoffRequests.get(url);
-    if (pending) return await pending;
-    const request = limitSongCutoffRequests(
-        async () => await callAPIAndCacheResponse(url, 0, 1, false, 2) as SongCutoffData,
-    ).finally(() => pendingSongCutoffRequests.delete(url));
-    pendingSongCutoffRequests.set(url, request);
-    return await request;
+    return await getSongTrackerResponse(url, 1, 2) as SongCutoffData;
 }
 
 export function getSongCutoffPoints(data: SongCutoffData | undefined, isMedley: boolean, songId?: number): SongCutoffPoint[] {

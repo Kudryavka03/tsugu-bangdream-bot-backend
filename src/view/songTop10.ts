@@ -128,11 +128,8 @@ export async function drawSongTop10(
         startAt: eventTime.startAt,
         endAt: eventTime.endAt,
     });
-    await trackerTop.initFull();
-    if (!trackerTop.isExist) {
-        return [`错误: ${ serverNameFullList[mainServer] } 歌榜不存在或数据不足`];
-    }
-    const snapshot = await getSongTopSnapshotData(event, mainServer, songId, trackerTop.points, trackerTop.users);
+    const trackerData = trackerTop.initFull().then(() => trackerTop.isExist ? trackerTop : undefined);
+    const snapshot = await getSongTopSnapshotData(event, mainServer, songId, trackerData);
     if (snapshot.ranking.length === 0) {
         return [`错误: ${ serverNameFullList[mainServer] } 歌榜不存在或数据不足`];
     }

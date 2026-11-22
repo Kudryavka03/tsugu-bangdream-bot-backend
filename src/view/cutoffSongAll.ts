@@ -33,16 +33,16 @@ export async function drawCutoffSongAll(
     const t10Points = getSongCutoffData(mainServer, event.eventId, 10)
         .then(data => getSongCutoffPoints(data, isMedley, songId));
     const results = await Promise.allSettled(songOverviewTiers.map(async tier => {
-        const rawPoints = tier === 10
-            ? await t10Points
-            : getSongCutoffPoints(await getSongCutoffData(mainServer, event.eventId, tier), isMedley, songId);
-        if (rawPoints.length === 0) return undefined;
+        const rawPoints = tier === 10 ? t10Points : getSongCutoffData(mainServer, event.eventId, tier)
+            .then(data => getSongCutoffPoints(data, isMedley, songId));
         const history = tier === 1 ? await getSongT1History(event, mainServer, songId, rawPoints, undefined, t10Points) : undefined;
+        const points = history?.points ?? await rawPoints;
+        if (points.length === 0) return undefined;
 
         const cutoff = new Cutoff(event.eventId, mainServer, tier, {
             startAt, endAt, eventType: 'song', dataSourceName: 'HHWX',
         });
-        await cutoff.initFull({ cutoffs: history?.points ?? rawPoints, dailyIncrementDivisor: 1 });
+        await cutoff.initFull({ cutoffs: points, dailyIncrementDivisor: 1 });
         if (cutoff.status === 'in_progress') {
             cutoff.rate = 0;
             const forecastStartAt = history?.forecastStartAt;

@@ -1,4 +1,5 @@
 import { callAPIAndCacheResponse } from '@/api/getApi';
+import { getSongTrackerResponse } from '@/api/songCutoffData';
 import { HHWX_Url } from '@/config';
 import { Server } from '@/types/Server';
 
@@ -60,13 +61,9 @@ export async function getTrackerTopData(params: {
 
     const url = buildTrackerTopDataUrl(params);
     try {
-        const data = await callAPIAndCacheResponse(
-            url,
-            0,
-            3,
-            false,
-            1,
-        ) as TrackerTopDataResponse;
+        const data = await (params.type === 'song'
+            ? getSongTrackerResponse(url, 3, 1)
+            : callAPIAndCacheResponse(url, 0, 3, false, 1)) as TrackerTopDataResponse;
 
         if (!data || data.result === false || data.success === false || !Array.isArray(data.points) || !Array.isArray(data.users)) {
             return null;

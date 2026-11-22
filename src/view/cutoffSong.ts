@@ -45,8 +45,12 @@ export async function drawCutoffSongsDetail(
         return null;
     });
 
-    const [t1Data, tierData] = await Promise.all([
-        getSongCutoffData(mainServer, eventId, 1),
+    const t1Data = getSongCutoffData(mainServer, eventId, 1);
+    const [histories, tierData] = await Promise.all([
+        Promise.all(songList.map(song => getSongT1History(
+            event, mainServer, isMedley ? undefined : song.songId,
+            t1Data.then(data => getSongCutoffPoints(data, isMedley, song.songId)),
+        ))),
         tier === 1 ? undefined : getSongCutoffData(mainServer, eventId, tier),
     ]);
 
@@ -58,9 +62,6 @@ export async function drawCutoffSongsDetail(
     const tierFirstSameScore = new Map<number, number>();
     const chartEntries: CutoffSongChartEntry[] = [];
 
-    const histories = await Promise.all(songList.map(song =>
-        getSongT1History(event, mainServer, isMedley ? undefined : song.songId,
-            getSongCutoffPoints(t1Data, isMedley, song.songId))));
     for (const [index, song] of songList.entries()) {
         const songId = song.songId;
         const { points: t1List, latestCorrection } = histories[index];

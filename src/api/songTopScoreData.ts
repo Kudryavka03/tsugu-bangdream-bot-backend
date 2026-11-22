@@ -8,6 +8,11 @@ import { evaluateSongTopScores, getSongTopReviewStart } from '@/types/songTopSco
 
 type PlayerLevel = Pick<TrackerTopDataUser, 'uid' | 'rank'>;
 
+interface SongRankingData {
+    points: readonly TrackerTopDataPoint[];
+    users: readonly PlayerLevel[];
+}
+
 export interface SongTopCorrection {
     time: number;
     originalT1Score: number;
@@ -80,17 +85,22 @@ function evaluateSongSnapshot(
     };
 }
 
+function getEligibleSongReviewStart(event: Event, server: Server, now: number): number | undefined {
+    const reviewStart = getSongTopReviewStart(event.startAt[server], event.endAt[server]);
+    if (reviewStart === undefined || now < reviewStart ||
+        getCurrentOrLatestEndedEventId(server, now) !== event.eventId) return;
+    return reviewStart;
+}
+
 async function getActiveSongReviewStart(
     event: Event,
     server: Server,
     songId: number | undefined,
-    now: number,
+    reviewStart: number | undefined,
     t10Points?: Promise<SongCutoffPoint[]>,
 ): Promise<number | undefined> {
+    if (reviewStart === undefined) return;
     const endAt = event.endAt[server];
-    const reviewStart = getSongTopReviewStart(event.startAt[server], endAt);
-    if (reviewStart === undefined || now < reviewStart ||
-        getCurrentOrLatestEndedEventId(server, now) !== event.eventId) return;
 
     try {
         const points = t10Points ? await t10Points : getSongCutoffPoints(
@@ -110,13 +120,16 @@ export async function getSongTopSnapshotData(
     event: Event,
     server: Server,
     songId: number | undefined,
-    points: readonly TrackerTopDataPoint[],
-    users: readonly PlayerLevel[],
-    now = Date.now(),
+    trackerData: Promise<SongRankingData | undefined>,
+    now?: number,
 ): Promise<SongTopSnapshotData> {
     const startAt = event.startAt[server];
     const endAt = event.endAt[server];
-    const snapshots = collectSongSnapshots(points, startAt ?? 0, now);
+    const eligibleStart = getEligibleSongReviewStart(event, server, now ?? Date.now());
+    const reviewStartPromise = getActiveSongReviewStart(event, server, songId, eligibleStart);
+    const data = await trackerData;
+    if (!data) return { ranking: [], cutoffs: [] };
+    const snapshots = collectSongSnapshots(data.points, startAt ?? 0, now ?? Date.now());
     const cutoffs: SongCutoffPoint[] = [];
     let ranking: SongRanking = [];
     let latestTime = -Infinity;
@@ -129,9 +142,9 @@ export async function getSongTopSnapshotData(
             latestTime = time;
         }
     }
-    const reviewStart = ranking.length ? await getActiveSongReviewStart(event, server, songId, now) : undefined;
+    const reviewStart = ranking.length ? await reviewStartPromise : undefined;
     const correction = reviewStart !== undefined && latestTime >= reviewStart
-        ? evaluateSongSnapshot(latestTime, ranking, getPlayerLevels(users), startAt, endAt)
+        ? evaluateSongSnapshot(latestTime, ranking, getPlayerLevels(data.users), startAt, endAt)
         : undefined;
     return { ranking, cutoffs: cutoffs.sort((a, b) => a.time - b.time), correction };
 }
@@ -140,23 +153,29 @@ export async function getSongT1History(
     event: Event,
     server: Server,
     songId: number | undefined,
-    points: SongCutoffPoint[],
-    now = Date.now(),
+    rawPoints: SongCutoffPoint[] | Promise<SongCutoffPoint[]>,
+    now?: number,
     t10Points?: Promise<SongCutoffPoint[]>,
 ): Promise<SongT1History> {
-    if (points.length === 0) return { points };
-    const reviewStart = await getActiveSongReviewStart(event, server, songId, now, t10Points);
-    if (reviewStart === undefined) return { points };
-    const startAt = event.startAt[server];
-    const endAt = event.endAt[server];
+    const eligibleStart = getEligibleSongReviewStart(event, server, now ?? Date.now());
+    if (eligibleStart === undefined) return { points: await rawPoints };
+    if (Array.isArray(rawPoints) && rawPoints.length === 0) return { points: rawPoints };
 
-    const data = await getTrackerTopData({ server, eventId: event.eventId, type: 'song', songId }).catch(error => {
+    const reviewStartPromise = getActiveSongReviewStart(event, server, songId, eligibleStart, t10Points);
+    const trackerDataPromise = getTrackerTopData({ server, eventId: event.eventId, type: 'song', songId }).catch(error => {
         logger('getSongT1History', `读取歌榜前十失败 (${error})`);
         return null;
     });
+    const points = await rawPoints;
+    if (points.length === 0) return { points };
+    const reviewStart = await reviewStartPromise;
+    if (reviewStart === undefined) return { points };
+    const data = await trackerDataPromise;
     if (!data) return { points };
 
-    const snapshots = collectSongSnapshots(data.points ?? [], reviewStart, now);
+    const startAt = event.startAt[server];
+    const endAt = event.endAt[server];
+    const snapshots = collectSongSnapshots(data.points ?? [], reviewStart, now ?? Date.now());
     const levels = getPlayerLevels(data.users ?? []);
     let latestCorrection: SongTopCorrection | undefined;
     let hasCorrection = false;
