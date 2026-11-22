@@ -94,14 +94,16 @@ export async function drawCutoffSongAll(
         let text = '暂无档线数据';
         if (cutoff) {
             const { ep, time } = cutoff.latestCutoff;
-            const rows = cutoff.status === 'in_progress'
-                ? [
-                    `当前预测线 ${cutoff.predictEP > 0 && Number.isFinite(cutoff.predictEP) ? cutoff.predictEP : '?'}`,
-                    `最新分数线 ${ep}`,
-                    `更新时间 ${changeTimefomant(time, mainServer)}`,
-                ]
-                : [`最终分数线 ${ep}`];
-            if (tier !== 1) rows.push(`占比T1 ${formatSongCutoffRatio(ep, t1, t1Correction?.effectiveT1Rank)}`);
+            const inProgress = cutoff.status === 'in_progress';
+            const rows: string[] = [];
+            if (inProgress) {
+                const prediction = cutoff.predictEP > 0 && Number.isFinite(cutoff.predictEP) ? cutoff.predictEP : '?';
+                rows.push(`当前预测线 ${prediction}`);
+            }
+            rows.push(`${inProgress ? '最新分数线' : '最终分数线'} ${ep}`);
+            if (tier === 1 && t1Correction) rows.push(`T1 取原榜 T${t1Correction.effectiveT1Rank}`);
+            if (inProgress) rows.push(`更新时间 ${changeTimefomant(time, mainServer)}`);
+            if (tier !== 1) rows.push(`占比T1 ${formatSongCutoffRatio(ep, t1)}`);
             text = rows.join('\n');
         }
         list.push(line, drawList({ key: `T${tier}`, text }));

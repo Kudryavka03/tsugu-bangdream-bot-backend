@@ -1,5 +1,5 @@
 import { formatSongCutoffRatio, getSongCutoffData, getSongCutoffPoints } from '@/api/songCutoffData';
-import { getSongT1History } from '@/api/songTopScoreData';
+import { getSongT1History, SongTopCorrection } from '@/api/songTopScoreData';
 import { Event, hasSongRanking } from '@/types/Event';
 import { Server } from '@/types/Server';
 import { Song } from '@/types/Song';
@@ -51,7 +51,7 @@ export async function drawCutoffSongsDetail(
     ]);
 
     const t1Score = new Map<number, number>();
-    const t1SourceRanks = new Map<number, number>();
+    const t1Corrections = new Map<number, SongTopCorrection>();
     const tierScore = new Map<number, number>();
     const tierPrevScore = new Map<number, number>();
     const latestUpdateTime = new Map<number, number>();
@@ -73,7 +73,7 @@ export async function drawCutoffSongsDetail(
         const prevTier = [...tierList].reverse().find(point => point.ep < lastTier.ep)?.ep;
         const firstSamePointTier = tierList.find(point => point.ep === lastTier.ep)?.time;
         t1Score.set(songId, lastT1.ep);
-        if (latestCorrection) t1SourceRanks.set(songId, latestCorrection.effectiveT1Rank);
+        if (latestCorrection) t1Corrections.set(songId, latestCorrection);
         tierScore.set(songId, lastTier.ep);
         tierPrevScore.set(songId, prevTier);
         latestUpdateTime.set(songId, lastTier.time);
@@ -117,7 +117,7 @@ export async function drawCutoffSongsDetail(
         const latest = tierScore.get(songId);
         const prev = tierPrevScore.get(songId);
         const t1 = t1Score.get(songId);
-        const t1SourceRank = t1SourceRanks.get(songId);
+        const correction = t1Corrections.get(songId);
         if (latest == null || t1 == null) {
             continue;
         }
@@ -131,12 +131,24 @@ export async function drawCutoffSongsDetail(
             const timeSinceSameScore = latestUpdateTime.get(songId) - tierFirstSameScore.get(songId);
             const timeTips = timeSinceSameScore > 0 ? `${changeTimePeriodFormat(timeSinceSameScore, false)}前` : '现在';
             songDetailList.push(line);
-            songDetailList.push(await drawList({ key: '最新分数', text: `${latest} (${timeTips} ${incrementText})` }));
+            if (tier === 1 && correction) {
+                songDetailList.push(drawListMerge([
+                    drawList({ key: '原 T1 分数', text: String(correction.originalT1Score) }),
+                    drawList({ key: '修正后 T1 分数', text: String(correction.effectiveT1Score) }),
+                ]));
+                songDetailList.push(drawList({
+                    key: '⚠ T1分数异常',
+                    RoundedRectColor: '#dc3545',
+                    RoundedRectTextColor: '#ffffff',
+                }));
+            } else {
+                songDetailList.push(await drawList({ key: '最新分数', text: `${latest} (${timeTips} ${incrementText})` }));
+            }
             if (tier !== 1) {
                 songDetailList.push(line);
                 songDetailList.push(await drawList({
                     key: '占比T1',
-                    text: formatSongCutoffRatio(latest, t1, t1SourceRank),
+                    text: formatSongCutoffRatio(latest, t1, correction?.effectiveT1Rank),
                 }));
             }
             return drawDatablock({ list: songDetailList });
