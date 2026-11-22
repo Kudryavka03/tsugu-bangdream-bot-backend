@@ -660,6 +660,7 @@ export function getCurrentEvent(server: Server, time: number = Date.now()): Even
 
 type EventSummary = {
     startAt: (string | number | null)[];
+    endAt?: (string | number | null)[];
     eventType: string;
     musics?: unknown[];
 };
@@ -679,6 +680,32 @@ function getLatestStartedEventId(server: Server, time: number, matches?: (data: 
         }
     }
     return currentId;
+}
+
+export function getEventIdBySchedule(server: Server, offset?: number, time: number = Date.now()): number | undefined {
+    const activeId = getLatestStartedEventId(server, time, event => Number(event.endAt?.[server] ?? NaN) >= time);
+    if (offset === undefined && activeId !== undefined) return activeId;
+
+    const events = Object.entries<EventSummary>(mainAPI['events'] ?? {}).map(([id, event]) => ({
+        id: Number(id),
+        startAt: Number(event.startAt?.[server] ?? NaN),
+        jpStartAt: Number(event.startAt?.[Server.jp] ?? NaN),
+    }));
+    const schedule = events.filter(event => Number.isFinite(event.startAt))
+        .sort((a, b) => a.startAt - b.startAt || a.id - b.id);
+    const anchorId = activeId ?? getLatestStartedEventId(server, time);
+    const anchorIndex = schedule.findIndex(event => event.id === anchorId);
+    const targetIndex = anchorIndex + (offset ?? 1);
+    if (targetIndex < schedule.length || server !== Server.cn) return schedule[targetIndex]?.id;
+
+    // 国服后续排期未公布时，参考最近已结束活动之后的日服顺序。
+    const completedId = getLatestStartedEventId(server, time, event =>
+        event.startAt?.[Server.jp] != null && Number(event.endAt?.[server] ?? NaN) < time);
+    const jpBaseline = events.find(event => event.id === (completedId ?? anchorId))?.jpStartAt;
+    const pending = events.filter(event =>
+        !Number.isFinite(event.startAt) && Number.isFinite(event.jpStartAt) && event.jpStartAt > jpBaseline)
+        .sort((a, b) => a.jpStartAt - b.jpStartAt || a.id - b.id);
+    return pending[targetIndex - schedule.length]?.id;
 }
 
 export function getLatestSongRankingEventId(server: Server, songId?: number, time: number = Date.now()): number | undefined {

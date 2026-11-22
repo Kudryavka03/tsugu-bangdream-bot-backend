@@ -11,7 +11,7 @@ import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
 import { piscina } from '@/WorkerPool';
 import { parentPort, threadId,isMainThread  } from'worker_threads';
-import { Event, getCurrentEvent, getEventListByTimeRange } from '@/types/Event';
+import { getCurrentEvent, getEventIdBySchedule, getEventListByTimeRange } from '@/types/Event';
 import { globalDefaultServer } from '@/config';
 import { getRequireCommand, getRequireOffset, hasCurrentEventReference, requireStatus, resolveCurrentEventReferences } from './eventSearchInput';
 
@@ -61,10 +61,10 @@ router.post('/',
 export async function commandEvent(displayedServerList: Server[], input: string | FuzzySearchResult | undefined, useEasyBG: boolean, compress: boolean, mainServer: Server = displayedServerList[0] ?? globalDefaultServer[0]): Promise<Array<Buffer | string>> {
 
     if (input == null || (typeof input === 'string' && !input.trim())) {
-        const currentEvent = getCurrentEvent(mainServer);
-        if (!currentEvent) return ['错误: 该服务器没有已开始的活动'];
+        const eventId = getEventIdBySchedule(mainServer);
+        if (eventId === undefined) return ['该服务器暂无可查询的下一期活动'];
         const servers = [mainServer, ...displayedServerList.filter(server => server !== mainServer)];
-        return await drawEventDetail(currentEvent.eventId, servers, useEasyBG, compress);
+        return await drawEventDetail(eventId, servers, useEasyBG, compress);
     }
 
     let fuzzySearchResult: FuzzySearchResult
@@ -73,17 +73,16 @@ export async function commandEvent(displayedServerList: Server[], input: string 
         const command = getRequireCommand(input);
         const offset = getRequireOffset(input);
         if (command !== null || offset !== null) {
-            const currentEvent = getCurrentEvent(mainServer);
-            if (!currentEvent) return ['错误: 该服务器没有已开始的活动'];
             const eventOffset = offset ?? (command === requireStatus.prev ? -1 : command === requireStatus.next ? 1 : 0);
-            let eventId = currentEvent.eventId + eventOffset;
+            let eventId = eventOffset === 0 ? getCurrentEvent(mainServer)?.eventId : getEventIdBySchedule(mainServer, eventOffset);
             let detailServer = mainServer;
-            if (eventOffset > 0 && !new Event(eventId).isExist) {
+            if (eventId === undefined && eventOffset > 0) {
                 const currentJpEvent = getCurrentEvent(Server.jp);
                 if (!currentJpEvent) return ['错误: 日服没有已开始的活动'];
                 eventId = currentJpEvent.eventId;
                 detailServer = Server.jp;
             }
+            if (eventId === undefined) return [eventOffset === 0 ? '错误: 该服务器没有已开始的活动' : '错误: 活动不存在'];
             const servers = [detailServer, ...displayedServerList.filter(server => server !== detailServer)];
             return await drawEventDetail(eventId, servers, useEasyBG, compress);
         }
