@@ -1,6 +1,6 @@
 import { formatSongCutoffRatio, getSongCutoffData, getSongCutoffPoints } from '@/api/songCutoffData';
 import { getSongT1History } from '@/api/songTopScoreData';
-import { drawCutoffChart } from '@/components/chart/cutoffChart';
+import { drawCutoffChart, drawCutoffChartSongAll } from '@/components/chart/cutoffChart';
 import { drawDatablock } from '@/components/dataBlock';
 import { drawEventDatablock } from '@/components/dataBlock/event';
 import { drawList, line } from '@/components/list';
@@ -88,6 +88,8 @@ export async function drawCutoffSongAll(
             const title = song.musicTitle?.[mainServer] ?? song.musicTitle?.find(Boolean);
             return drawList({ key: '歌榜歌曲', text: title ? `${songId} ${title}` : String(songId) });
         });
+    let presentMap = new Map<number,number>()
+    presentMap.set(1,1)
     const list = [songRow, line, drawList({ key: '状态', text: statusName[status] })];
     for (const tier of songOverviewTiers) {
         const cutoff = cutoffs.get(tier);
@@ -113,7 +115,7 @@ export async function drawCutoffSongAll(
         logger('drawCutoffSongAll', `活动信息加载失败 (${error})`);
         return drawDatablock({ list: [drawList({ key: '活动ID', text: String(event.eventId) })] });
     });
-    const chart = await drawCutoffChart([...cutoffs.values()], false, mainServer, false, 'current');
+    const chart = await drawCutoffChartSongAll([...cutoffs.values()], false, mainServer, false, 'current');
     list.push(line, chart);
     return [await outputFinalBuffer({
         imageList: [

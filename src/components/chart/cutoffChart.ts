@@ -1,6 +1,6 @@
 import { Canvas } from 'skia-canvas';
 import { Cutoff } from "@/types/Cutoff";
-import { drawTimeLineChart } from "@/components/chart_Timeline";
+import { drawTierChart, drawTimeLineChart } from "@/components/chart_Timeline";
 import { Event } from '@/types/Event';
 import { Server } from '@/types/Server';
 import { CutoffEventTop } from '@/types/CutoffEventTop';
@@ -181,4 +181,63 @@ export async function drawCutoffEventTopChart(
     }
     var data = { datasets: datasets }
     return await drawTimeLineChart({ data, start: new Date(CutoffEventTop.startAt), end: new Date(CutoffEventTop.endAt), setStartToZero }, true,w,h)
+}
+// 给歌榜all 单独一个cutoff draw。歌榜使用一个全新的图标方式，他不反映个歌榜的趋势，而是反映歌榜每个Tier之间的下降趋势
+export async function drawCutoffChartSongAll(cutoffList: Cutoff[], setStartToZero = false, server: Server = Server['jp'], drawPredict = false, prediction: boolean | 'current' = true) {
+    var datasets = []
+    var time = new Date().getTime()
+    if (cutoffList.length == 0) {
+        return (new Canvas(1, 1))
+    }
+    const list = []
+
+    var onlyOne = cutoffList.length == 1
+    const tier1Score = cutoffList.find(cutoff => cutoff.tier === 1)?.latestCutoff.ep
+    let chartDataSongAll: { x: number, y: number }[] = []
+    if (Number.isFinite(tier1Score) && tier1Score > 0) {
+        for (const cutoff of cutoffList) {
+            const score = cutoff.latestCutoff?.ep
+            if (!Number.isFinite(score)) continue
+            chartDataSongAll.push({ x: cutoff.tier, y: (score / tier1Score) * 100 })
+        }
+    }
+    const tempColor = getPresetColor(1)
+        datasets.push({
+            label: '占比T1',
+            data: chartDataSongAll,
+            borderWidth: 5,
+            borderColor: [tempColor.getRGBA(1)],
+            backgroundColor: [tempColor.getRGBA(0.2)],
+            pointBackgroundColor: tempColor.getRGBA(1),
+            pointBorderColor: tempColor.getRGBA(1),
+            fill: onlyOne
+        })
+    /*
+    if (!setStartToZero) {
+        if (time < cutoffList[0].endAt) {
+            const tempColor = getPresetColor(0)
+            datasets.push({
+                label: "当前时间",
+                borderColor: [tempColor.getRGBA(1)],
+                backgroundColor: [tempColor.getRGBA(1)],
+                data: [{ x: new Date(time), y: 0 }],
+                fill: false,
+                pointRadius: 10,
+                pointHoverRadius: 15,
+                showLine: false
+            })
+        }
+    }
+        */
+    let all = []
+    all.push(stackImage(list))
+
+    var data = {
+        datasets: datasets
+    }
+
+    if (chartDataSongAll.length > 0) all.push(await drawTierChart({ data }))
+    return (stackImage(all))
+    
+
 }

@@ -54,13 +54,17 @@ export function evaluateSongTopScores(
         const { score, level } = top10[index];
         const nextScore = top10[index + 1].score;
         // Keep the common denominator until after adding the bonus so exact thresholds stay exact.
-        const percentNumerator = (score - nextScore) * 100;
-        const excessNumerator = Math.max(0, percentNumerator - nextScore);
-        const gapScoreNumerator = excessNumerator * 50;
-        const levelBonus = excessNumerator > 0 ? getLevelBonus(level) : 0;
+        const percentNumerator = (score - nextScore) * 100;     // 定义一个1%的分叉阈值
+        const excessNumerator = Math.max(0, percentNumerator - nextScore);  // 与下一名相减。
+        //例如329当期T1 4364093  T2 4250680，计算得出2.6%的差距，那么减去1%基准就是1.6%
+        const gapScoreNumerator = excessNumerator * 50;     
+        const levelBonus = excessNumerator > 0 ? getLevelBonus(level) : 0;      // 硬性规定：小于150级的用户不可以拿歌榜T10
+
         const confidence = Math.min(100, (gapScoreNumerator + levelBonus * nextScore) / nextScore);
         const rank = index + 1;
-        const flagged = confidence >= 60;
+        // 261123：不排除开挂的人在中间。因此在这里再次定义一个新的规定，通过检查T1-T10两者分差，决定是否需要标记异常
+        let flagable = (top10[0].score - top10.at(-1).score)/top10.at(-1).score >  0.01
+        const flagged = flagable && (confidence >= 60);
         if (flagged) lastFlaggedRank = rank;
         scores.push({
             rank,
