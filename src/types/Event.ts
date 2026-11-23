@@ -747,7 +747,8 @@ export function getCurrentOrLatestEndedEventId(server: Server, time: number = Da
 export function getEventIdBySchedule(server: Server, offset?: number, time: number = Date.now()): number | undefined {
     const activeId = getActiveEventId(server, time);
     if (offset === undefined && activeId !== undefined) return activeId;
-
+    if (activeId == undefined && offset) offset+=1  // 没有活动举办的时候应该主动为offset+1，不然没活动的时候chd = chd+1
+    // 如果没有正在进行的活动那么getActiveEventId会返回undefined
     const events = Object.entries<EventSummary>(mainAPI['events'] ?? {}).map(([id, event]) => ({
         id: Number(id),
         startAt: Number(event.startAt?.[server] ?? NaN),
@@ -757,7 +758,7 @@ export function getEventIdBySchedule(server: Server, offset?: number, time: numb
         .sort((a, b) => a.startAt - b.startAt || a.id - b.id);
     const anchorId = activeId ?? getLatestStartedEventId(server, time);
     const anchorIndex = schedule.findIndex(event => event.id === anchorId);
-    const targetIndex = anchorIndex + (offset ?? 1);
+    const targetIndex = anchorIndex + (offset ?? 1);    // 默认+1
     if (targetIndex < schedule.length || server !== Server.cn) return schedule[targetIndex]?.id;
 
     // 国服后续排期未公布时，参考最近已结束活动之后的日服顺序。
