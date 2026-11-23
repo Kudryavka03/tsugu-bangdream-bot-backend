@@ -421,6 +421,46 @@ export class Event {
         const availableImages = images.filter((image): image is Image => image != null);
         return availableImages.length ? availableImages : undefined;
     }
+    async getRewardStampVoice(server:Server):Promise<Buffer[]>{
+        if (!this.isExist) return [];
+        if (!this.isInitFull) await this.initFull();
+        const stampRewardIds = new Set<number>();
+        const voiceStampIds = new Set<number>();
+        const allStamps = mainAPI['stamps'] ?? {};
+        // 各服奖励可能不同；只有该服数据缺失时才使用日服备份。
+        const rewards = (this.pointRewards?.[server] ?? this.pointRewards?.[Server.jp] ?? []).filter(Boolean)
+        const rankingRewards = (this.rankingRewards?.[server] ?? this.rankingRewards?.[Server.jp] ?? []).filter(Boolean)
+        for (const reward of [...rewards, ...rankingRewards]) {
+            if (reward.rewardId == null) continue;
+            if (reward.rewardType === 'stamp' || reward.rewardType === 'voice_stamp') stampRewardIds.add(reward.rewardId);
+            if (reward.rewardType === 'voice_stamp') voiceStampIds.add(reward.rewardId);
+        }
+        const preferredServer = this.startAt[server] != null && this.startAt[server] <= Date.now() ? server : Server.jp;
+        // Future activities prefer already available JP assets, but CN-exclusive
+        // rewards still retain their CN asset instead of disappearing.
+        const assetServers = [...new Set([preferredServer, server, Server.jp])];
+        const voice = await Promise.all([...stampRewardIds].map(async stampId => {
+            const urls = assetServers.flatMap(assetServer => {
+                const name = allStamps[stampId]?.imageName?.[assetServer];
+                return name && !name.includes('bilibili') ? [`${Bestdoriurl}/assets/${Server[assetServer]}/sound/voice_stamp_rip/${name}.mp3`] : [];
+            });
+            for (const url of urls) {
+                try {
+                    const buffer = await downloadFileCache(url, false);
+                    if (!buffer?.length || buffer.equals(assetErrorImageBuffer)) continue;
+                    return buffer;
+                } catch {
+                    // A failed download or decode retries the same reward ID's
+                    // other localized asset, without dropping unrelated stamps.
+                }
+            }
+            if (voiceStampIds.has(stampId) && urls.length) {
+                logger('Event.getRewardStampVoice', `Unable to load event ${this.eventId} reward voice ${stampId}; tried ${urls.join(', ') || 'no known asset'}`);
+            }
+            return undefined;
+        }));
+        return voice.filter((buffer): buffer is Buffer => Buffer.isBuffer(buffer) && buffer.length > 0 && !buffer.equals(assetErrorImageBuffer));
+    }
     async getRewardDeco(server:Server): Promise<Image> {
         
         //const allStamps = await callAPIAndCacheResponse(`${Bestdoriurl}/api/stamps/all.2.json`)

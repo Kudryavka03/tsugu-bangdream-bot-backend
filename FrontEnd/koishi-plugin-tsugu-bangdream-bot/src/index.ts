@@ -4,6 +4,7 @@ import type { Server } from "./types/Server";
 import * as koishi_1 from "koishi";
 import * as searchCard_1 from "./commands/searchCard";
 import * as searchEvent_1 from "./commands/searchEvent";
+import * as searchEventVoice_1 from "./commands/searchEventVoice";
 import * as searchMonthlyRanking_1 from "./commands/searchMonthlyRanking";
 import * as searchSong_1 from "./commands/searchSong";
 import { parseNoteCountInput } from "./commands/searchSongByNotes";
@@ -155,7 +156,7 @@ export function apply(ctx: Context, config: Config) {
     ctx.middleware((session, next) => {
         if (config.noSpace) {
             // 优先匹配以查卡开头的较长命令。
-            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池', '查卡牌', '查卡', '查角色', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
+            const keywords = ['查询玩家', '查卡面', '查玩家', '查卡池', '查卡牌', '查卡', '查角色', '查语音', 'cyy', '查活动', '查歌榜T10', '歌榜T10', '查歌榜10', '歌榜10', '月榜T10', '月榜前十', '查月榜', '查分数表', '查询分数榜', '查分数榜', '查曲', '查谱面', '查岗', 'm查岗', 'm前十车速', 'm分速表', 'm查稼动', 'm查睡眠', 'mycx', 'mycxall', 'mlsycx', '满火计算', '何时满火', 'mhjs', '满火', 'mh', '亏火计算', '亏火', '查询分数表', 'ycx', 'ycxall', 'lsycx', '抽卡模拟', '绑定玩家', '解除绑定', '主服务器', '设置默认服务器', '玩家状态', '开启车牌转发', '关闭车牌转发'];
             keywords.unshift('ycxmusicall', 'gball', 'ycxmusic', 'gb10', 'cgb10', 'gb', 'cgb');
             const cutoffCacheKeywords = ['预热档线', '添加档线缓存', '添加预热档线', '删除档线', '删除预热档线', '移除档线', '移除预热档线', '档线缓存状态', '查看档线缓存', '预热档线列表'];
             keywords.push('物量查曲');
@@ -482,6 +483,22 @@ export function apply(ctx: Context, config: Config) {
         const displayedServerList = tsuguUserData.displayedServerList;
         const list = await (0, searchEvent_1.commandEvent)(config, displayedServerList, text, tsuguUserData.mainServer);
         return (0, utils_1.paresMessageList)(list);
+    });
+    ctx.command("查语音 [word:text]", "查询活动奖励语音", cmdConfig)
+        .alias('cyy')
+        .usage([
+            '查询活动奖励语音，并直接发送语音消息。',
+            '不输入参数时，返回你设置的主服务器当前活动的奖励语音。',
+            'now、n、现在、latest、+N、-N、next、prev 的含义与查活动相同。',
+            '也可以填写活动 ID 或关键词。匹配到多个活动时只返回列表，请再用活动 ID 查询。',
+        ].join('\n'))
+        .example('查语音 :返回主服务器当前活动的奖励语音')
+        .example('cyy 329 :返回329号活动的奖励语音')
+        .example('查语音 now :返回主服务器当前活动的奖励语音')
+        .example('查语音 +1 :返回主服务器下一期活动的奖励语音')
+        .action(async ({ session }, text) => {
+        const tsuguUserData = await observeUserTsugu(session);
+        await (0, searchEventVoice_1.commandEventVoice)(config, session, text, tsuguUserData.mainServer);
     });
     ctx.command("查月榜 <word:text>", "查月榜", cmdConfig)
         .usage('根据关键词或月榜ID查询月榜信息')

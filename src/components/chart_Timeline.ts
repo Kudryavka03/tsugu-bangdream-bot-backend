@@ -281,7 +281,7 @@ export async function drawTierChart(
   const tiers = points.map(point => point.x);
   const tierSpan = tiers[tiers.length - 1] - tiers[0];
   const xMax = tiers.length === 1 ? 1 : tiers.length - 1;
-  const realTierLabels = [10, 100, 300, 500, 1000, 2000]
+  const realTierLabels = [10, 100, 200, 300, 500, 1000, 2000]
     .filter(tier => tier >= tiers[0] && tier <= tiers[tiers.length - 1]);
   const realTierX = (tier: number) => tierSpan > 0 ? ((tier - tiers[0]) / tierSpan) * (tiers.length - 1) : 0;
   const realTicks = realTierLabels.map(tier => ({ tier, x: realTierX(tier), label: `T${tier}` }));

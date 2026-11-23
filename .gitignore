@@ -28,7 +28,19 @@ ConfigRepo/
 *.dll
 
 # Generated test scripts
-/tests/
 /tests/*
+!/tests/challenge-point-estimate.test.js
+!/tests/song-diff-scope.test.js
+!/tests/top-rate-speed-window.test.js
 /FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests/*
-/FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests
+!/FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests/topRateWindow.test.js
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/tests/topRateWindow.test.js
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.14.tgz
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.15.tgz
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.16.tgz
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.17.tgz
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.18.tgz
+FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1.3.21.tgz
+tests/challenge-point-estimate.test.js
+tests/song-diff-scope.test.js
+tests/top-rate-speed-window.test.js

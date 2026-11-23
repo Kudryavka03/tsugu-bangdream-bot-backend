@@ -46,6 +46,14 @@ export function listToBase64Old(list: Array<Buffer | string>): Array<{ type: 'st
     return result
 }
 
+export interface AudioReply {
+  type: 'audio'
+  data: Buffer
+  mime?: string
+}
+
+export type ReplyItem = string | Buffer | AudioReply
+
 type BackendReplyItem =
   | {
       type: 'text'
@@ -56,8 +64,17 @@ type BackendReplyItem =
       mime: string
       data: Buffer
     }
+  | {
+      type: 'audio'
+      mime: string
+      data: Buffer
+    }
 
-export function listToBase64(list: Array<Buffer | string>): Buffer {
+function isAudioReply(item: ReplyItem): item is AudioReply {
+  return item != null && typeof item === 'object' && !Buffer.isBuffer(item) && item.type === 'audio' && Buffer.isBuffer(item.data)
+}
+
+export function listToBase64(list: Array<ReplyItem>): Buffer {
   const packet: BackendReplyItem[] = list.map(item => {
     if (typeof item === 'string') {
       return {
@@ -71,6 +88,14 @@ export function listToBase64(list: Array<Buffer | string>): Buffer {
         type: 'image',
         mime: 'image/jpeg',
         data: item,
+      }
+    }
+
+    if (isAudioReply(item)) {
+      return {
+        type: 'audio',
+        mime: item.mime || 'audio/mpeg',
+        data: item.data,
       }
     }
 

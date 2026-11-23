@@ -76,10 +76,7 @@ export async function getReplyFromBackendOld(url, data) {
     const result = await sendPostRequest(url, data);
     return base64ToList(result);
 }
-export async function getReplyFromBackend(
-  url: string,
-  data: unknown,
-): Promise<Array<string | Buffer>> {
+export async function getTypedReplyFromBackend(url: string, data: unknown): Promise<BackendMessage[]> {
   getReplyFromBackendLogger.info(url, data)
 
   const response = await axios.post<ArrayBuffer>(url, data, {
@@ -97,9 +94,24 @@ export async function getReplyFromBackend(
     if (item.type === 'text') {
       return item.text
     }
+    if (item.type === 'audio') {
+      return {
+        type: 'audio',
+        mime: item.mime || 'audio/mpeg',
+        data: Buffer.from(item.data),
+      }
+    }
     return Buffer.from(item.data)
   })
 }
+export async function getReplyFromBackend(
+  url: string,
+  data: unknown,
+): Promise<Array<string | Buffer>> {
+  const list = await getTypedReplyFromBackend(url, data)
+  return list.map(item => typeof item === 'string' || Buffer.isBuffer(item) ? item : item.data)
+}
+export type BackendMessage = string | Buffer | { type: 'audio'; mime: string; data: Buffer }
 type BackendReplyItem =
   | {
       type: 'text'
@@ -107,6 +119,11 @@ type BackendReplyItem =
     }
   | {
       type: 'image'
+      mime: string
+      data: Uint8Array
+    }
+  | {
+      type: 'audio'
       mime: string
       data: Uint8Array
     }

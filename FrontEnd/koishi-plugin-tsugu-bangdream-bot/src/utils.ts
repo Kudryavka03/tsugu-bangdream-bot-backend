@@ -14,6 +14,9 @@ export function paresMessageList(list) {
         if (typeof message == 'string') {
             messageList.push(message);
         }
+        else if (message && message.type === 'audio' && message.data) {
+            messageList.push(koishi_1.h.audio(message.data, message.mime || 'audio/mpeg'));
+        }
         else if (message instanceof Buffer) {
             messageList.push(koishi_1.h.image(message, 'image/png'));
         }
