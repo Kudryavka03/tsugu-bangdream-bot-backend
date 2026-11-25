@@ -151,7 +151,20 @@ export function isFuzzySearchResult(value: any): boolean {
   );
 }
 
+// 条件符贴着前一个词时补一个空格，只补最后一个，所有走分词的指令共用。
+const conditionOperator = /<=|>=|==|＞＝|＜＝|＞=|＜=|[<>＜＞=＝≥≤]/g;
+
+export function insertSpaceBeforeLastCondition(input: string): string {
+  conditionOperator.lastIndex = 0;
+  let lastIndex = -1;
+  let found: RegExpExecArray | null;
+  while ((found = conditionOperator.exec(input)) !== null) lastIndex = found.index;
+  if (lastIndex <= 0 || /\s/.test(input.charAt(lastIndex - 1))) return input;
+  return input.slice(0, lastIndex) + ' ' + input.slice(lastIndex);
+}
+
 export function fuzzySearch(keyword: string, splitCardKeywords = false): FuzzySearchResult {
+  keyword = insertSpaceBeforeLastCondition(keyword);
   //兼容引号
   const tokens = [...keyword.matchAll(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g)];
   const keywordList = combineNoteExpressionTokens(tokens.flatMap(([raw, quoted]) => {
@@ -186,6 +199,9 @@ export function fuzzySearch(keyword: string, splitCardKeywords = false): FuzzySe
     keyword = keyword.replace(/&lt;/g, '<');
     keyword = keyword.replace(/＞/g, '>');
     keyword = keyword.replace(/＜/g, '<');
+    keyword = keyword.replace(/＝/g, '=');
+    keyword = keyword.replace(/≥/g, '>=');
+    keyword = keyword.replace(/≤/g, '<=');
 
     const lvNumber = extractLvNumber(keyword);
     if (lvNumber !== null) {

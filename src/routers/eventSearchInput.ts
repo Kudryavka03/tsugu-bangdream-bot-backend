@@ -1,3 +1,5 @@
+import { insertSpaceBeforeLastCondition } from '@/fuzzySearch';
+
 // 只识别完整的搜索词，避免将活动名称中的 n / now 当作占位符。
 const currentEventAlias = /^(?:now|现在|n)$/i;
 const comparison = /(^|\s)(<=|>=|==|=|<|>)\s*(now|现在|n|\d+)?(?=\s|$)/gi;
@@ -9,7 +11,7 @@ export function hasCurrentEventReference(input: string): boolean {
 }
 
 export function resolveCurrentEventReferences(input: string, eventId?: number): string {
-    const text = input.trim()
+    const text = insertSpaceBeforeLastCondition(input).trim()
         .replace(/&gt;|＞/gi, '>')
         .replace(/&lt;|＜/gi, '<')
         .replace(/＝/g, '=')

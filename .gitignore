@@ -44,3 +44,7 @@ FrontEnd/koishi-plugin-tsugu-bangdream-bot/koishi-plugin-tsugu-bangdream-bot-0.1
 tests/challenge-point-estimate.test.js
 tests/song-diff-scope.test.js
 tests/top-rate-speed-window.test.js
+tmp-time-preview/前十车速.jpg
+tmp-time-preview/查停摆.jpg
+tmp-time-preview/查变动.jpg
+tmp-time-preview/查岗.jpg
