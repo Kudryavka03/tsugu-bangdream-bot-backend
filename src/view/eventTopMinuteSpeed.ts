@@ -10,8 +10,8 @@ import { outputFinalBuffer } from '@/image/output'
 import { drawListMerge } from '@/components/list'
 import { drawDottedLine } from '@/image/dottedLine'
 import { logger } from '@/logger'
-import { drawText } from '@/image/text'
-import { drawTips } from '@/components/tips'
+import { drawText, drawTextMeasureText } from '@/image/text'
+import { inheritSurfaceDecorations } from '@/image/surfaceShadow'
 import { getDateByServerTimezone, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time'
 import { GUIDE_THEME } from '@/image/theme'
 import { labelEventTopRooms } from '@/view/cutoffEventTop'
@@ -316,24 +316,72 @@ export async function drawEventTopMinuteSpeed(
     const { list, width } = composeMinuteSpeedList(mainServer, table, names, rooms)
     const firstMinute = table.minutes[0]
     const lastMinute = table.minutes[table.minutes.length - 1]
+    const tipLines = [
+        { text: `统计时段：${formatServerDateTime(firstMinute, mainServer)} 至 ${formatServerDateTime(lastMinute, mainServer)}（服务器时间）` },
+        { text: '每格是这一分钟的分数减去上一分钟的分数。0 表示没有变化，--- 表示没有这条前十记录。', singleLine: true },
+        { text: '括号表示中间少了采样，括号里是距上一条记录的分数差。' },
+        { text: '同一颜色是同一个房间，颜色按出分节奏估计。玩家中途换房时，房间可能估不准。' },
+    ]
     const eventInfo = drawEventDatablock(new Event(eventId), [mainServer]).catch(error => {
         logger('drawEventDatablock error:', error)
         return null
     })
-    const [title, block, tips, event] = await Promise.all([
+    const [title, block, event] = await Promise.all([
         drawTitle('分速表', `${serverName} 活动 ${eventId}`),
         drawDatablock({ list }),
-        drawTips({
-            text: [
-                `统计时段：${formatServerDateTime(firstMinute, mainServer)} 至 ${formatServerDateTime(lastMinute, mainServer)}（服务器时间）`,
-                '每格是这一分钟的分数减去上一分钟的分数。0 表示没有变化，--- 表示没有这条前十记录。',
-                '括号表示中间少了采样，括号里是距上一条记录的分数差。',
-                '同一颜色是同一个房间，颜色按出分节奏估计。玩家中途换房时，房间可能估不准。',
-            ].join('\n'),
-            maxWidth: Math.max(width, 900),
-        }),
         eventInfo,
     ])
-    const images = event ? [title, block, tips, event] : [title, block, tips]
-    return [await outputFinalBuffer({ imageList: images, useEasyBG: true, compress })]
+    const tipsWidth = event ? Math.max(360, block.width - event.width - 56) : Math.max(width, 900)
+    const tips = drawMinuteSpeedTips(tipLines, tipsWidth)
+    const footer = event ? placeTipsBesideEvent(event, tips) : tips
+    return [await outputFinalBuffer({ imageList: [title, block, footer], useEasyBG: true, compress })]
+}
+
+function drawMinuteSpeedTips(lines: Array<{ text: string, singleLine?: boolean }>, maxWidth: number): Canvas {
+    const textSize = 30
+    const images = lines.map(line => {
+        if (!line.singleLine) {
+            return drawText({ text: line.text, maxWidth, textSize, lineHeight: textSize * 1.45, color: GUIDE_THEME.muted })
+        }
+        let size = textSize
+        while (size > 12 && drawTextMeasureText(line.text, size, 'old') > maxWidth) size -= 1
+        return drawText({
+            text: line.text,
+            textSize: size,
+            maxWidth: 1,
+            lineHeight: Math.round(size * 1.45),
+            color: GUIDE_THEME.muted,
+            forceSingleLine: true,
+        })
+    })
+    const gap = 6
+    const textHeight = images.reduce((sum, image) => sum + image.height, 0) + gap * Math.max(0, images.length - 1)
+    const canvas = new Canvas(maxWidth, textHeight + 18)
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = GUIDE_THEME.divider
+    ctx.fillRect(0, 0, maxWidth, 2)
+    ctx.fillStyle = GUIDE_THEME.primary
+    ctx.fillRect(0, 0, Math.min(86, maxWidth), 3)
+    let y = 12
+    for (const image of images) {
+        ctx.drawImage(image, 0, y)
+        y += image.height + gap
+    }
+    return canvas
+}
+
+function placeTipsBesideEvent(event: Canvas, tips: Canvas): Canvas {
+    // The event card ends 50px before the canvas edge, so pull the tips into that margin.
+    const cardRightInset = 50
+    const visualGap = 56
+    const tipsX = event.width - cardRightInset + visualGap
+    const tipsY = 12
+    const width = Math.max(event.width, tipsX + tips.width)
+    const height = Math.max(event.height, tipsY + tips.height)
+    const canvas = new Canvas(width, height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(event, 0, 0)
+    inheritSurfaceDecorations(canvas, event, 0, 0)
+    ctx.drawImage(tips, tipsX, tipsY)
+    return canvas
 }
