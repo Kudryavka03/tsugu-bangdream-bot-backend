@@ -100,7 +100,7 @@ function occupiedDays(startTs: number, endTs: number): number {
     // 计算跨越的天数，再加1包含第一天
     return Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay) + 1;
 }
-export function changeTimefomant(timeStamp: number | null,server?:Server) {//时间戳到年月日 精确到分钟
+export function changeTimefomant(timeStamp: number | null,server?:Server, showSecond = false) {//时间戳到年月日，默认精确到分钟
     if (timeStamp == null) {
         return '?'
     }
@@ -123,7 +123,9 @@ export function changeTimefomant(timeStamp: number | null,server?:Server) {//时
     else{
         nHours = date.getHours().toString()
     }
+    const nSeconds = date.getSeconds().toString().padStart(2, '0')
     var temp = date.getFullYear().toString() + "年" + (date.getMonth() + 1).toString() + "月" + date.getDate().toString() + "日 " + nHours + ":" + nMinutes
+    if (showSecond) temp += ":" + nSeconds
     if (server!== undefined){
         const weekMap = (server == Server.jp)?['日', '月', '火', '水', '木', '金', '土']:['日', '一', '二', '三', '四', '五', '六'];
         const week = weekMap[date.getDay()];

@@ -72,17 +72,7 @@ export async function drawMonthlyRankingTopRateDetail(monthlyRankingId: number, 
     }
 
     var all = [];
-    const widthMax = 1000, line: Canvas = drawDottedLine({
-        width: widthMax,
-        height: 30,
-        startX: 5,
-        startY: 15,
-        endX: widthMax - 5,
-        endY: 15,
-        radius: 2,
-        gap: 10,
-        color: "#a8a8a8"
-    })
+    const widthMax = 1000
     all.push(await drawTitle('查岗', `${serverNameFullList[mainServer]}`));
     {
         const list: Array<Image | Canvas> = [];
@@ -143,7 +133,7 @@ export async function drawMonthlyRankingTopRateDetail(monthlyRankingId: number, 
                     score = playerRating[i].value - playerRating[i + 1].value
                 if (score > max || score < min) continue;
                 count += 1
-                const timeImage = await drawList({ text: `${mid.toTimeString().slice(0, 5)}` })
+                const timeImage = await drawList({ text: `${mid.toTimeString().slice(0, 8)}` })
                 const ctx = timeImage.getContext('2d')
                 ctx.font = "18px old,Microsoft Yahei"
                 ctx.fillText(`${mid.getMonth() + 1}.${mid.getDate()}`, 50, 13)
@@ -178,11 +168,23 @@ export async function drawMonthlyRankingTopRateDetail(monthlyRankingId: number, 
     const timeList = [1, 3, 12, 24]
     {
         const list = [], now = Date.now()
-        list.push(drawListMerge([await drawList({ key: '时间' }), await drawList({ key: '分数变动次数' }), await drawList({ key: '平均时间间隔' }), await drawList({ key: '平均分数' })], widthMax))
+        const statWidths = [400, 220, 220, 160]
+        const statLine: Canvas = drawDottedLine({
+            width: widthMax,
+            height: 30,
+            startX: 5,
+            startY: 15,
+            endX: widthMax - 5,
+            endY: 15,
+            radius: 2,
+            gap: 10,
+            color: "#a8a8a8"
+        })
+        list.push(drawListMerge([await drawList({ key: '时间', maxWidth: statWidths[0] }), await drawList({ key: '变动次数', maxWidth: statWidths[1] }), await drawList({ key: '平均间隔', maxWidth: statWidths[2] }), await drawList({ key: '平均分数', maxWidth: statWidths[3] })], widthMax, false, "top", statWidths))
         for (const a of timeList) {
             const begin = now - a * 60 * 60 * 1000
             const st = new Date(begin), ed = new Date(now)
-            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}` })
+            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 8)}~${ed.toTimeString().slice(0, 8)}` })
             const offset = Math.floor((now / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((begin / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             // console.log(st.getTimezoneOffset())
             if (offset > 0) {
@@ -210,9 +212,9 @@ export async function drawMonthlyRankingTopRateDetail(monthlyRankingId: number, 
                 list.push(drawListMerge([timeImage, await drawList({ text: '数据不足' })], widthMax))
             } else {
                 const averageTime = getAverageTime(timestamps)
-                list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${(sumScore / count).toFixed(2)}` })], widthMax))
+                list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${(sumScore / count).toFixed(2)}` })], widthMax, false, "top", statWidths))
             }
-            list.push(line)
+            list.push(statLine)
         }
         list.pop()
         all.push(await drawDatablock({ list, topLeftText: `近期统计数据` }))
@@ -279,7 +281,8 @@ export async function drawMonthlyRankingTopSleepStat(monthlyRankingId: number, p
     }
     const playerRating = getRatingByPlayer(monthlyRankingCutoffTop.points, playerId).filter(item => item.time < monthlyRanking.endAt[mainServer])
     const list = [];
-    list.push(drawListMerge([await drawList({ key: '日期' }), await drawList({ key: '休息时段' }), await drawList({ key: '休息时长' })], widthMax));
+    const sleepWidths = [200, 560, 240]
+    list.push(drawListMerge([await drawList({ key: '日期' }), await drawList({ key: '休息时段' }), await drawList({ key: '休息时长' })], widthMax, false, "top", sleepWidths));
     const sleep: { start: number; end: number }[] = []
     const limitTime = (time || 25) * 60 * 1000;
     let tmpTime = -1;
@@ -308,7 +311,7 @@ export async function drawMonthlyRankingTopSleepStat(monthlyRankingId: number, p
 
         for (const { start, end } of sleep) {
             const st = new Date(start), ed = new Date(end)
-            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}` })
+            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 8)}~${ed.toTimeString().slice(0, 8)}` })
             const offset = Math.floor((ed.getTime() / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((st.getTime() / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             // console.log(st.getTimezoneOffset())
             if (offset > 0) {
@@ -328,7 +331,7 @@ export async function drawMonthlyRankingTopSleepStat(monthlyRankingId: number, p
                 await drawList({ text: `${formatDate(ed)}` }),
                 timeImage,
                 await drawList({ text: toTimeStr(diff) })
-            ], widthMax))
+            ], widthMax, false, "top", sleepWidths))
             list.push(line)
         }
         const nowMonthlyRanking = new MonthlyRanking(monthlyRankingId);
@@ -557,7 +560,7 @@ export async function drawMonthlyRankingTopTenMinuteSpeed(monthlyRankingId: numb
 
     for (let tIdx = displayTimeStamps.length - 1; tIdx >= 0; tIdx--) {
         const row: Canvas[] = [];
-        const timeStr = new Date(displayTimeStamps[tIdx]).toTimeString().slice(0, 5);
+        const timeStr = new Date(displayTimeStamps[tIdx]).toTimeString().slice(0, 8);
         const timeImg = await drawList({ text: timeStr });
         row.push(timeImg);
         colWidths[0] = Math.max(colWidths[0], timeImg.width);
@@ -609,12 +612,15 @@ export async function drawMonthlyRankingTopRunningStatus(monthlyRankingId: numbe
     //}
 
     var all = [];
-    const widthMax = 1000, line: Canvas = drawDottedLine({
-        width: widthMax,
+    const widthMax = 1000
+    const runWidths = [160, 560, 150, 150, 220]
+    const runWidth = runWidths.reduce((sum, width) => sum + width, 0)
+    const line: Canvas = drawDottedLine({
+        width: runWidth,
         height: 30,
         startX: 5,
         startY: 15,
-        endX: widthMax - 5,
+        endX: runWidth - 5,
         endY: 15,
         radius: 2,
         gap: 10,
@@ -649,7 +655,7 @@ export async function drawMonthlyRankingTopRunningStatus(monthlyRankingId: numbe
         await drawList({ key: '稼动把数' }),
         await drawList({ key: '把均pt' }),
         await drawList({ key: '稼动总pt' })
-    ], widthMax));
+    ], runWidth, false, "top", runWidths));
     //const run: {start: number; end: number; type: 'stop'|'unknown'|'running'}[] = []
     const limitTime = (time || 25) * 60 * 1000;
     const run: { startTime: number, startValue: number, endTime: number, endValue: number, playTimes: number }[] = [];
@@ -706,7 +712,7 @@ export async function drawMonthlyRankingTopRunningStatus(monthlyRankingId: numbe
         let totalRunTime = 0;
         for (const { startTime, startValue, endTime, endValue, playTimes } of run) {
             const st = new Date(startTime), ed = new Date(endTime)
-            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}` })
+            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 8)}~${ed.toTimeString().slice(0, 8)}` })
             const offset = Math.floor((ed.getTime() / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((st.getTime() / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             if (offset > 0) {
                 const ctx = timeImage.getContext('2d')
@@ -727,7 +733,7 @@ export async function drawMonthlyRankingTopRunningStatus(monthlyRankingId: numbe
                 await drawList({ text: String(playTimes) }),
                 await drawList({ text: String(Math.floor((endValue - startValue) / playTimes)) }),
                 await drawList({ text: String(endValue - startValue) })
-            ], widthMax, false, "top", [widthMax * 0.15, widthMax * 0.3, widthMax * 0.15, widthMax * 0.15, widthMax * 0.25]))
+            ], runWidth, false, "top", runWidths))
             list.push(line)
         }
         const nowMonthlyRanking = new MonthlyRanking(monthlyRankingId);
@@ -737,9 +743,9 @@ export async function drawMonthlyRankingTopRunningStatus(monthlyRankingId: numbe
             await drawList({ text: toTimeStr(Math.floor(totalRunTime / (1000 * 60))) }),
             await drawList({ text: '平均每天: ' }),
             await drawList({ text: toTimeStr(Math.floor(24 * 60 * totalRunTime / (playerRating[0].time - nowMonthlyRanking.startAt[mainServer]))) })
-        ], widthMax))
+        ], runWidth))
     } else {
-        list.push(drawListMerge([await drawList({ text: '数据不足' })], widthMax))
+        list.push(drawListMerge([await drawList({ text: '数据不足' })], runWidth))
     }
     //折线图
     list.push(await drawMonthlyRankingCutOffTopSingleChart(monthlyRankingCutoffTop, false, playerId, mainServer))

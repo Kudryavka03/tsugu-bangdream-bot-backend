@@ -28,9 +28,9 @@ async function buildMonthlyRankingDetailBlocks(monthlyRanking: MonthlyRanking, d
     list.push(await drawList({ key: 'ID', text: monthlyRanking.monthlyRankingId.toString() }));
     list.push(line);
 
-    list.push(await drawListByServerList(monthlyRanking.startAt.map(changeTimefomant), '开始时间', displayedServerList));
+    list.push(await drawListByServerList(monthlyRanking.startAt.map(time => changeTimefomant(time)), '开始时间', displayedServerList));
     list.push(line);
-    list.push(await drawListByServerList(monthlyRanking.endAt.map(changeTimefomant), '结束时间', displayedServerList));
+    list.push(await drawListByServerList(monthlyRanking.endAt.map(time => changeTimefomant(time)), '结束时间', displayedServerList));
     list.push(line);
 
     const rankToShow = [1, 2, 3, 10, 20, 30];

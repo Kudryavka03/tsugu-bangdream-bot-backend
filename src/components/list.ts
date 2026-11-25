@@ -341,7 +341,10 @@ export function drawListMergeMin(
 
 
 //横向组合较短list，高度为最高的list，宽度平分
-export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number = 800, drawLine: boolean = false, align: "top" | "bottom" | "center" = "top"): Canvas {
+export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number = 800, drawLine: boolean = false, align: "top" | "bottom" | "center" = "top", widthList?: number[]): Canvas {
+    const useCustomWidth = widthList != undefined && widthList.length === imageList.length
+    const columnWidths = useCustomWidth ? widthList : imageList.map(() => maxWidth / imageList.length)
+    const canvasWidth = useCustomWidth ? columnWidths.reduce((sum, width) => sum + width, 0) : maxWidth
     var maxHeight = 0
     for (let i = 0; i < imageList.length; i++) {
         const element = imageList[i];
@@ -349,7 +352,7 @@ export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number
             maxHeight = element.height
         }
     }
-    var canvas = new Canvas(maxWidth, maxHeight)
+    var canvas = new Canvas(canvasWidth, maxHeight)
     var ctx = canvas.getContext('2d')
     var x = 0
     const line: Canvas = drawDottedLine({
@@ -380,7 +383,7 @@ export function drawListMerge(imageList: Array<Canvas | Image>, maxWidth: number
             }
         }
 
-        x += maxWidth / imageList.length
+        x += columnWidths[i]
     }
     return canvas
 }

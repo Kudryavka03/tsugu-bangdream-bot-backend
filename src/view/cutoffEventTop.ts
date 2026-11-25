@@ -330,7 +330,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             }
             count += 1
             const mid = new Date(change.time)
-            const timeChangeImage = drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 5)}`}), await drawList({ text: `${change.score}`})], widthMax / 2)
+            const timeChangeImage = drawListMerge([await drawList({ text: `${mid.toTimeString().slice(0, 8)}`}), await drawList({ text: `${change.score}`})], widthMax / 2)
             const ctx = timeChangeImage.getContext('2d')
             ctx.font = "18px old,Microsoft Yahei"
             ctx.fillText(`${mid.getMonth()+1}.${mid.getDate()}`, 45, 13)
@@ -385,12 +385,13 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
     const timeList = [1, 3, 12, 24]
     {
         const list = [], now = Date.now()
-        list.push(drawListMerge([await drawList({ key: '时间' }), await drawList({ key: '分数变动次数' }), await drawList({ key: '平均时间间隔' }), await drawList({ key: '平均分数' })], widthMax))
+        const statWidths = [400, 220, 220, 160]
+        list.push(drawListMerge([await drawList({ key: '时间', maxWidth: statWidths[0] }), await drawList({ key: '变动次数', maxWidth: statWidths[1] }), await drawList({ key: '平均间隔', maxWidth: statWidths[2] }), await drawList({ key: '平均分数', maxWidth: statWidths[3] })], widthMax, false, "top", statWidths))
         for (const a of timeList) {
             const begin = changeBegin ?? now - a * 60 * 60 * 1000
             const end = changeEnd ?? now
             const st = new Date(begin), ed = new Date(end)
-            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 5)}~${ed.toTimeString().slice(0, 5)}`})
+            const timeImage = await drawList({ text: `${st.toTimeString().slice(0, 8)}~${ed.toTimeString().slice(0, 8)}`})
             const offset = Math.floor((end / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60) - Math.floor((begin / 1000 / 60 - st.getTimezoneOffset()) / 24 / 60)
             // console.log(st.getTimezoneOffset())
             if (offset > 0) {
@@ -403,7 +404,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
             const sumScore = rangeChanges.reduce((sum, change) => sum + change.score, 0)
             const timestamps = rangeChanges.map(change => change.time)
             const averageTime = getAverageTime(timestamps)
-            list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax))
+            list.push(drawListMerge([timeImage, await drawList({ text: `${count}` }), await drawList({ text: timestamps.length <= 1 ? '-' : `${(new Date(averageTime)).toTimeString().slice(3, 8)}` }), await drawList({ text: count == 0 ? '-' : `${Math.floor(sumScore / count)}` })], widthMax, false, "top", statWidths))
             list.push(line)
             if (changeBegin != undefined && changeEnd != undefined) {
                 break
@@ -670,7 +671,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         `${isFinite(prevNull[index]) ? prevNull[index] : '--'}min`, `${isFinite(nextNull[index]) ? nextNull[index] : '--'}min`,
         getPossibleRoom(possibleAtSameRoom, uid),
     ]);
-    const timeTips = `统计时段：${changeTimefomant(LastHour)} - ${changeTimefomant(thisHour)}`;
+    const timeTips = `统计时段：${changeTimefomant(LastHour, undefined, true)} - ${changeTimefomant(thisHour, undefined, true)}`;
     return drawTopRateSpeedReport(mainServer, subTimeTips, columns, rows,
         `${timeTips}\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度`, drawEventDatablockPromise, compress);
 }
@@ -756,6 +757,7 @@ export async function drawTopRateSleep(eventId: number, playerId: number, tier: 
         console.log(playerId)
     }
     var all = [];
+    const timeColumnWidth = 560
     var breakTime = 1490000 // 如果间隔相差25min则认定为休息
     const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照最近到最远排名
     // console.log(playerId)
@@ -798,7 +800,7 @@ export async function drawTopRateSleep(eventId: number, playerId: number, tier: 
         // var event = new Event(eventId);
         // all.push(await drawEventDatablock(event, [mainServer]));
         //名片
-        var widthMax = 420+420+270
+        var widthMax = timeColumnWidth+timeColumnWidth+270
         var userInRankings = cutoffEventTop.getLatestRanking();
         var drawPlayerRankingInListPromise1 = []
         for (let i = 0; i < userInRankings.length; i++) {
@@ -851,8 +853,8 @@ const FullLine2: Canvas = drawDottedLine({
 })
 
 list.push(drawListMergeMin([
-    await drawList({ key: '开始时间', maxWidth: 420 }),
-    await drawList({ key: '结束时间', maxWidth: 420 }),
+    await drawList({ key: '开始时间', maxWidth: timeColumnWidth }),
+    await drawList({ key: '结束时间', maxWidth: timeColumnWidth }),
     await drawList({ key: '停摆时长', maxWidth: 270 }),
 ]))
 list.push(FullLine2)
@@ -863,8 +865,8 @@ for (let j = allCount> 10? allCount -10 : 0; j < allCount; j++) {    // 人工�
 
 
     imageList.push(drawListMergeMin([
-        await drawList({ key: `${changeTimefomant(breakTimeSt[j])}`, maxWidth: 420 }),
-        await drawList({ key: `${changeTimefomant(breakTimeEd[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimefomant(breakTimeSt[j], undefined, true)}`, maxWidth: timeColumnWidth }),
+        await drawList({ key: `${changeTimefomant(breakTimeEd[j], undefined, true)}`, maxWidth: timeColumnWidth }),
         await drawList({ key: `${changeTimePeriodFormat(breakTimeEd[j] - breakTimeSt[j],false)}`, maxWidth: 270 }),
     ]))
 
@@ -1015,7 +1017,8 @@ export async function drawTopRateChanged(eventId: number, playerId: number, tier
          }
     }
     var all = [];
-    var widthMax = 420+420+200+200+250
+    const timeColumnWidth = 560
+    var widthMax = timeColumnWidth+timeColumnWidth+200+200+250
     all.push(await drawTitle('查变动', `${serverNameFullList[mainServer]}`));
     {
         const list: Array<Image | Canvas> = [];
@@ -1074,8 +1077,8 @@ const FullLine2: Canvas = drawDottedLine({
 })
 
 list.push(drawListMergeMin([
-    await drawList({ key: '开始时间', maxWidth: 420 }),
-    await drawList({ key: '结束时间', maxWidth: 420 }),
+    await drawList({ key: '开始时间', maxWidth: timeColumnWidth }),
+    await drawList({ key: '结束时间', maxWidth: timeColumnWidth }),
     await drawList({ key: '变动次数', maxWidth: 200 }),
     await drawList({ key: '把均Pt', maxWidth: 200 }),
     await drawList({ key: '总变动Pt', maxWidth: 250 }),
@@ -1093,8 +1096,8 @@ for (let j = allCount> 100? allCount -100 : 0; j < allCount; j++) {    // 人工
         ? Math.floor(changeTimeTotalPts[j] / changeTimeCounts[j])
         : "0"
     imageList.push(drawListMergeMin([
-        await drawList({ key: `${changeTimefomant(changeTimeSt[j])}`, maxWidth: 420 }),
-        await drawList({ key: `${changeTimefomant(changeTimeEd[j])}`, maxWidth: 420 }),
+        await drawList({ key: `${changeTimefomant(changeTimeSt[j], undefined, true)}`, maxWidth: timeColumnWidth }),
+        await drawList({ key: `${changeTimefomant(changeTimeEd[j], undefined, true)}`, maxWidth: timeColumnWidth }),
         await drawList({ key: `${changeTimeCounts[j]}`, maxWidth: 200 }),
         await drawList({ key: `${avgPt}`, maxWidth: 200 }),
         await drawList({ key: `${changeTimeTotalPts[j]}`, maxWidth: 250 }),
@@ -1351,6 +1354,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
             let smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 2026-08-31: 从绝对同房中寻找是否有更好的同房列表。例如跟当前跟同房A 同房B都符合条件，但是同房B的条件更加符合，因此跳过。
+            // 比例更高还不够：漏拍次数相同只是各漏了不同的一拍。只有锚点漏拍更少，才算另一间更紧的房。
             //console.log(`${uid} VS ${tempUidList[i]} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length}`)
             //console.log(tempUidList[i],dupUid.includes(tempUidList[i]))
             if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
@@ -1365,28 +1369,22 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                         let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
                         let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
                         let ratioValueOfSameRoomUid = smallCountInPartNew / largeCountInTotalNew
-                        if (ratioValueOfSameRoomUid > ratioValue){
-                            console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence}`)
-                            console.log(`G1: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 最小同房/最大变动次数：${smallCountInPartNew / largeCountInTotalNew} > ${sameRoomRatioConfidence}`)
+                        let missCount = largeCountInTotal - smallCountInPart
+                        let missCountNew = largeCountInTotalNew - smallCountInPartNew
+                        if (ratioValueOfSameRoomUid > ratioValue && missCountNew < missCount){
+                            console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} 漏拍：${missCount}`)
+                            console.log(`G1: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 最小同房/最大变动次数：${smallCountInPartNew / largeCountInTotalNew} > ${sameRoomRatioConfidence} 漏拍：${missCountNew}`)
                             findGreaterResult = true
                             break
                         }
                     }
                     if (!findGreaterResult){
-                        if (sureMap.has(tempUidList[i])){
-                            let sureMapList = sureMap.get(tempUidList[i])
-                            for(let sml of sureMapList){
-                                //console.log(sml)
-                                possibleAtSameRoomTemp.push(sml)
-                                
-                                //dupUid.push(sml)
-                            }
-                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
-                        }else{
-                            possibleAtSameRoomTemp.push(tempUidList[i])
-                            //console.log(uid,tempUidList[i])
-                            //dupUid.push(tempUidList[i])
-                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        const matchedRatio = smallCountInPart / largeCountInTotal
+                        const matchedIds = sureMap.has(tempUidList[i]) ? sureMap.get(tempUidList[i]) : [tempUidList[i]]
+                        for (let sml of matchedIds){
+                            if (possibleAtSameRoomTemp.includes(sml) || sureAtSameRoom.includes(sml)) continue
+                            possibleAtSameRoomTemp.push(sml)
+                            possibleAtSameRoomRatioTemp.push(matchedRatio)
                         }
 
                         console.log(`G1: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 最小同房/最大变动次数：${smallCountInPart /largeCountInTotal} > ${sameRoomRatioConfidence} / 规则1`)
@@ -1406,34 +1404,31 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                         if (tempUidListAppearCount[index] < currentUidChange.length && currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[index]){
                             let largeCountInTotalNew = (tempUidListAppearCount[index] > currentUidChange.length)?tempUidListAppearCount[index]:currentUidChange.length
                             let smallCountInPartNew = (tempUidListAppearCountInCurrentUidChange[index] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[index]
-                            if ((smallCountInPartNew / largeCountInTotalNew) > ratioValue){
+                            let missCount = largeCountInTotal - smallCountInPart
+                            let missCountNew = largeCountInTotalNew - smallCountInPartNew
+                            if ((smallCountInPartNew / largeCountInTotalNew) > ratioValue && missCountNew < missCount){
                                 findGreaterResult = true
-                                console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence}`)
-                                console.log(`G2: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[index] / tempUidListAppearCount[index]} > ${sameRoomRatioConfidence}`)
+                                console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} 漏拍：${missCount}`)
+                                console.log(`G2: 更好的结果 - 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[index]} 总出现次数：${tempUidListAppearCount[index]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[index]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[index] / tempUidListAppearCount[index]} > ${sameRoomRatioConfidence} 漏拍：${missCountNew}`)
                                 break
                             }
                         }
                     }
                     if (!findGreaterResult){
-                        if (sureMap.has(tempUidList[i])){
-                            let sureMapList = sureMap.get(tempUidList[i])
-                            for(let sml of sureMapList){
-                                //console.log(sml)
-                                possibleAtSameRoomTemp.push(sml)
-                                //dupUid.push(sml)
-                            }
-                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
-                        }else{
-                            possibleAtSameRoomTemp.push(tempUidList[i])
-                            //dupUid.push(tempUidList[i])
-                            possibleAtSameRoomRatioTemp.push(smallCountInPart /largeCountInTotal)
+                        const matchedRatio = smallCountInPart / largeCountInTotal
+                        const matchedIds = sureMap.has(tempUidList[i]) ? sureMap.get(tempUidList[i]) : [tempUidList[i]]
+                        for (let sml of matchedIds){
+                            if (possibleAtSameRoomTemp.includes(sml) || sureAtSameRoom.includes(sml)) continue
+                            possibleAtSameRoomTemp.push(sml)
+                            possibleAtSameRoomRatioTemp.push(matchedRatio)
                         }
                         console.log(`G2: 判定同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 待查UID总变动：${tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]} > ${sameRoomRatioConfidence} / 规则2`)
                     }
                     if (findGreaterResult) continue
                 }
                 // 如果当前查询UID变动小于待查UID变动呢？
-                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
+                else if(roomLeft > possibleAtSameRoomTemp.length && currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length) > sameRoomRatioToTotalConfidence && tempUidListAppearCount[i] > currentUidChange.length){           // 如果最小同房次数 / 最大房间数量 > sameRoomRatioConfidence比例
+                    // 房间已满 5 人就不再记规则3。满员后没有空位，也不能把当前房间整间推迟。
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 当前查询总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13)
                     if(!skipCompare)skipCompare = true  // 让后面的流程来匹配
                     console.log(`数值偏少但可能同房 ${uid} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length} > ${sameRoomRatioToTotalConfidence} / 规则3`)
