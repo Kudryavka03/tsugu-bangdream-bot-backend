@@ -163,7 +163,7 @@ export function apply(ctx: Context, config: Config) {
             keywords.push('火罐抽取计算', '火罐抽取', '火罐计算', '抽火罐', '抽火');
             keywords.push('控分助手', '控分');
             keywords.push(...cutoffCacheKeywords);
-            keywords.push(...songDiffAliases, 'songdiff', '查散点图', ...scatterAliases, '前十车速');
+            keywords.push(...songDiffAliases, 'songdiff', '查散点图', ...scatterAliases, '前十车速', '分速表', '分速图');
             const tierKeywords = ['前十', '十线', '百线', '千','K', 'k', '二千', '2k', '2K', '三千', '3k', '3K', '4k',  '四千', '4K', '2000', '1000', '3000', '4000', '5000', '5k', '5K', '万线', '10000线', 'w线','W线'];
             
             // 检查会话内容是否以列表中的任何一个词语开头
@@ -995,6 +995,22 @@ export function apply(ctx: Context, config: Config) {
         const window = resolveActivityTimeWindow(options, range, mainServer);
         if (!window.ok) return window.error;
         const list = await topRateDetail_1.commandTopRateDetail(config, undefined, undefined, undefined, mainServer, 1,
+            eventId, undefined, undefined, window.value);
+        return utils_1.paresMessageList(list);
+    });
+    ctx.command('分速表 [...参数:string]', '查询活动前十分速表', { ...cmdConfig, strictOptions: true })
+        .alias('分速图')
+        .option('from', activityFromOption)
+        .option('to', activityToOption)
+        .usage('默认查询当前活动最近一小时的每分钟分速。可选活动 ID、服务器和开始-结束时间，时段最长 1 小时。')
+        .example('分速表')
+        .example('分速表 329 国服 15:00-16:00')
+        .action(async ({ session, options }, ...args) => {
+        const { error, eventId, mainServer, range } = await resolveTopRateActivity(session, args);
+        if (error) return error;
+        const window = resolveActivityTimeWindow(options, range, mainServer);
+        if (!window.ok) return window.error;
+        const list = await topRateDetail_1.commandTopRateDetail(config, undefined, undefined, undefined, mainServer, 5,
             eventId, undefined, undefined, window.value);
         return utils_1.paresMessageList(list);
     });

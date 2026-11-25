@@ -1169,6 +1169,18 @@ function getPossibleRoom (data,uid){
     }
 
 }
+
+export function labelEventTopRooms(valueChangeData: number[][], uidSort: number[]): string[] {
+    let rooms: number[][] = []
+    try {
+        const inferred = inferPossibleRoomsByScoreChange(valueChangeData, uidSort)
+        if (Array.isArray(inferred)) rooms = inferred
+    } catch (error) {
+        logger('labelEventTopRooms error:', error)
+    }
+    return uidSort.map(uid => getPossibleRoom(rooms, uid))
+}
+
 export function compareSameDataArray(arr1,arr2){       // 判断两个数组是否包含相同的数据
     if (arr1.length != arr2.length) return false
     var tempArr = []

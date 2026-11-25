@@ -5,6 +5,7 @@ import { isServer } from '@/types/Server';
 import { body } from 'express-validator';
 import express from 'express';
 import { drawTopRateChanged, drawTopRateDetail, drawTopRateScatter, drawTopRateSleep, drawTopRateSpeedRank } from '@/view/cutoffEventTop';
+import { drawEventTopMinuteSpeed } from '@/view/eventTopMinuteSpeed';
 import type { TopRateTimeWindow } from '@/types/topRateSpeedWindow';
 import { middleware } from '@/routers/middleware';
 import { Request, Response } from 'express';
@@ -19,7 +20,7 @@ router.post(
         body('tier').optional().isInt(),
         body('count').optional().isInt(),
         body('compress').optional().isBoolean(),
-        body('mode').optional().isInt(),    // 1：实时查岗  2：查变动  3：查停摆  4：散点图
+        body('mode').optional().isInt(),    // 1：实时查岗  2：查变动  3：查停摆  4：散点图  5：分速表
         body('eventId').optional().isInt(),
         body('day').optional().isInt(),
         body('limit').optional(),
@@ -43,6 +44,14 @@ router.post(
 );
 
 export async function commandTopRateDetail(mainServer: Server, playerId: number, tier: number, compress: boolean, maxCount?: number,mode:number = 0,eventId:number = 0,day?:number,limit?:{ min?: number, max?: number, minInclusive?: boolean, maxInclusive?: boolean }, range?: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    if (mode == 5) {
+        if (range?.from !== undefined && range?.to !== undefined && range.from >= range.to) {
+            return ['开始时间须早于结束时间']
+        }
+        const selectedEventId = Number(eventId) || getCurrentEvent(mainServer)?.eventId
+        if (!selectedEventId) return ['该服务器暂无已开始的活动']
+        return await drawEventTopMinuteSpeed(selectedEventId, mainServer, compress, range)
+    }
     const speedRank = mode == 1 || (mode == 0 && (playerId == 0 || playerId == 1 || tier == 0));
     if (!speedRank && !playerId && !tier) {
         // 这里查前十车速总表
