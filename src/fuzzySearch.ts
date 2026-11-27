@@ -28,7 +28,8 @@ function loadConfig(): FuzzySearchConfig {
 export function manualLoadFuzzyConfig() {
   if (config != undefined) {
     config = loadConfig();
-    cardSearchAliases = getCardSearchAliases(config);
+    cardSearchAliases = getSearchAliases(config, cardSearchAliasTypes);
+    eventSearchAliases = getSearchAliases(config, eventSearchAliasTypes);
   }
 }
 
@@ -87,11 +88,14 @@ function extractSkillNumber(str: string): number | null {
   return null;
 }
 
-export let config: FuzzySearchConfig = loadConfig();
-let cardSearchAliases = getCardSearchAliases(config);
+const cardSearchAliasTypes = ['rarity', 'attribute', 'characterId', 'bandId', 'type', 'skillType', 'scoreUpMaxValue'];
+const eventSearchAliasTypes = ['attribute', 'characterId', 'bandId', 'eventType'];
 
-function getCardSearchAliases(settings: FuzzySearchConfig) {
-  const types = ['rarity', 'attribute', 'characterId', 'bandId', 'type', 'skillType', 'scoreUpMaxValue'];
+export let config: FuzzySearchConfig = loadConfig();
+let cardSearchAliases = getSearchAliases(config, cardSearchAliasTypes);
+let eventSearchAliases = getSearchAliases(config, eventSearchAliasTypes);
+
+function getSearchAliases(settings: FuzzySearchConfig, types: string[]) {
   const aliases = new Set<string>();
   for (const type of types) {
     for (const values of Object.values(settings[type] ?? {})) {
@@ -109,9 +113,9 @@ function getCardSearchAliases(settings: FuzzySearchConfig) {
   return { aliases, lengths };
 }
 
-function splitCardKeyword(token: string): string[] {
+function splitKeyword(token: string, dictionary: { aliases: Set<string>, lengths: number[] }): string[] {
   const keyword = token.toLowerCase();
-  const { aliases, lengths } = cardSearchAliases;
+  const { aliases, lengths } = dictionary;
   if (aliases.has(keyword) || isInteger(keyword)) return [token];
 
   // Only split when every part is a configured alias. Prefer the longest viable alias at each position.
@@ -163,13 +167,15 @@ export function insertSpaceBeforeLastCondition(input: string): string {
   return input.slice(0, lastIndex) + ' ' + input.slice(lastIndex);
 }
 
-export function fuzzySearch(keyword: string, splitCardKeywords = false): FuzzySearchResult {
+// true 使用查卡词典；event 使用活动词典。整段不能完全切开时保持原词。
+export function fuzzySearch(keyword: string, splitKeywords: boolean | 'event' = false): FuzzySearchResult {
   keyword = insertSpaceBeforeLastCondition(keyword);
+  const dictionary = splitKeywords === 'event' ? eventSearchAliases : splitKeywords ? cardSearchAliases : undefined;
   //兼容引号
   const tokens = [...keyword.matchAll(/["“”『』「」]([^"“”『』「」]+)["“”『』「」]|\S+/g)];
   const keywordList = combineNoteExpressionTokens(tokens.flatMap(([raw, quoted]) => {
     const token = raw.replace(/^["“”『』「」]|["“”『』「」]$/g, '');
-    return splitCardKeywords && !quoted ? splitCardKeyword(token) : [token];
+    return dictionary && !quoted ? splitKeyword(token, dictionary) : [token];
   }));
 
   console.log(keywordList)

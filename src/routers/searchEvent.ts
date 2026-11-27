@@ -119,7 +119,7 @@ export async function commandEvent(displayedServerList: Server[], input: string 
                 : displayedServerList;
             return await drawEventDetail(parseInt(input), servers, useEasyBG, compress);
         }
-        fuzzySearchResult = fuzzySearch(input);
+        fuzzySearchResult = fuzzySearch(input, 'event');
     } else {
         // 使用 fuzzySearch 逻辑
         fuzzySearchResult = { ...input };

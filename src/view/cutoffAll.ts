@@ -6,7 +6,7 @@ import { changeTimefomant } from '@/components/list/time';
 import { Server } from '@/types/Server';
 import { drawTitle } from '@/components/title'
 import { outputFinalBuffer } from '@/image/output'
-import { Cutoff } from "@/types/Cutoff";
+import { checkCutoffEventIfNeedFallbackToUpperServer, Cutoff } from "@/types/Cutoff";
 import { drawCutoffChart } from '@/components/chart/cutoffChart'
 import { serverNameFullList, tierListOfServer } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
@@ -19,6 +19,7 @@ export async function drawCutoffAll(eventId: number, mainServer: Server, compres
     if (!event.isExist) {
         return ['活动不存在']
     }
+    checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     /*
     if (event.startAt[mainServer] == undefined) {
         return ['活动在该服务器不存在']

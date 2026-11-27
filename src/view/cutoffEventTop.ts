@@ -27,7 +27,7 @@ import { summarizeTopRateSpeedWindow, TopRateTimeWindow } from '@/types/topRateS
 import array from 'ref-array-di';
 import { min } from 'moment';
 import { getTop10AvgScore } from './cutoffDetail';
-import { Cutoff } from '@/types/Cutoff';
+import { checkCutoffEventIfNeedFallbackToUpperServer, Cutoff } from '@/types/Cutoff';
 import { drawT10CutoffSummary } from '@/view/t10CutoffSummary';
 import { getTopTierCutoffs } from '@/types/TrackerTop';
 
@@ -44,6 +44,7 @@ type PlayerRatingChange = {
 }
 
 export async function drawTopRateScatter(eventId: number, playerId: number, tier: number, maxCount: number | undefined, mainServer: Server, compress: boolean, day?: number, limit?: TopRateLimit, range?: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     const serverName = serverNameFullList[mainServer];
     const cutoff = new CutoffEventTop(eventId, mainServer);
     if (!cutoff.isExist || !Number.isFinite(cutoff.startAt) || !Number.isFinite(cutoff.endAt) || cutoff.status === 'not_start') {
@@ -152,6 +153,7 @@ function drawScatterStatistics(scores: number[], day?: number): Canvas {
 }
 
 export async function drawCutoffEventTop(eventId: number, mainServer: Server, compress: boolean): Promise<Array<Buffer | string>> {
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     var event = new Event(eventId);
     const drawEventDatablockPromise = drawEventDatablock(event, [mainServer]).catch(err => {
@@ -223,6 +225,7 @@ export async function drawCutoffEventTop(eventId: number, mainServer: Server, co
 }
 
 export async function drawTopRateDetail(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean, day?: number, limit?: TopRateLimit): Promise<Array<Buffer | string>> {
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     if (playerId == 1 || playerId == 0 || tier == 0) return drawTopRateSpeedRank(eventId,playerId,tier,maxCount,mainServer,compress)
     if (playerId == 3 ) return drawTopRateSleep(eventId,1007987242,tier,maxCount,mainServer,compress)
     if (playerId == 4 ) return drawTopRateChanged(eventId,1004512554,tier,maxCount,mainServer,compress)
@@ -430,7 +433,7 @@ export async function drawTopRateDetail(eventId: number, playerId: number, tier:
 
 export async function drawTopRateSpeedRank(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean, apiData?: object, range?: TopRateTimeWindow): Promise<Array<Buffer | string>> {
     if (range) return drawTopRateSpeedRankInWindow(eventId, mainServer, compress, range);
-
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     console.log(eventId)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     /*
@@ -677,6 +680,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 }
 
 async function drawTopRateSpeedRankInWindow(eventId: number, server: Server, compress: boolean, range: TopRateTimeWindow): Promise<Array<Buffer | string>> {
+    server = checkCutoffEventIfNeedFallbackToUpperServer(eventId,server)
     const cutoff = new CutoffEventTop(eventId, server);
     if (!cutoff.isExist || cutoff.status === 'not_start' || !Number.isFinite(cutoff.startAt) || !Number.isFinite(cutoff.endAt)) {
         return [`错误：${serverNameFullList[server]} 活动 ${eventId} 不存在或尚未开始`];
@@ -737,6 +741,7 @@ async function drawTopRateSpeedReport(server: Server, subtitle: string, columns:
 }
 
 export async function drawTopRateSleep(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     /*
     if (cutoffEventTop.status != "in_progress") {
@@ -892,6 +897,7 @@ all.push(await drawDatablock({ list}))
 }
 
 export async function drawTopRateChanged(eventId: number, playerId: number, tier: number, maxCount: number, mainServer: Server, compress: boolean,apiData?:object): Promise<Array<Buffer | string>> {
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
 
     /*

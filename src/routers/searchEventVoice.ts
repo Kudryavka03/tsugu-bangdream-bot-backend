@@ -72,7 +72,7 @@ export async function commandEventVoice(input: string | FuzzySearchResult | unde
         if (isInteger(text)) {
             return voicesOfEvent(parseInt(text), mainServer);
         }
-        return voicesOfEvents(matchEvents(fuzzySearch(text)), mainServer);
+        return voicesOfEvents(matchEvents(fuzzySearch(text, 'event')), mainServer);
     }
 
     const fuzzySearchResult: FuzzySearchResult = { ...input };

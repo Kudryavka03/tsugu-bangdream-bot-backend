@@ -848,4 +848,34 @@ export function loadCutoff(eventId: number, server: Server, tier: number, manual
     }
 }
 
-// 天音最强！天音最强！天音最强！
+// 音宝音宝，，，
+
+
+// 优化：如果用户指定了一个当前服务器不存在的活动，则默认寻找日服（甚至是5001的台服）
+export function checkCutoffEventIfNeedFallbackToUpperServer(eventId:number,server:Server,tier?:number):Server{
+    let eIdStr = `${eventId}`
+    if (mainAPI["events"][eIdStr]["startAt"][server]!=null) return server
+    let preferList = [Server.jp,Server.cn,Server.tw,Server.en,Server.kr]
+    for(let s of preferList){
+        if (s == server) continue
+        if (mainAPI["events"][eIdStr]["startAt"][s]!=null){
+            if (tier){
+                let checkTier = false
+                if(s == Server.jp) checkTier = tierListOfServer.jp.includes(tier)
+                else if(s == Server.cn) checkTier = tierListOfServer.cn.includes(tier)
+                else if(s == Server.tw) checkTier = tierListOfServer.tw.includes(tier)
+                else if(s == Server.en) checkTier = tierListOfServer.en.includes(tier)
+                else if(s == Server.kr) checkTier = tierListOfServer.kr.includes(tier)
+                if (checkTier){
+                    server = s
+                    return server
+                }
+            }
+            else{
+                server = s
+                break
+            }
+        }
+    }
+    return server
+}

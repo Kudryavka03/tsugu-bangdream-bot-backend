@@ -6,7 +6,7 @@ import { changeTimePeriodFormat, changeTimefomant } from '@/components/list/time
 import { Server } from '@/types/Server';
 import { drawTitle } from '@/components/title'
 import { outputFinalBuffer } from '@/image/output'
-import { Cutoff, loadCutoff } from "@/types/Cutoff";
+import { checkCutoffEventIfNeedFallbackToUpperServer, Cutoff, loadCutoff } from "@/types/Cutoff";
 import { drawCutoffChart } from '@/components/chart/cutoffChart'
 import { assetsRootPath, serverNameFullList } from '@/config';
 import { drawEventDatablock } from '@/components/dataBlock/event';
@@ -21,6 +21,7 @@ import { Band } from '@/types/Band';
 
 export async function drawCutoffDetail(eventId: number, tier: number, mainServer: Server, compress: boolean,eventId2?:number): Promise<Array<Buffer | string>> {
     //if (!mainAPI['events'][`${eventId}`]['endAt'][mainServer]) return [`错误: ${serverNameFullList[mainServer]} 活动不存在或未举办`]
+    mainServer = checkCutoffEventIfNeedFallbackToUpperServer(eventId,mainServer)
     var cutoff = loadCutoff(eventId, mainServer, tier)
     var cutoffGroup = []
     if (cutoff.isExist == false) {
