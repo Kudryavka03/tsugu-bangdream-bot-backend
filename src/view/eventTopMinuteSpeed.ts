@@ -116,10 +116,12 @@ export function buildMinuteSpeedTable(points: MinutePoint[], offsetMs: number, f
 
     const minutes = [...scores.keys()].sort((a, b) => a - b)
     const minuteIndex = new Map(minutes.map((minute, index) => [minute, index]))
-    const shown = minutes.filter(minute => minute > from && minute <= to)
-    if (shown.length === 0) return '错误: 所选时段内没有前十记录'
+    const firstMinute = Math.ceil((from + offsetMs) / MINUTE_MS) * MINUTE_MS - offsetMs
+    const endMinute = minutes.filter(minute => minute >= firstMinute && minute < to).pop()
+    if (endMinute == null) return '错误: 所选时段内没有前十记录'
 
-    const endMinute = shown[shown.length - 1]
+    const shown: number[] = []
+    for (let minute = firstMinute; minute < to; minute += MINUTE_MS) shown.push(minute)
     const endScores = scores.get(endMinute)
     const players = [...endScores.entries()]
         .sort((a, b) => b[1] - a[1] || a[0] - b[0])

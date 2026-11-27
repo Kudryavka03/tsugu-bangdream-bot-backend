@@ -507,10 +507,9 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         ['上下分差', 250], ['1小时内分差', 300], ['速度排名', 300], ['分数变动次数', 300],
         ['把均PT', 200], ['前空白', 200], ['尾空白', 200], ['猜房间', 200],
     ];
-    const blankStart = new Date(summary.last - 3_600_000).setSeconds(0, 0);
     const rows = summary.rows.map((row, index) => {
         const rating = getRatingByPlayer(points, row.uid);
-        const { leadingMinutes, trailingMinutes } = getTopRateBlankMinutes(rating, blankStart, summary.last);
+        const { leadingMinutes, trailingMinutes } = getTopRateBlankMinutes(rating, summary.from, summary.last);
         return [
             index + 1, row.uid, cutoffEventTop.getUserNameById(row.uid) || String(row.uid), row.score, row.gap,
             row.gain ?? '--', row.gain == null ? '--' : 1 + summary.rows.filter(candidate => candidate.gain != null && candidate.gain > row.gain).length,
@@ -525,28 +524,22 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
 }
 
 function getTopRateBlankMinutes(rating: { time: number; value: number }[], start: number, end: number) {
-    let score = rating[0].value;
-    let changeTime = end;
-    let trailingMinutes: number | undefined;
-    for (let i = 1; i < rating.length; i++) {
+    let firstChange: number | undefined;
+    let lastChange: number | undefined;
+    for (let i = 0; i + 1 < rating.length; i++) {
         const { time, value } = rating[i];
-        if (value === score) continue;
+        if (time > end) continue;
+        if (time < start) break;
+        const previous = rating[i + 1].value;
+        if (value < 0 || previous < 0 || value === previous) continue;
 
-        if (trailingMinutes === undefined) {
-            if (end - time >= 3_600_000) break;
-            trailingMinutes = Math.round((time - end + 60_000) / 60_000);
-        }
-
-        // The leading blank requires a differing observation before the rounded start.
-        if (time < start) {
-            const leadingMinutes = Math.round((changeTime - start) / 60_000);
-            return { leadingMinutes: leadingMinutes <= 30 ? leadingMinutes : undefined, trailingMinutes };
-        }
-
-        score = value;
-        changeTime = rating[i - 1].time;
+        firstChange = time;
+        lastChange ??= time;
     }
-    return { leadingMinutes: undefined, trailingMinutes };
+    return {
+        leadingMinutes: firstChange === undefined ? undefined : Math.floor((firstChange - start) / 60_000),
+        trailingMinutes: lastChange === undefined ? undefined : Math.round((lastChange - end) / 60_000),
+    };
 }
 
 async function drawTopRateSpeedRankInWindow(eventId: number, server: Server, compress: boolean, range: TopRateTimeWindow): Promise<Array<Buffer | string>> {
