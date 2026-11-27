@@ -23,7 +23,7 @@ import { drawTips } from '@/components/tips';
 import { changeTimePeriodFormat, changeTimefomant, formatSeconds, getDateByServerTimezone, getServerUtcOffset, normalizeTimestamp } from '@/components/list/time';
 import mainAPI, { TopRateSpeed } from '@/types/_Main';
 import { estimateChallengePoints } from '@/types/challengePointEstimate';
-import { summarizeTopRateSpeedWindow, TopRateTimeWindow } from '@/types/topRateSpeedWindow';
+import { summarizeTopRateSpeedHour, summarizeTopRateSpeedWindow, TopRateTimeWindow } from '@/types/topRateSpeedWindow';
 import array from 'ref-array-di';
 import { min } from 'moment';
 import { getTop10AvgScore } from './cutoffDetail';
@@ -450,169 +450,13 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         logger('drawEventDatablock error:', err);
         return null;
     });
-    let pId = playerId
-
-    //var cutoffEventTop = new CutoffEventTop(eventId, mainServer);
     await cutoffEventTop.initFull(0);
-    var userInRankings = cutoffEventTop.getLatestRanking(); // 前十当前排名，其中包含UID跟Point
-    var rank = []   // 分数
-    var rankBetween = []    // 前后两个分差
-    var rankBetweenLastTick = [] //前后两个时刻分数变化
-    var rankChangeCount = [] // 分数变动次数
-    var avgRankChange = [] // 把均pt
-    var rankForBetween = []
-    var userName = []
-    var prevNull = []   // 前空白
-    var nextNull = []   // 尾空白
-    
+    if (!cutoffEventTop.isExist || !cutoffEventTop.points?.length) return ['该活动的前十榜单数据不足'];
 
-    var thisHour = cutoffEventTop.points[cutoffEventTop.points.length -1].time
-    
-    var LastHour = new Date(thisHour - 3600000).setSeconds(0)
-    LastHour = new Date(LastHour).setMilliseconds(0)
-    var LastHourBackup = LastHour
-    var LastHourInCutoffT10 = 0
-    for(let i = cutoffEventTop.points.length -1;i>0;i--){   // 找出LastHour的上一个时间点
-        if (cutoffEventTop.points[i].time < LastHour){
-            //console.log(cutoffEventTop.points[i].time,LastHour)
-            LastHourInCutoffT10 = cutoffEventTop.points[i].time 
-            break
-        }
-    }
-    //LastHourInCutoffT10--
-    //LastHour = LastHourInCutoffT10
-    //LastHour = thisHour - 3600000
-    //console.log(LastHour)
-    // thisHour是当前小时如16:37就返回16:00
-    // LastHour是上一个小时，到时候就只要取这几个区间的就好
-    //console.log(userInRankings)
-    var sortUidList = []
-    for (let i = 0; i < userInRankings.length; i++) {
-        
-
-        playerId = userInRankings[i].uid
-        sortUidList.push(playerId)
-        var user = cutoffEventTop.getUserByUid(playerId);
-        userName.push(user.name)
-          // 玩家当前时刻分数
-          rank.push(userInRankings[i].point)
-        let countChange = 0
-        let lastScore = 0
-        let nowScore = 0
-        var isFirst = true
-        const playerRating = getRatingByPlayer(cutoffEventTop.points, playerId) // 按照时间段排的分数，最高返回最近400次的变化分数，从最近到最远。
-        //console.log( playerRating.length)
-
-        for (let j = 0; j  < playerRating.length; j += 1) {
-            if (playerRating[j ].value == -1) {
-                break
-            }
-            //console.log(playerRating[j].time)
-            if (playerRating[j].time >thisHour) continue
-            if (playerRating[j].time <LastHour) {
-                lastScore = playerRating[j].value
-                break
-            }
-            if(isFirst) {
-                nowScore = playerRating[j].value
-                //
-                rank[i] = nowScore  // 玩家状态将会显示
-                //rank.push(nowScore)
-                isFirst = false
-            }
-            if (playerRating[j].value != playerRating[j + 1].value) {
-                countChange ++
-                lastScore = playerRating[j].value
-            }
-        }
-                //rankBetweenLastTick.push()
-        rankChangeCount.push(countChange)   // 分数变动次数
-        //console.log(new Date(LastHour).getHours(),new Date(LastHour).getMinutes(),new Date(LastHour).getSeconds())
-        // 前后空白
-        // 改成starfx的bot同样的下限取值方式，后面再给他改过来，，，
-        //LastHour = LastHourInCutoffT10
-        let tmpScore = playerRating[0].value == -1?0:playerRating[0].value
-        let tmpTime = thisHour
-        let tmpScore2 = 0
-        let isPrev = false
-        let pushPrev = false
-        let pushNext = false
-        let prevNextInListTime = 1000
-        for (let j = 0; j  < playerRating.length; j += 1) {
-            if (pushPrev) break
-            if (!isPrev){   //计算尾空白
-                
-                if (playerRating[j].value!= tmpScore){      // 尾空白大于3600喵置0
-                    if ((playerRating[j].time - tmpTime) <= -3600000) {
-                        isPrev = true
-                        nextNull.push(1/0)
-                        pushNext = true
-                        break
-                    }else{
-                        //nextNull.push(playerRating[j].time - tmpTime + 60000)
-                        nextNull.push(Math.round((playerRating[j].time - tmpTime +60000) / (60000)))
-                        isPrev = true
-                        pushNext = true
-                    }
-                }
-            }
-            if (isPrev){
-                
-                if (playerRating[j].time >=LastHour && playerRating[j].value!= tmpScore){
-                    tmpScore = playerRating[j].value
-                    tmpTime = playerRating[j-1].time
-                }
-                if (playerRating[j].time <LastHour){
-                    if (playerRating[j].value!= tmpScore){
-
-                        /*if (playerRating[j] != playerRating[j-1]){
-                            prevNull.push(0)
-                            pushPrev = true
-                        }
-                    else*/ if (Math.round((tmpTime - LastHour) / (60000)) <= 30){
-                                //let tmpTime1 = new Date(tmpTime).getMinutes()
-                                //let LastHour = new Date(tmpTime).getMinutes()
-                                prevNull.push(Math.round((tmpTime - LastHour)/60000))
-                                pushPrev = true
-                                //console.log((Math.round((tmpTime - LastHour+60000) / (60000))),nextNull.at(-1))
-                            } 
-                            else{
-                                prevNull.push(1/0)
-                                pushPrev = true
-                                //console.log(1/0,nextNull.at(-1))
-                            }
-
-                    }
-                }
-            }
-        }
-        if (!pushPrev) prevNull.push(1/0)
-        if (!pushNext) nextNull.push(1/0)
-        //LastHour = LastHourBackup
-
-
-        if(lastScore >0 ){
-            rankBetweenLastTick.push(nowScore - lastScore)// 与上一时刻相比相差了多少
-        }else{
-            rankBetweenLastTick.push(0)
-        }
-       // console.log((nowScore-lastScore) / countChange==0?1:countChange)
-        avgRankChange.push(countChange==0?0:Math.round((nowScore-lastScore) / countChange))    // 把均Pt
-        if (i == 0) {
-            rankBetween.push(0)
-        }
-        else rankBetween.push(rank[i-1] - nowScore  )  // 与上一名的分数差距
-    }
-    // 改回来。
-    //LastHour = thisHour - 3600000 - new Date(thisHour).getMilliseconds()
-    
-    for (let h = 0; h < rankBetweenLastTick.length; h++) {
-        let rank = 1;
-        for (let g = 0; g < rankBetweenLastTick.length; g++) {
-            if (rankBetweenLastTick[g] > rankBetweenLastTick[h]) rank++;
-        }
-        rankForBetween.push(rank);
-    }
+    const points = cutoffEventTop.points.map(point => ({ ...point, time: normalizeTimestamp(point.time) }));
+    const summary = summarizeTopRateSpeedHour(points);
+    if (!summary) return ['至少需要两次前十榜单记录'];
+    const sortUidList = summary.rows.map(row => row.uid);
 
     // 判断是否在同一房间内
     // 基本思路：抽取出同一时间value的人，数据越多越纯。但也不要太多
@@ -622,12 +466,7 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
     let tempArr1 = []
     let tempArr2 = []
     try{
-        var pureData = []
-        for(let pd of cutoffEventTop.points){
-            if (pd.time >= LastHour && pd.time <=thisHour){
-                pureData.push(pd)
-            } 
-        }
+        const pureData = points.filter(({ time }) => time >= summary.from && time <= summary.last);
         var timeList = [];  // 一共有多少个time（采集点）
         for (let pd of pureData){
             if (!timeList.includes(pd.time)) timeList.push(pd.time)
@@ -664,19 +503,50 @@ export async function drawTopRateSpeedRank(eventId: number, playerId: number, ti
         // TODO: 在房间出现变动的时候使用较多数据的一个房间进行判断。（已完成）
     }
     const columns: [string, number][] = [
-        ['排名', 200], ['UID', 300], ['昵称', 420], [pId == 2 ? '统计时分数' : '分数', 275],
+        ['排名', 200], ['UID', 300], ['昵称', 420], [playerId == 2 ? '统计时分数' : '分数', 275],
         ['上下分差', 250], ['1小时内分差', 300], ['速度排名', 300], ['分数变动次数', 300],
         ['把均PT', 200], ['前空白', 200], ['尾空白', 200], ['猜房间', 200],
     ];
-    const rows = userInRankings.map(({ uid }, index) => [
-        index + 1, uid, userName[index], rank[index], rankBetween[index], rankBetweenLastTick[index],
-        rankForBetween[index], rankChangeCount[index], avgRankChange[index],
-        `${isFinite(prevNull[index]) ? prevNull[index] : '--'}min`, `${isFinite(nextNull[index]) ? nextNull[index] : '--'}min`,
-        getPossibleRoom(possibleAtSameRoom, uid),
-    ]);
-    const timeTips = `统计时段：${changeTimefomant(LastHour, undefined, true)} - ${changeTimefomant(thisHour, undefined, true)}`;
+    const blankStart = new Date(summary.last - 3_600_000).setSeconds(0, 0);
+    const rows = summary.rows.map((row, index) => {
+        const rating = getRatingByPlayer(points, row.uid);
+        const { leadingMinutes, trailingMinutes } = getTopRateBlankMinutes(rating, blankStart, summary.last);
+        return [
+            index + 1, row.uid, cutoffEventTop.getUserNameById(row.uid) || String(row.uid), row.score, row.gap,
+            row.gain ?? '--', row.gain == null ? '--' : 1 + summary.rows.filter(candidate => candidate.gain != null && candidate.gain > row.gain).length,
+            row.changeCount ?? '--', row.averageGain ?? '--',
+            `${leadingMinutes ?? '--'}min`, `${trailingMinutes ?? '--'}min`,
+            getPossibleRoom(possibleAtSameRoom, row.uid),
+        ];
+    });
+    const timeTips = `统计时段：${changeTimefomant(summary.from, undefined, true)} - ${changeTimefomant(summary.last, undefined, true)}`;
     return drawTopRateSpeedReport(mainServer, subTimeTips, columns, rows,
-        `${timeTips}\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度`, drawEventDatablockPromise, compress);
+        `${timeTips}\n次数按相邻榜单的增分统计，缺榜或分数回调时显示 --。\n仅在T10用户一直保持在一个房间，猜房间数据才具有可信度`, drawEventDatablockPromise, compress);
+}
+
+function getTopRateBlankMinutes(rating: { time: number; value: number }[], start: number, end: number) {
+    let score = rating[0].value;
+    let changeTime = end;
+    let trailingMinutes: number | undefined;
+    for (let i = 1; i < rating.length; i++) {
+        const { time, value } = rating[i];
+        if (value === score) continue;
+
+        if (trailingMinutes === undefined) {
+            if (end - time >= 3_600_000) break;
+            trailingMinutes = Math.round((time - end + 60_000) / 60_000);
+        }
+
+        // The leading blank requires a differing observation before the rounded start.
+        if (time < start) {
+            const leadingMinutes = Math.round((changeTime - start) / 60_000);
+            return { leadingMinutes: leadingMinutes <= 30 ? leadingMinutes : undefined, trailingMinutes };
+        }
+
+        score = value;
+        changeTime = rating[i - 1].time;
+    }
+    return { leadingMinutes: undefined, trailingMinutes };
 }
 
 async function drawTopRateSpeedRankInWindow(eventId: number, server: Server, compress: boolean, range: TopRateTimeWindow): Promise<Array<Buffer | string>> {
@@ -1211,6 +1081,8 @@ export function compareSameDataArray(arr1,arr2){       // 判断两个数组是�
 // 首先取出要猜UID（参数UID）出现变动时，跟着一起变的用户
 // 然后对于整个小时数据而言，出现总数量相同，且变动数量相同的用户，则可以百分百确认时同一个房间的
 // 对于变动稍有出入的用户来说，允许设置一定的偏移去应对可能出现的掉线等情况从而无法记录。
+const EVENT_TOP_ROOM_SIZE = 5;
+
 function inferSureRoomsByScoreChange(valueChangeData: number[][],uid: number,dupUid: number[] = []){
     // 首先，将当前uid发生变动的提取出来
     var currentUidChange = []   // 这个array的length就是代表当前uid总变动次数
@@ -1255,7 +1127,7 @@ function inferSureRoomsByScoreChange(valueChangeData: number[][],uid: number,dup
         var largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
         // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
         var smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-        if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length <5 && !dupUid.includes(tempUidList[i])){
+        if (largeCountInTotal == smallCountInTotal && largeCountInPart == smallCountInPart && sureAtSameRoom.length < EVENT_TOP_ROOM_SIZE && !dupUid.includes(tempUidList[i])){
             sureAtSameRoom.push(tempUidList[i])     // 确认是在一个房间的
         }
     }
@@ -1354,7 +1226,32 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         var possibleAtSameRoomRatio = [] // 可能在同一个房间的可能概率
         let possibleAtSameRoomTemp = []
         let possibleAtSameRoomRatioTemp = []
-        const roomLeft = 5 - sureAtSameRoom.length
+        const roomLeft = EVENT_TOP_ROOM_SIZE - sureAtSameRoom.length
+        const qualifiedCandidates = new Map<number, { rule: 1 | 2; members: number[] }>()
+        const eligibleMembers = new Set<number>(sureAtSameRoom)
+        if (!strictMode && roomLeft > 0) {
+            for (let i = 0; i < tempUidList.length; i++) {
+                const candidate = tempUidList[i]
+                const candidateChanges = tempUidListAppearCount[i]
+                const together = tempUidListAppearCountInCurrentUidChange[i]
+                if (together < minTogetherCount || dupUid.includes(candidate) || sureAtSameRoom.includes(candidate)) continue
+
+                let rule: 1 | 2
+                if (together / Math.max(candidateChanges, currentUidChange.length) > sameRoomRatioConfidence) {
+                    rule = 1
+                } else if (candidateChanges < currentUidChange.length && together / candidateChanges > sameRoomRatioConfidence) {
+                    rule = 2
+                } else {
+                    continue
+                }
+
+                const members = (sureMap.get(candidate) ?? [candidate]).filter(member => !dupUid.includes(member))
+                qualifiedCandidates.set(candidate, { rule, members })
+                for (const member of members) eligibleMembers.add(member)
+            }
+        }
+        // Only compare alternatives when the eligible players cannot all fit in this room.
+        const hasOverflow = eligibleMembers.size > EVENT_TOP_ROOM_SIZE
         let skipCompare = false
         for(let i = 0;i<tempUidList.length;i++){
             // 26.9.23： 如果sureAtSameRoomUidList.includes，则表示主动跳过同房的列表，导致同房会单独另起一个房间
@@ -1365,22 +1262,19 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
             if (strictMode)break
             // 参数UID与待查UID占整个时段的变动次数，取大
             let largeCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?tempUidListAppearCount[i]:currentUidChange.length
-            // 参数UID与待查UID占整个时段的变动次数，取小
-            let smallCountInTotal = (tempUidListAppearCount[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCount[i]
-            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取大
-            let largeCountInPart = (tempUidListAppearCountInCurrentUidChange[i] < currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
-            // 参数UID与待查UID占与 参数UID 一起变动 的变动次数，取小
+            // 参数UID与待查UID一起变动的次数
             let smallCountInPart = (tempUidListAppearCountInCurrentUidChange[i] > currentUidChange.length)?currentUidChange.length:tempUidListAppearCountInCurrentUidChange[i]
             // 2026-08-31: 从绝对同房中寻找是否有更好的同房列表。例如跟当前跟同房A 同房B都符合条件，但是同房B的条件更加符合，因此跳过。
             // 比例更高还不够：漏拍次数相同只是各漏了不同的一拍。只有锚点漏拍更少，才算另一间更紧的房。
             //console.log(`${uid} VS ${tempUidList[i]} 总出现次数：${currentUidChange.length}  ${tempUidList[i]} 总出现次数：${tempUidListAppearCount[i]} 同时变动次数：${tempUidListAppearCountInCurrentUidChange[i]} 待查UID同时变动 / 当前查询总变动：${tempUidListAppearCountInCurrentUidChange[i] /currentUidChange.length}`)
             //console.log(tempUidList[i],dupUid.includes(tempUidList[i]))
-            if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同方次数> 5 && uid不重复
-                if((smallCountInPart / largeCountInTotal) > sameRoomRatioConfidence){           // 如果最小同房次数 / 最大变动次数 > sameRoomRatioConfidence比例
+            if (smallCountInPart>= minTogetherCount && !dupUid.includes(tempUidList[i])){     // 最小同房次数且 UID 未分组
+                const candidate = qualifiedCandidates.get(tempUidList[i])
+                if (candidate?.rule === 1) {
 
                     let ratioValue = smallCountInPart /largeCountInTotal    // 记录当前的可能度
                     let findGreaterResult = false
-                    for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
+                    for (let m = 0; hasOverflow && m < sureAtSameRoomUidListFirst.length; m++) {
                         let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
                         if (tempUidList[index] == uid ||tempUidList[index]==tempUidList[i] ) continue // 重复uid不判断
                         if (index == -1) break
@@ -1398,8 +1292,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     }
                     if (!findGreaterResult){
                         const matchedRatio = smallCountInPart / largeCountInTotal
-                        const matchedIds = sureMap.has(tempUidList[i]) ? sureMap.get(tempUidList[i]) : [tempUidList[i]]
-                        for (let sml of matchedIds){
+                        for (const sml of candidate.members){
                             if (possibleAtSameRoomTemp.includes(sml) || sureAtSameRoom.includes(sml)) continue
                             possibleAtSameRoomTemp.push(sml)
                             possibleAtSameRoomRatioTemp.push(matchedRatio)
@@ -1409,13 +1302,13 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     }
                     if (findGreaterResult) continue
                 }
-                else if(currentUidChange.length >= tempUidListAppearCountInCurrentUidChange[i] && (tempUidListAppearCountInCurrentUidChange[i] / tempUidListAppearCount[i]) > sameRoomRatioConfidence &&  tempUidListAppearCount[i] < currentUidChange.length){
+                else if (candidate?.rule === 2) {
                     // 如果 当前查询UID的变动 大于等于 待查UID同时变动 且 （待查UID同时变动 / 待查UID总变动） >  sameRoomRatioToTotalConfidence(0.76)(10/13) 且 
                     // 这个是给刚入局的用的。例如中途加入了某个车。与规则3互相形成互补。
                     // 因过于宽松26-06-18起调整倍率为与sameRoomRatio一致。原倍率sameRoomRatioToTotalConfidence暂时不用
                     let ratioValue = smallCountInPart /largeCountInTotal    // 记录当前的可能度
                     let findGreaterResult = false // 是否找到更好的结果
-                    for (let m = 0;m<sureAtSameRoomUidListFirst.length;m++){
+                    for (let m = 0; hasOverflow && m < sureAtSameRoomUidListFirst.length; m++) {
                         let index = findIndexOfArray(tempUidList,sureAtSameRoomUidListFirst[m])
                         if (index == -1) break
                         if (tempUidList[index] == uid ||tempUidList[index]==tempUidList[i]) continue // 重复uid不判断
@@ -1434,8 +1327,7 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
                     }
                     if (!findGreaterResult){
                         const matchedRatio = smallCountInPart / largeCountInTotal
-                        const matchedIds = sureMap.has(tempUidList[i]) ? sureMap.get(tempUidList[i]) : [tempUidList[i]]
-                        for (let sml of matchedIds){
+                        for (const sml of candidate.members){
                             if (possibleAtSameRoomTemp.includes(sml) || sureAtSameRoom.includes(sml)) continue
                             possibleAtSameRoomTemp.push(sml)
                             possibleAtSameRoomRatioTemp.push(matchedRatio)
@@ -1522,13 +1414,13 @@ function inferPossibleRoomsByScoreChange(valueChangeData: number[][] = [],uidSor
         }
         
         for(let f of sureAtSameRoom){
-            if (finalResultIn.length <5){
+            if (finalResultIn.length < EVENT_TOP_ROOM_SIZE){
                 finalResultIn.push(f)
                 dupUid.push(f)
             }
         }
         for(let f of possibleAtSameRoom){
-            if (finalResultIn.length <5 && !finalResultIn.includes(f)){
+            if (finalResultIn.length < EVENT_TOP_ROOM_SIZE && !finalResultIn.includes(f)){
                 finalResultIn.push(f)
                 dupUid.push(f)
             }

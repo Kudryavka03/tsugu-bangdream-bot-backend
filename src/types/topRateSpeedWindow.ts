@@ -2,10 +2,35 @@ import type { TrackerTopPoint } from './TrackerTop';
 
 export type TopRateTimeWindow = { from?: number; to?: number };
 
-export function summarizeTopRateSpeedWindow(points: TrackerTopPoint[], from: number, to: number) {
+function isValidPoint({ time, uid, value }: TrackerTopPoint) {
+    return Number.isFinite(time) && Number.isFinite(uid) && Number.isFinite(value) && value >= 0;
+}
+
+export function summarizeTopRateSpeedHour(points: TrackerTopPoint[]) {
+    let end = -Infinity;
+    for (const point of points) {
+        if (isValidPoint(point)) end = Math.max(end, point.time);
+    }
+    if (end === -Infinity) return undefined;
+
+    const from = end - 3_600_000;
+    let baseline: number | undefined;
+    for (const point of points) {
+        if (point.time <= from && (baseline === undefined || point.time > baseline) && isValidPoint(point)) {
+            baseline = point.time;
+        }
+    }
+
+    // The final snapshot at or before the start is only a baseline for changes inside the hour.
+    const summary = summarizeTopRateSpeedWindow(points, from, end + 1, baseline);
+    if (summary) return { ...summary, from: Math.max(from, summary.first) };
+}
+
+export function summarizeTopRateSpeedWindow(points: TrackerTopPoint[], from: number, to: number, baseline = from) {
     const snapshots = new Map<number, Map<number, number>>();
-    for (const { time, uid, value } of points) {
-        if (!Number.isFinite(time) || time < from || time >= to || !Number.isFinite(uid) || !Number.isFinite(value) || value < 0) continue;
+    for (const point of points) {
+        const { time, uid, value } = point;
+        if (time < baseline || time >= to || !isValidPoint(point)) continue;
         let scores = snapshots.get(time);
         if (!scores) {
             scores = new Map();
